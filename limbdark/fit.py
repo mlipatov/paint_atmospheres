@@ -11,7 +11,7 @@ import util as ut
 
 ## functions on a given interval
 # the non-zero functions on a given interval
-f = [lambda x: 1, lambda x: x, lambda x: x**2, lambda x: x**3, lambda x: math.sqrt(x)]
+f = [lambda _: 1, lambda x: x, lambda x: x**2, lambda x: x**3, lambda x: math.sqrt(x)]
 # the number of non-zero functions on a given interval
 n = len(f)
 # zero functions on a given interval
@@ -20,7 +20,7 @@ fz = [lambda _: 0] * n
 ## the values of mu in Castelli and Kurucz 2004, reversed
 mu_arr = np.array([0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.])
 # the boundaries [x0, x1, ... x(n)] between the intervals of the fit: [0, x0), [x0, x1), ... [x(n), 1]
-mu0_arr = np.array([0.25])
+mu0_arr = np.array([0.05, 0.25])
 # the number of intervals
 m = len(mu0_arr) + 1
 # mu array split into a list of arrays according to the boundaries
@@ -92,7 +92,9 @@ class Fit:
 		# check that the fit is good
 		I1 = self.I_arr[-1] # given intensity value at mu = 1
 		diff = np.abs(np.amax(vI(mu_arr) - self.I_arr))
-		if I1 == 0 and diff != 0:
+		if diff == 0:
+			dev = 0
+		elif I1 == 0:
 			dev = np.inf
 		else:
 			dev = diff / I1
