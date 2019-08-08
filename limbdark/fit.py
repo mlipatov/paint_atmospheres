@@ -19,27 +19,6 @@ fz = [lambda _: 0] * n
 
 ## the values of mu in Castelli and Kurucz 2004, reversed
 mu_arr = np.array([0.01, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.])
-# the boundaries [x0, x1, ... x(n)] between the intervals of the fit: [0, x0), [x0, x1), ... [x(n), 1]
-mu0_arr = np.array([0.1, 0.25])
-# the number of intervals
-m = len(mu0_arr) + 1
-# mu array split into a list of arrays according to the boundaries
-mu_arr_split = np.split(mu_arr, np.searchsorted(mu_arr, mu0_arr))
-
-## all the functions on each interval
-F = []
-for i in range(m):
-	F.append(fz * i + f + fz * (m - i - 1))
-## the model for the given complete set of mu values
-# stack the column obtained from applying to each value of mu all the functions 
-# on that value's interval
-xl = []
-for i in range(m): # interval
-	Fi = F[i] # all functions on this interval
-	for mu in mu_arr_split[i]: # mu on this interval
-		xj = [func(mu) for func in Fi]
-		xl.append(np.array(xj))
-x = np.array(xl)
 
 # number of steps in mu for monotonicity checks
 mu_step = 0.001
@@ -60,15 +39,40 @@ class Fit:
 	""" Class containing intensity vs mu for some temperature and gravity, 
 		along with the corresponding fit """
 
-	# variable containing the minimum I(mu = 0) / I(mu = 1), the wavelength, the gravity and the temperature 
-	# where this occurs; can be negative
-	I0_min = [np.inf, -1, -1, -1]
-	# variable containing the minimum value of intensity difference across a mu step divided by
-	# I(mu = 1), the wavelength, the gravity, the temperature and the mu where this occurs; can be negative
-	min_step = [np.inf, -1, -1, -1, -1]
-	# maximum deviation of the fitted function from the given values of intensity divided by I(mu = 1),
-	# the wavelength, the gravity, the temperature and the mu where this occurs; cannot be negative
-	max_dev = [0, -1, -1, -1, -1]
+	# the boundaries [x0, x1, ... x(n)] between the intervals of the fit: [0, x0), [x0, x1), ... [x(n), 1]
+	mu0_arr = np.array([])
+	# the number of intervals
+	m = 0	
+	# mu array split into a list of arrays according to the boundaries
+	mu_arr_split = np.array([])
+	# all the functions on each interval
+	F = []
+	# the model for the given complete set of mu values
+	x = []
+
+	# sets the array of boundary values between mu intervals
+	# then computes 
+	@classmethod
+	def set_mu0_arr(cls, b):
+		cls.mu0_arr = b
+		cls.m = len(b) + 1
+		mu0_arr = cls.mu0_arr
+		m = cls.m
+		# split the array of Kurucz's mu values according to the boundaries between intervals
+		cls.mu_arr_split = np.split(mu_arr, np.searchsorted(mu_arr, mu0_arr))
+		# compute all the functions on each interval
+		for i in range(m):
+			cls.F.append(fz * i + f + fz * (m - i - 1))
+		## compute the model for the given complete set of mu values
+		# stack the column obtained from applying to each value of mu all the functions 
+		# on that value's interval
+		xl = []
+		for i in range(m): # interval
+			Fi = cls.F[i] # all functions on this interval
+			for mu in cls.mu_arr_split[i]: # mu on this interval
+				xj = [func(mu) for func in Fi]
+				xl.append(np.array(xj))
+		cls.x = np.array(xl)
 
 	# initialize with an array of intensities corresponding to the array of mu values in this class
 	# and the wavelength, log g and temperature of this fit
@@ -79,7 +83,7 @@ class Fit:
 		self.g = g
 		self.temp = temp
 		# fit
-		alpha = np.linalg.lstsq(x, I_arr, rcond=None)[0]
+		alpha = np.linalg.lstsq(self.x, I_arr, rcond=None)[0]
 		self.params = alpha
 		if ch:
 			self.check()
@@ -87,10 +91,20 @@ class Fit:
 	# intensity vs mu in terms of computed parameters
 	# mu has to be in [0, 1]
 	def I(self, mu):
-		i = np.searchsorted(mu0_arr, mu, side='right') # interval where this mu value is found
-		Fi = F[i] # all the functions on this interval
+		i = np.searchsorted(self.mu0_arr, mu, side='right') # interval where this mu value is found
+		Fi = self.F[i] # all the functions on this interval
 		I = sum(self.params * [func(mu) for func in Fi])
 		return I
+
+	# variable containing the minimum I(mu = 0) / I(mu = 1), the wavelength, the gravity and the temperature 
+	# where this occurs; can be negative
+	I0_min = [np.inf, -1, -1, -1]
+	# variable containing the minimum value of intensity difference across a mu step divided by
+	# I(mu = 1), the wavelength, the gravity, the temperature and the mu where this occurs; can be negative
+	min_step = [np.inf, -1, -1, -1, -1]
+	# maximum deviation of the fitted function from the given values of intensity divided by I(mu = 1),
+	# the wavelength, the gravity, the temperature and the mu where this occurs; cannot be negative
+	max_dev = [0, -1, -1, -1, -1]
 
 	# check that the fit is good
 	# adjusts class variable to contain information about the worst fits so far:

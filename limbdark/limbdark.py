@@ -94,12 +94,13 @@ class LimbDark:
 	""" Class containing all limbdarkening information """
 
 	# initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
-	def __init__(self, datafile, check):
+	def __init__(self, datafile, bounds, check):
 		wl_arr, g_arr, temp_arr, I_arr, g_temp_arr = getdata(datafile)
 		self.wl_arr = wl_arr
 		self.g_arr = g_arr
 		self.temp_arr = temp_arr
 		self.g_temp_arr = g_temp_arr
+		ft.Fit.set_mu0_arr(np.array(bounds))
 
 		g_temp_shape = np.shape(g_temp_arr)
 		# re-structure the array of intensities to become an array of fit objects
@@ -124,7 +125,8 @@ class LimbDark:
 						# initialize and fit
 						fit = ft.Fit(I_slice, wl, g, temp, check)
 						self.fits[ind_wl][ind_g][ind_temp] = fit
-			# print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
+			if check:
+				print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
 		end = time.time()
 		print("Done in " + str(end - start) + " seconds")
 		sys.stdout.flush()
