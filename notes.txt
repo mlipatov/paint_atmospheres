@@ -1,5 +1,4 @@
-mpmath.appellf1 takes about a tenth of a second on fido. This is 4 - 5 orders of magnitude slower thant scipy.special.ellipeinc
-two logarithms are about twice as fast as ellipeinc
+mpmath.appellf1 takes about a tenth of a second on fido. This is 4 - 5 orders of magnitude slower thant scipy.special.ellipeinc; two logarithms are about twice as fast as ellipeinc
 
 Two intervals (break at 0.25), no constraints. Goodness of fit relative to I1:
 [-0.16284416397255186, 89.5, 3.0, 17000.0] [-0.02670474500664984, 124.5, 4.0, 21000.0, 0.0] [0.012848021667953471, 111.5, 3.0, 9000.0, 0.9]
