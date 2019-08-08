@@ -124,6 +124,7 @@ class LimbDark:
 						# initialize and fit
 						fit = ft.Fit(I_slice, wl, g, temp, check)
 						self.fits[ind_wl][ind_g][ind_temp] = fit
+			# print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
 		end = time.time()
 		print("Done in " + str(end - start) + " seconds")
 		sys.stdout.flush()
