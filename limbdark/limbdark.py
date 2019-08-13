@@ -100,7 +100,7 @@ class LimbDark:
 		self.g_arr = g_arr
 		self.temp_arr = temp_arr
 		self.g_temp_arr = g_temp_arr
-		ft.Fit.set_mu0_arr(np.array(bounds))
+		ft.Fit.set_muB(bounds)
 
 		g_temp_shape = np.shape(g_temp_arr)
 		# re-structure the array of intensities to become an array of fit objects
