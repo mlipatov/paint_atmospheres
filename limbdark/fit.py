@@ -53,11 +53,12 @@ class Fit:
 		# set the number of intervals
 		cls.m = len(b) + 1
 		# set the array of tuples describing the intervals
+		cls.muB_tup = []
 		cls.muB_tup.append((0, b[0]))
 		for c in range(len(b) - 1):
 			cls.muB_tup.append((b[c], b[c+1]))
 		cls.muB_tup.append((b[-1], 1))
-		# set local variables
+		# set local variables for this function
 		muB_arr = cls.muB_arr
 		m = cls.m
 		# split the array of Kurucz's mu values according to the boundaries between intervals
@@ -122,10 +123,10 @@ class Fit:
 			return int1 + int2
 		# initialize the total integral
 		result = 0
-		# find the values of mu that correspond to the two integration boundaries
-		# sort them; they should be between 0 and 1
-		mu0, mu1 = sorted([mu(phi) for phi in [0, phi1]])
-		for i, interval in enumerate(muB_tup): # for each mu interval
+		# find the values of mu that correspond to the two integration boundaries:
+		# mu(phi1) should be zero; mu(0) should be between 0 and 1
+		mu0, mu1 = [0, mu(0)]
+		for i, interval in enumerate(self.muB_tup): # for each mu interval
 			muL = np.NAN; muU = np.NAN # initialize the integration boundaries for this interval
 			ellipL = np.NAN; ellipU = np.NAN # initialize the elliptic integrals
 			if mu0 >= interval[0] and mu0 < interval[1]: 
@@ -144,13 +145,13 @@ class Fit:
 				ellipL = sp.ellipeinc(phiL/2., (2*a)/(a + b))
 				# if the upper elliptic integral needs to be found, find it
 				if np.isnan(ellipU):
-					ellipU = sp.ellipeinc(phi/2., (2*a)/(a + b))
+					ellipU = sp.ellipeinc(phiU/2., (2*a)/(a + b))
 				# compute the integral on this interval algebraically
 				result += intgrt(phiU, i, ellipU) - intgrt(phiL, i, ellipL)
 				# set the upper elliptic integral for the next interval 
 				# to the lower one for this interval
 				ellipU = ellipL 
-		return result
+		return 2 * result
 
 
 	# variable containing the minimum I(mu = 0) / I(mu = 1), the wavelength, the gravity and the temperature 

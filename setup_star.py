@@ -1,13 +1,15 @@
 # Sets up the spectrum calculation for a star
 import limbdark.limbdark as limbdark
+import limbdark.fit as ft
 import star.star as star
+import util as ut
 import sys
 import time
 import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python setup_spectrum.py \'spectrum.pkl\' \'limbdark.pkl\' \'roche\' " +\
+	"python setup_star.py \'star.pkl\' \'limbdark.pkl\' \'roche\' " +\
 	"0.8760 0.08683 40.124 2.135 2.818")
 parser.add_argument("pkl_sfile", help="a name for a .pkl spectrum file to create")
 parser.add_argument("pkl_lfile", help="a name for a limb darkening .pkl file from which to obtain wavelengths")
@@ -33,18 +35,28 @@ Req = args.Req # equatorial radius of the star in solar radii
 ## unpickle the limb darkening information
 with open(pkl_lfile, 'rb') as f:
 	ld = pickle.load(f)
+# set the bounds between mu intervals with the bounds in the limb darkening information
+ft.Fit.set_muB(ld.bounds)
 
-### Pickle the star
+### Initialize and pickle the star
 st = star.Star(omega, inclination, luminosity, mass, Req, surface)
 with open(pkl_sfile, 'wb') as f:
 	pickle.dump(st, f)
+
+fit = ld.fits[1000][0][0]
+print(st.Z1())
+sys.stdout.flush()
+z = 0.01
+phi0 = st.phi1(z)
+a, b = st.ab(z)
+print(fit.integrate(phi0, a, b))
 
 # print an initialization message
 if (surface == "ellipsoid"):
 	surfmes = " an ellipsoid"
 elif (surface == "roche"):
 	surfmes = "obtained from a Roche potential"
-ct.printf ("Spectrum initialized for a star with a mass of " + str(mass) + " sun(s), a luminosity of "\
+ut.printf ("Initialized a star with a mass of " + str(mass) + " sun(s), a luminosity of "\
 	+ str(luminosity) + " sun(s), an equatorial radius equal to " + str(Req) + \
 	" solar radii, a rotation speed " + str(omega) +\
 	" of the Keplerian angular velocity at the equator, and an inclination of " +\

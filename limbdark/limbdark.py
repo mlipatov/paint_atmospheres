@@ -6,8 +6,8 @@ import math
 
 # given the name of a file provided by Castelli and Kurucz 2004,
 # output arrays of wavelengths, mu, values of log g, temperatures, intensities and 
-# 	an array specifying which values of temperature each log g has 
-#	(this contains a -1 for each combination of temperature and log g that doesn't exist)
+#     an array specifying which values of temperature each log g has 
+#    (this contains a -1 for each combination of temperature and log g that doesn't exist)
 # all arrays other than the intensity array should be sorted
 # Intensity indices: [wavelength][mu][log gravity][temperature]
 # Where the intensity is not given for some temperature, the record is -1
@@ -91,52 +91,53 @@ def getdata(filename):
 
 
 class LimbDark:
-	""" Class containing all limbdarkening information """
+    """ Class containing all limbdarkening information """
 
-	# initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
-	def __init__(self, datafile, bounds, check):
-		wl_arr, g_arr, temp_arr, I_arr, g_temp_arr = getdata(datafile)
-		self.wl_arr = wl_arr
-		self.g_arr = g_arr
-		self.temp_arr = temp_arr
-		self.g_temp_arr = g_temp_arr
-		ft.Fit.set_muB(bounds)
+    # initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
+    def __init__(self, datafile, bounds, check):
+        wl_arr, g_arr, temp_arr, I_arr, g_temp_arr = getdata(datafile)
+        self.wl_arr = wl_arr
+        self.g_arr = g_arr
+        self.temp_arr = temp_arr
+        self.g_temp_arr = g_temp_arr
+        self.bounds = bounds
+        ft.Fit.set_muB(bounds)
 
-		g_temp_shape = np.shape(g_temp_arr)
-		# re-structure the array of intensities to become an array of fit objects
-		# initialize each fit object, thus calculating the fit at that combination of wavelength,
-		#	log g and temperature; if the combination doesn't exist, set the fit object to None
-		self.fits = [[[None for k in range(g_temp_shape[1])] \
-			for j in range(g_temp_shape[0])] for i in range(len(wl_arr))]
-		print ("Computing fits of intensity versus mu. "),
-		sys.stdout.flush()
-		start = time.time()
-		for ind_wl in np.arange(len(wl_arr)):
-			if (ind_wl % 100 == 0):
-				ut.printf(str(ind_wl) + " out of " + str(len(wl_arr)) + " wavelengths completed.\n")
-				sys.stdout.flush()
-			for ind_g in np.arange(g_temp_shape[0]):
-				for ind_temp in np.arange(g_temp_shape[1]):
-					if g_temp_arr[ind_g][ind_temp] != -1:
-						I_slice = I_arr[ind_wl, :, ind_g, ind_temp] # get the intensities at different mus
-						wl = wl_arr[ind_wl]
-						g = g_arr[ind_g]
-						temp = temp_arr[ind_temp]
-						# initialize and fit
-						fit = ft.Fit(I_slice, wl, g, temp, check)
-						self.fits[ind_wl][ind_g][ind_temp] = fit
-			if check:
-				print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
-		end = time.time()
-		print("Done in " + str(end - start) + " seconds")
-		sys.stdout.flush()
+        g_temp_shape = np.shape(g_temp_arr)
+        # re-structure the array of intensities to become an array of fit objects
+        # initialize each fit object, thus calculating the fit at that combination of wavelength,
+        #    log g and temperature; if the combination doesn't exist, set the fit object to None
+        self.fits = [[[None for k in range(g_temp_shape[1])] \
+            for j in range(g_temp_shape[0])] for i in range(len(wl_arr))]
+        print ("Computing fits of intensity versus mu. "),
+        sys.stdout.flush()
+        start = time.time()
+        for ind_wl in np.arange(len(wl_arr)):
+            if (ind_wl % 100 == 0):
+                ut.printf(str(ind_wl) + " out of " + str(len(wl_arr)) + " wavelengths completed.\n")
+                sys.stdout.flush()
+            for ind_g in np.arange(g_temp_shape[0]):
+                for ind_temp in np.arange(g_temp_shape[1]):
+                    if g_temp_arr[ind_g][ind_temp] != -1:
+                        I_slice = I_arr[ind_wl, :, ind_g, ind_temp] # get the intensities at different mus
+                        wl = wl_arr[ind_wl]
+                        g = g_arr[ind_g]
+                        temp = temp_arr[ind_temp]
+                        # initialize and fit
+                        fit = ft.Fit(I_slice, wl, g, temp, check)
+                        self.fits[ind_wl][ind_g][ind_temp] = fit
+            if check:
+                print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
+        end = time.time()
+        print("Done in " + str(end - start) + " seconds")
+        sys.stdout.flush()
 
 
-	# plots the information in the Fit object corresponding to given wavelength, log g and temperature
-	def plotFit(self, wl, g, temp):
-		# find the Fit object and extract its parameters
-		ind_wl = np.where(self.wl_arr == wl)[0][0]
-		ind_g = np.where(self.g_arr == g)[0][0]
-		ind_temp = np.where(self.temp_arr == temp)[0][0]
-		fit = self.fits[ind_wl][ind_g][ind_temp]
-		fit.plot()
+    # plots the information in the Fit object corresponding to given wavelength, log g and temperature
+    def plotFit(self, wl, g, temp):
+        # find the Fit object and extract its parameters
+        ind_wl = np.where(self.wl_arr == wl)[0][0]
+        ind_g = np.where(self.g_arr == g)[0][0]
+        ind_temp = np.where(self.temp_arr == temp)[0][0]
+        fit = self.fits[ind_wl][ind_g][ind_temp]
+        fit.plot()
