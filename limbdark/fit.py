@@ -99,7 +99,8 @@ class Fit:
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
 
-	# computes twice the integral of this fit as a function of mu = a * cos(phi) + b,
+	# for each function of the fit, 
+	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
 	# between 0 and the given integration boundary on phi
 	def integrate(self, phi1, a, b):
 		# the second argument to the single elliptic integral that is necessary to compute
@@ -127,19 +128,24 @@ class Fit:
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
 		def intgrt(phi, i, el):
-			# parameters of the fit
-			p = self.p[n * i : n * (i + 1)]
 			# cosine phi
 			cosn = math.cos(phi)
+			sine = math.sin(phi)
+			sin2 = math.sin(2*phi)
+			sin3 = math.sin(3*phi)
 			# integral of the polynomial
-			int1 = phi*(p[0] + b*p[1] + (a**2*p[2])/2. + b**2*p[2] + (3*a**2*b*p[3])/2. + b**3*p[3]) +\
-				(a*(6*p[1] + 3*(4*b + a*cosn)*p[2] +\
-					(5*a**2 + 18*b**2 + 9*a*b*cosn + a**2*math.cos(2*phi))*p[3])*math.sin(phi))/6.
+			int1 = [
+				phi,
+				b*phi + a*sine,
+				(a**2*phi)/2. + b**2*phi + 2*a*b*sine + (a**2*cosn*sine)/2.,
+				(3*a**2*b*phi)/2. + b**3*phi + (3*a**3*sine)/4. + 3*a*b**2*sine + \
+					(3*a**2*b*sin2)/4. + (a**3*sin3)/12.
+			]
 			# integral of the square root
-			int2 = (2*el*p[4]) * math.sqrt(a + b)
-			return int1 + int2
-		# initialize the total integral
-		result = 0
+			int2 = [ (2*el) * math.sqrt(a + b) ]
+			return np.array(int1 + int2)
+		# initialize the total integral for each non-zero function on an interval
+		result = np.zeros(n)
 		# find the values of mu that correspond to the two integration boundaries:
 		# mu(phi1) should be zero; mu(0) should be between 0 and 1
 		mu0, mu1 = [0, mu(0)]

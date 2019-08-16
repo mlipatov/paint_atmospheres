@@ -3,6 +3,7 @@ import limbdark.limbdark as limbdark
 import limbdark.fit as ft
 import star.star as star
 import util as ut
+import numpy as np
 import sys
 import time
 import argparse
@@ -51,8 +52,13 @@ phi1 = st.phi1(z)
 print(phi1)
 a, b = st.ab(z)
 print(a, b)
-print(fit.integrate(phi1, a, b))
-print(fit.p)
+# this is incorrect right now
+# we need to split the phi integral into several integrals, the boundaries between which depend on z
+integr = fit.integrate(phi1, a, b)
+print(integr)
+p = fit.p[:5]
+print(p)
+print(np.sum(np.dot(p, integr)))
 
 # print an initialization message
 if (surface == "ellipsoid"):
