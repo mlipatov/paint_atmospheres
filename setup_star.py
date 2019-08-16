@@ -47,9 +47,12 @@ fit = ld.fits[1000][0][0]
 print(st.Z1())
 sys.stdout.flush()
 z = 0.01
-phi0 = st.phi1(z)
+phi1 = st.phi1(z)
+print(phi1)
 a, b = st.ab(z)
-print(fit.integrate(phi0, a, b))
+print(a, b)
+print(fit.integrate(phi1, a, b))
+print(fit.p)
 
 # print an initialization message
 if (surface == "ellipsoid"):

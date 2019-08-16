@@ -102,14 +102,31 @@ class Fit:
 	# computes twice the integral of this fit as a function of mu = a * cos(phi) + b,
 	# between 0 and the given integration boundary on phi
 	def integrate(self, phi1, a, b):
+		# the second argument to the single elliptic integral that is necessary to compute
+		# the integral of sqrt(mu)
+		m = (2*a)/(a + b)
+		sqrtm = math.sqrt(m)
+		# phi in terms of mu
 		def mu(phi):
 			return a * math.cos(phi) + b
+		# mu in terms of phi
 		def phi(mu):
-			return math.acos((mu - b) / a)
+			cosn = (mu - b) / a
+			if cosn > 1 or cosn < -1:
+				return np.NAN
+			else:
+				return math.acos(cosn)
+		# the elliptic integral between zero and phi / 2
+		def ellip(phi):
+			if m > 1: # change variables
+				t1 = math.asin(sqrtm * math.sin(phi / 2))
+				return sqrtm * sp.ellipeinc(t1, 1./m) + ((1 - m) / sqrtm) * sp.ellipkinc(t1, 1./m)
+			else:
+				return sp.ellipeinc(phi / 2., m)
 		# indefinite integral of the fit as a function of phi,
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
-		def intgrt(phi, i, ellip):
+		def intgrt(phi, i, el):
 			# parameters of the fit
 			p = self.p[n * i : n * (i + 1)]
 			# cosine phi
@@ -119,33 +136,37 @@ class Fit:
 				(a*(6*p[1] + 3*(4*b + a*cosn)*p[2] +\
 					(5*a**2 + 18*b**2 + 9*a*b*cosn + a**2*math.cos(2*phi))*p[3])*math.sin(phi))/6.
 			# integral of the square root
-			int2 = (2*ellip*p[4]) * math.sqrt(a + b)
+			int2 = (2*el*p[4]) * math.sqrt(a + b)
 			return int1 + int2
 		# initialize the total integral
 		result = 0
 		# find the values of mu that correspond to the two integration boundaries:
 		# mu(phi1) should be zero; mu(0) should be between 0 and 1
 		mu0, mu1 = [0, mu(0)]
-		for i, interval in enumerate(self.muB_tup): # for each mu interval
-			muL = np.NAN; muU = np.NAN # initialize the integration boundaries for this interval
+		# go through the mu intervals in the order of increasing mu values
+		# this corresponds to going through the phi intervals in the order of decreasing phi values
+		for i, interval in enumerate(self.muB_tup):
+			phiL = np.NAN; phiU = np.NAN # initialize the integration boundaries for this interval
 			ellipL = np.NAN; ellipU = np.NAN # initialize the elliptic integrals
+			# setting the upper integration limit on phi, which corresponds to
+			# setting the lower limit on mu
 			if mu0 >= interval[0] and mu0 < interval[1]: 
-				muL = mu0
-			if mu0 < interval[0]:
-				muL = interval[0]
+				phiU = phi1
+			if mu0 < interval[0]: 
+				phiU = phi(interval[0])
+			# setting the lower integration limit on phi, which corresponds to
+			# setting the upper limit on mu
 			if mu1 >= interval[0] and mu1 < interval[1]:
-				muU = mu1
+				phiL = 0
 			if mu1 >= interval[1]:
-				muU = interval[1]
-			if not np.isnan(muL) and not np.isnan(muU):
-				# find the values of phi that correspond to the two integration boundaries
-				# for this mu interval; sort them; they should be between 0 and pi
-				phiL, phiU = sorted([phi(mu) for mu in [muL, muU]])
-				# find the lower elliptic integral
-				ellipL = sp.ellipeinc(phiL/2., (2*a)/(a + b))
-				# if the upper elliptic integral needs to be found, find it
+				phiL = phi(interval[1])
+			# if both the upper and the lower limits of integrations are defined in this interval
+			if not np.isnan(phiL) and not np.isnan(phiU):
+				# find the elliptic integral at the lower phi integration boundary
+				ellipL = ellip(phiL)
+				# if the upper elliptic integral needs to be found, find it as well
 				if np.isnan(ellipU):
-					ellipU = sp.ellipeinc(phiU/2., (2*a)/(a + b))
+					ellipU = ellip(phiU)
 				# compute the integral on this interval algebraically
 				result += intgrt(phiU, i, ellipU) - intgrt(phiL, i, ellipL)
 				# set the upper elliptic integral for the next interval 
