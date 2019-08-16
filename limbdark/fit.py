@@ -99,14 +99,14 @@ class Fit:
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
 
-	# for each function of the fit, 
+	# Given the upper integration boundary phi1, for each function of the fit on each interval of the fit, 
 	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
-	# between 0 and the given integration boundary on phi
+	# on the intersection of the interval and [0, phi1]
 	def integrate(self, phi1, a, b):
 		# the second argument to the single elliptic integral that is necessary to compute
 		# the integral of sqrt(mu)
-		m = (2*a)/(a + b)
-		sqrtm = math.sqrt(m)
+		M = (2 * a)/(a + b)
+		sqrtM = math.sqrt(M)
 		# phi in terms of mu
 		def mu(phi):
 			return a * math.cos(phi) + b
@@ -119,15 +119,15 @@ class Fit:
 				return math.acos(cosn)
 		# the elliptic integral between zero and phi / 2
 		def ellip(phi):
-			if m > 1: # change variables
-				t1 = math.asin(sqrtm * math.sin(phi / 2))
-				return sqrtm * sp.ellipeinc(t1, 1./m) + ((1 - m) / sqrtm) * sp.ellipkinc(t1, 1./m)
+			if M > 1: # change variables
+				t1 = math.asin(sqrtM * math.sin(phi / 2))
+				return sqrtM * sp.ellipeinc(t1, 1./M) + ((1 - M) / sqrtM) * sp.ellipkinc(t1, 1./M)
 			else:
-				return sp.ellipeinc(phi / 2., m)
-		# indefinite integral of the fit as a function of phi,
+				return sp.ellipeinc(phi / 2., M)
+		# indefinite integrals of the non-zero fit functions as functions of phi,
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
-		def intgrt(phi, i, el):
+		def intgrt(phi, el):
 			# cosine phi
 			cosn = math.cos(phi)
 			sine = math.sin(phi)
@@ -144,8 +144,8 @@ class Fit:
 			# integral of the square root
 			int2 = [ (2*el) * math.sqrt(a + b) ]
 			return np.array(int1 + int2)
-		# initialize the total integral for each non-zero function on an interval
-		result = np.zeros(n)
+		# initialize the total integral for function on each interval
+		result = np.zeros(n * self.m)
 		# find the values of mu that correspond to the two integration boundaries:
 		# mu(phi1) should be zero; mu(0) should be between 0 and 1
 		mu0, mu1 = [0, mu(0)]
@@ -174,7 +174,7 @@ class Fit:
 				if np.isnan(ellipU):
 					ellipU = ellip(phiU)
 				# compute the integral on this interval algebraically
-				result += intgrt(phiU, i, ellipU) - intgrt(phiL, i, ellipL)
+				result[i * n : (i + 1) * n] += intgrt(phiU, ellipU) - intgrt(phiL, ellipL)
 				# set the upper elliptic integral for the next interval 
 				# to the lower one for this interval
 				ellipU = ellipL 

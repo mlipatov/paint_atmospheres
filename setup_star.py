@@ -45,18 +45,12 @@ with open(pkl_sfile, 'wb') as f:
 	pickle.dump(st, f)
 
 fit = ld.fits[1000][0][0]
-print(st.Z1())
-sys.stdout.flush()
 z = 0.01
 phi1 = st.phi1(z)
-print(phi1)
 a, b = st.ab(z)
-print(a, b)
-# this is incorrect right now
-# we need to split the phi integral into several integrals, the boundaries between which depend on z
 integr = fit.integrate(phi1, a, b)
 print(integr)
-p = fit.p[:5]
+p = fit.p
 print(p)
 print(np.sum(np.dot(p, integr)))
 
