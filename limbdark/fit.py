@@ -77,32 +77,12 @@ class Fit:
 				xl.append(np.array(xj))
 		cls.x = np.array(xl)
 
-	# initialize with an array of intensities corresponding to the array of mu values in this module
-	# and the wavelength, log g and temperature of this fit
-	# computes the fit
-	def __init__(self, I_arr, wl, g, temp, ch):
-		self.I_arr = I_arr
-		self.wl = wl
-		self.g = g
-		self.temp = temp
-		# fit
-		alpha = np.linalg.lstsq(self.x, I_arr, rcond=None)[0]
-		self.p = alpha
-		if ch:
-			self.check()
-
-	# intensity vs mu in terms of computed parameters
-	# mu has to be in [0, 1]
-	def I(self, mu):
-		i = np.searchsorted(self.muB_arr, mu, side='right') # interval where this mu value is found
-		Fi = self.F[i] # all the functions on this interval
-		I = sum(self.p * [func(mu) for func in Fi])
-		return I
 
 	# Given the upper integration boundary phi1, for each function of the fit on each interval of the fit, 
 	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
 	# on the intersection of the interval and [0, phi1]
-	def integrate(self, phi1, a, b):
+	@classmethod
+	def integrate(cls, phi1, a, b):
 		# the second argument to the single elliptic integral that is necessary to compute
 		# the integral of sqrt(mu)
 		M = (2 * a)/(a + b)
@@ -145,13 +125,13 @@ class Fit:
 			int2 = [ (2*el) * math.sqrt(a + b) ]
 			return np.array(int1 + int2)
 		# initialize the total integral for function on each interval
-		result = np.zeros(n * self.m)
+		result = np.zeros(n * cls.m)
 		# find the values of mu that correspond to the two integration boundaries:
 		# mu(phi1) should be zero; mu(0) should be between 0 and 1
 		mu0, mu1 = [0, mu(0)]
 		# go through the mu intervals in the order of increasing mu values
 		# this corresponds to going through the phi intervals in the order of decreasing phi values
-		for i, interval in enumerate(self.muB_tup):
+		for i, interval in enumerate(cls.muB_tup):
 			phiL = np.NAN; phiU = np.NAN # initialize the integration boundaries for this interval
 			ellipL = np.NAN; ellipU = np.NAN # initialize the elliptic integrals
 			# setting the upper integration limit on phi, which corresponds to
@@ -179,6 +159,28 @@ class Fit:
 				# to the lower one for this interval
 				ellipU = ellipL 
 		return 2 * result
+
+	# initialize with an array of intensities corresponding to the array of mu values in this module
+	# and the wavelength, log g and temperature of this fit
+	# computes the fit
+	def __init__(self, I_arr, wl, g, temp, ch):
+		self.I_arr = I_arr
+		self.wl = wl
+		self.g = g
+		self.temp = temp
+		# fit
+		alpha = np.linalg.lstsq(self.x, I_arr, rcond=None)[0]
+		self.p = alpha
+		if ch:
+			self.check()
+
+	# intensity vs mu in terms of computed parameters
+	# mu has to be in [0, 1]
+	def I(self, mu):
+		i = np.searchsorted(self.muB_arr, mu, side='right') # interval where this mu value is found
+		Fi = self.F[i] # all the functions on this interval
+		I = sum(self.p * [func(mu) for func in Fi])
+		return I
 
 
 	# variable containing the minimum I(mu = 0) / I(mu = 1), the wavelength, the gravity and the temperature 

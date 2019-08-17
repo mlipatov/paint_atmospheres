@@ -1,5 +1,12 @@
 mpmath.appellf1 takes about a tenth of a second on fido. This is 4 - 5 orders of magnitude slower thant scipy.special.ellipeinc; two logarithms are about twice as fast as ellipeinc
 
+def f1(): return sp.ellipeinc(0.01, 1) 
+def f2(): return mp.ellipe(0.01, 1)
+>>> timeit.timeit(f1, number=10)
+4.786900001363392e-05
+>>> timeit.timeit(f2, number =10)
+0.010422914000002947
+
 ----------------------------------
 Results of goodness of fit checks:
 

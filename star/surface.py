@@ -3,7 +3,18 @@ import math
 
 class Surface:
 
-
+	def __init__(self, omega, inclination):
+		self.inclination = inclination
+		self.omega = omega
+		# derived parameters
+		if omega != 0: 
+			self.w = 1 + 2 / omega**2
+		else:
+			self.w = np.inf
+		self.f = 1 + omega**2 / 2
+		self.sini = math.sin(inclination)
+		self.cosi = math.cos(inclination)
+		self.Z1 = self.Z1()
 
 	## conversions between z and a related variable
 	def U(self, z):
@@ -64,7 +75,10 @@ class Surface:
 	# input: z
 	# output: integration bound on phi
 	def phi1(self, z): 
-	  return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
+		if z == -self.Z1:
+			return 0
+		else:
+		  	return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
 
 	## integration bound on z
 	## this should be computed only once for a given star
