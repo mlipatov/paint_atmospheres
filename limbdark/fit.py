@@ -153,7 +153,7 @@ class Fit:
 				# if the upper elliptic integral needs to be found, find it as well
 				if np.isnan(ellipU):
 					ellipU = ellip(phiU)
-				# compute the integral on this interval algebraically
+				# compute the integral on this interval
 				result[i * n : (i + 1) * n] += intgrt(phiU, ellipU) - intgrt(phiL, ellipL)
 				# set the upper elliptic integral for the next interval 
 				# to the lower one for this interval

@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 class Star:
-	def __init__(self, omega, inclination, luminosity, mass, Req, z_num):
+	def __init__(self, omega, inclination, luminosity, mass, Req, z_step):
 		self.luminosity = luminosity
 		self.mass = mass
 		self.Req = Req
@@ -13,7 +13,6 @@ class Star:
 		surf = self.surface
 
 		z1 = surf.Z1 # an integration bound on the surface
-		z_step = (1 + z1) / z_num # step size between values of z for integration
 		self.z_arr = np.arange(-z1, 1, z_step) # an array of z values for integration
 		z_arr = self.z_arr
 

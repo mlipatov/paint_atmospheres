@@ -88,6 +88,8 @@ class Surface:
 		cosi = self.cosi
 		if np.isinf(w):
 			return sini
+		elif sini == 0:
+			return 0
 		else:
 			## solve for s at the integration bound
 			Tsq = (sini / cosi)**2
