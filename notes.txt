@@ -10,16 +10,33 @@ def f2(): return mp.ellipe(0.01, 1)
 ----------------------------------
 Results of goodness of fit checks:
 
-Two intervals (a break at 0.25), no constraints. 
+Two intervals (a break at 0.25), no constraints, 1, x, x^2, x^3, sqrt(x). 
 [deviation / I1,		wavelength	logg	temperature		mu]
 [-0.16284416397255186 	89.5 		3.0 	17000.0] 				deviation = I(0)
 [-0.02670474500664984	124.5		4.0		21000.0			0.0] 	deviation = deltaI over delta-mu = 0.001 
 [0.012848021667953471	111.5		3.0		9000.0			0.9]	deviation = abs(Imu - I(mu))
 Done in 3858.4337430000305 seconds (1 hour 7 minutes)
 
-Three intervals (breaks at 0.1 and 0.25)
+Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, sqrt(x).
 [deviation / I1,		wavelength	logg	temperature		mu]
 [-0.15994461796382242	88.5		3.0		17000.0] 				deviation = I(0)
 [-0.028263981475541138	124.5		4.0		20000.0			0.0] 	deviation = deltaI over delta-mu = 0.001 
 [0.012848021667937193	111.5		3.0		9000.0			0.9]	deviation = abs(Imu - I(mu))
 Done in 4749.923330068588 seconds (1 hour 20 minutes)
+
+Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, x^4.
+[deviation / I1,		wavelength	logg	temperature		mu]
+[-0.007908973220551912, 208.5,		0.0,	5000.0] 				deviation = I(0)
+[-0.08723279893571326, 	89.5, 		2.5, 	17000.0, 		0.099] 	deviation = deltaI over delta-mu = 0.001 
+[0.005541090102985639, 	111.5, 		3.0, 	9000.0, 		0.9]	deviation = abs(Imu - I(mu))
+Done in 4557.5568470954895 seconds (1 hour 16 minutes)
+
+----------------------------------
+Using each boundary twice:
+
+Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, x^4.
+[deviation / I1,		wavelength	logg	temperature		mu]
+[-0.009491111111106017, 54.0, 		3.0, 	16000.0] 				deviation = I(0)
+[-0.002573739524375959, 124.5, 		4.0, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
+[0.00554109010298971, 	111.5, 		3.0, 	9000.0, 		0.9]	deviation = abs(Imu - I(mu))
+Done in about 1 hour 18 minutes

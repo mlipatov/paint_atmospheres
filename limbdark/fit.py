@@ -12,7 +12,7 @@ import util as ut
 
 ## functions on a given interval
 # the non-zero functions on a given interval
-f = [lambda _: 1, lambda x: x, lambda x: x**2, lambda x: x**3, lambda x: math.sqrt(x)]
+f = [lambda _: 1, lambda x: x, lambda x: x**2, lambda x: x**3, lambda x: x**4]
 # the number of non-zero functions on a given interval
 n = len(f)
 # zero functions on a given interval
@@ -30,7 +30,7 @@ class Fit:
 	""" Class containing intensity vs mu for some temperature and gravity, 
 		along with the corresponding fit """
 
-	# the boundaries for the intervals of the fit: [0, x0), [x0, x1), ... [x(n), 1]
+	# the boundaries for the intervals of the fit: [0, x0], [x0, x1], ... [x(n), 1]
 	muB_arr = np.array([])
 	# the tuples of boundaries
 	muB_tup = []
@@ -63,6 +63,9 @@ class Fit:
 		m = cls.m
 		# split the array of Kurucz's mu values according to the boundaries between intervals
 		cls.mu_arr_split = np.split(mu_arr, np.searchsorted(mu_arr, muB_arr))
+		# include the boundaries twice, both in the interval on the left and the interval on the right
+		for i in range(m - 1):
+			cls.mu_arr_split[i] = np.append(cls.mu_arr_split[i], cls.mu_arr_split[i + 1][0])
 		# compute all the functions on each interval
 		for i in range(m):
 			cls.F.append(fz * i + f + fz * (m - i - 1))
@@ -77,16 +80,41 @@ class Fit:
 				xl.append(np.array(xj))
 		cls.x = np.array(xl)
 
+	# initialize an object of this class with an array of intensities corresponding to the array 
+	# of mu values in this module and the wavelength, log g and temperature of this fit;
+	# compute the fit
+	def __init__(self, I_arr, wl, g, temp, ch):
+		self.wl = wl
+		self.g = g
+		self.temp = temp
+		self.I_arr = I_arr
+		# for the linear algebra fit,
+		# duplicate the intensity values at the boundaries of mu intervals
+		I_arr_dup = np.copy(I_arr)
+		ind = len(I_arr_dup) - 1
+		for i in reversed(range(self.m - 1)):
+			sub_ind = len(self.mu_arr_split[i + 1]) - 1
+			ind -= sub_ind
+			I_arr_dup = np.insert(I_arr_dup, ind, I_arr_dup[ind])
+		# fit
+		alpha = np.linalg.lstsq(self.x, I_arr_dup, rcond=None)[0]
+		self.p = alpha
+		if ch:
+			self.check()
+
+	# intensity vs mu in terms of computed parameters
+	# mu has to be in [0, 1]
+	def I(self, mu):
+		i = np.searchsorted(self.muB_arr, mu, side='right') # interval where this mu value is found
+		Fi = self.F[i] # all the functions on this interval
+		I = sum(self.p * [func(mu) for func in Fi])
+		return I
 
 	# Given the upper integration boundary phi1, for each function of the fit on each interval of the fit, 
 	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
 	# on the intersection of the interval and [0, phi1]
 	@classmethod
 	def integrate(cls, phi1, a, b):
-		# the second argument to the single elliptic integral that is necessary to compute
-		# the integral of sqrt(mu)
-		M = (2 * a)/(a + b)
-		sqrtM = math.sqrt(M)
 		# phi in terms of mu
 		def mu(phi):
 			return a * math.cos(phi) + b
@@ -97,33 +125,28 @@ class Fit:
 				return np.NAN
 			else:
 				return math.acos(cosn)
-		# the elliptic integral between zero and phi / 2
-		def ellip(phi):
-			if M > 1: # change variables
-				t1 = math.asin(sqrtM * math.sin(phi / 2))
-				return sqrtM * sp.ellipeinc(t1, 1./M) + ((1 - M) / sqrtM) * sp.ellipkinc(t1, 1./M)
-			else:
-				return sp.ellipeinc(phi / 2., M)
 		# indefinite integrals of the non-zero fit functions as functions of phi,
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
-		def intgrt(phi, el):
+		def intgrt(phi):
 			# cosine phi
 			cosn = math.cos(phi)
+			cos2 = math.cos(2*phi)
 			sine = math.sin(phi)
 			sin2 = math.sin(2*phi)
 			sin3 = math.sin(3*phi)
+			sin4 = math.sin(4*phi)
 			# integral of the polynomial
-			int1 = [
+			integr = [
 				phi,
 				b*phi + a*sine,
-				(a**2*phi)/2. + b**2*phi + 2*a*b*sine + (a**2*cosn*sine)/2.,
-				(3*a**2*b*phi)/2. + b**3*phi + (3*a**3*sine)/4. + 3*a*b**2*sine + \
-					(3*a**2*b*sin2)/4. + (a**3*sin3)/12.
+				(a**2/2. + b**2)*phi + (2*a*b + (a**2*cosn)/2.)*sine,
+				((3*a**2*b)/2. + b**3)*phi + ((5*a**3)/6. + 3*a*b**2 + \
+					(3*a**2*b*cosn)/2. + (a**3*cos2)/6.)*sine,
+				((3*a**4)/8. + 3*a**2*b**2 + b**4)*phi + (3*a**3*b + 4*a*b**3)*sine + \
+					(a**4/4. + (3*a**2*b**2)/2.)*sin2 + (a**3*b*sin3)/3. + (a**4*sin4)/32.
 			]
-			# integral of the square root
-			int2 = [ (2*el) * math.sqrt(a + b) ]
-			return np.array(int1 + int2)
+			return np.array(integr)
 		# initialize the total integral for function on each interval
 		result = np.zeros(n * cls.m)
 		# find the values of mu that correspond to the two integration boundaries:
@@ -133,7 +156,6 @@ class Fit:
 		# this corresponds to going through the phi intervals in the order of decreasing phi values
 		for i, interval in enumerate(cls.muB_tup):
 			phiL = np.NAN; phiU = np.NAN # initialize the integration boundaries for this interval
-			ellipL = np.NAN; ellipU = np.NAN # initialize the elliptic integrals
 			# setting the upper integration limit on phi, which corresponds to
 			# setting the lower limit on mu
 			if mu0 >= interval[0] and mu0 < interval[1]: 
@@ -148,39 +170,9 @@ class Fit:
 				phiL = phi(interval[1])
 			# if both the upper and the lower limits of integrations are defined in this interval
 			if not np.isnan(phiL) and not np.isnan(phiU):
-				# find the elliptic integral at the lower phi integration boundary
-				ellipL = ellip(phiL)
-				# if the upper elliptic integral needs to be found, find it as well
-				if np.isnan(ellipU):
-					ellipU = ellip(phiU)
 				# compute the integral on this interval
-				result[i * n : (i + 1) * n] += intgrt(phiU, ellipU) - intgrt(phiL, ellipL)
-				# set the upper elliptic integral for the next interval 
-				# to the lower one for this interval
-				ellipU = ellipL 
+				result[i * n : (i + 1) * n] += intgrt(phiU) - intgrt(phiL)
 		return 2 * result
-
-	# initialize with an array of intensities corresponding to the array of mu values in this module
-	# and the wavelength, log g and temperature of this fit
-	# computes the fit
-	def __init__(self, I_arr, wl, g, temp, ch):
-		self.I_arr = I_arr
-		self.wl = wl
-		self.g = g
-		self.temp = temp
-		# fit
-		alpha = np.linalg.lstsq(self.x, I_arr, rcond=None)[0]
-		self.p = alpha
-		if ch:
-			self.check()
-
-	# intensity vs mu in terms of computed parameters
-	# mu has to be in [0, 1]
-	def I(self, mu):
-		i = np.searchsorted(self.muB_arr, mu, side='right') # interval where this mu value is found
-		Fi = self.F[i] # all the functions on this interval
-		I = sum(self.p * [func(mu) for func in Fi])
-		return I
 
 
 	# variable containing the minimum I(mu = 0) / I(mu = 1), the wavelength, the gravity and the temperature 
@@ -264,7 +256,7 @@ class Fit:
 		fig = plt.figure()
 		plt.axes().set_ylim([np.min(I_arr) - offset_y, np.max(I_arr) + offset_y])
 		plt.scatter(mu_arr, I_arr, marker='o', c='b', s=6)
-		plt.plot(mu_arr, vI(mu_arr), 'g--', label=lab % tuple(params))
+		plt.plot(mu_check_arr, vI(mu_check_arr), 'g--', label=lab % tuple(params))
 		plt.title('I vs mu wl='+str(wl)+' T='+str(temp)+' g='+str(g))
 		plt.xlabel('mu')
 		plt.ylabel('intensity')

@@ -19,9 +19,9 @@ class Star:
 		# a 2D array of integrated fit functions, 
 		# one for each z value and each parameter / interval combination of the fit
 		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
-		# compute the integrated fit functions
+		## compute the integrated fit functions
 		c = 0
-		for z in z_arr[1:]: # all the integrals should be zero at the first z value
+		for z in z_arr: 
 			if z < z1:
 				phi1 = surf.phi1(z)
 			else:

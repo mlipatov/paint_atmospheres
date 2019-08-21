@@ -1,3 +1,4 @@
+import limbdark.fit as ft
 import limbdark.limbdark as limbdark
 import argparse
 import pickle
@@ -18,6 +19,9 @@ temp = args.temp
 ## unpickle the fits
 with open(pkl_lfile, 'rb') as f:
 	ld = pickle.load(f)
+# set the bounds between mu intervals in the Fit class
+# with the bounds in the limb darkening information
+ft.Fit.set_muB(ld.bounds)
 
 ## Plot a dependence of intensity on mu
 ld.plotFit(wl, g, temp)
