@@ -2,6 +2,13 @@ import numpy as np
 import math
 
 class Surface:
+	""" Contains all the information pertaining to the surface of a rotating star,
+	as defined by a Roche potential that combines gravitational and rotational effects.
+	z is defined as the cylindrical coordinate z normalized by the polar radius, r - 
+	the cylindrical coordinate r normalized by the equatorial radius, rho - the 
+	spherical coordinate rho normalized by the equatorial radius, f - the flatness of the
+	star, i.e. the equatorial radius divided by the polar radius. theta is the 
+	spherical polar angle. """
 
 	def __init__(self, omega, inclination):
 		self.inclination = inclination
@@ -79,6 +86,10 @@ class Surface:
 			return 0
 		else:
 		  	return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
+
+	# spherical coordinate rho as a function of z
+	def rho(self, z):
+		return math.sqrt( self.R(z)**2 + (z / self.f)**2 )
 
 	## integration bound on z
 	## this should be computed only once for a given star
