@@ -5,21 +5,24 @@ import math
 
 class Map:
 	""" Contains a map of intensity integrals, area elements, gravity and temperature across
-	a set of z values on the surface of a rotating star. """
+	a set of z values on the surface of a rotating star. Based on Espinosa Lara 2011 (EL)."""
 
 	# initialize with the surface shape of the star and the step in z
 	def __init__(self, surf, z_step):
-		omega = surf.omega # rotational velocity of the star with this surface
 		z1 = surf.Z1 # an integration bound on the surface
-		self.z_arr = np.arange(-z1, 1, z_step) # an array of z values for integration
-		z_arr = self.z_arr
+		self.f = surf.f # flatness of the surface
+		self.omega = surf.omega # rotational velocity of the star with this surface
+
+		self.z_arr1 = np.arange(-z1, 0, z_step) # negative z values
+		self.z_arr2 = np.arange(0, 1, z_step) # positive z values
+		self.z_arr = np.concatenate(( self.z_arr1, self.z_arr2 )) # an array of z values for integration
 
 		# a 2D array of integrated fit functions, 
 		# one for each z value and each parameter / interval combination of the fit
 		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
 		## compute the integrated fit functions
 		c = 0
-		for z in z_arr: 
+		for z in self.z_arr: 
 			if z < z1:
 				phi1 = surf.phi1(z)
 			else:
@@ -29,15 +32,90 @@ class Map:
 			c += 1
 
 		# an array of area elements for integration, one for each value of z
-		self.A_arr = np.array([ surf.A(z) for z in z_arr ])
+		self.A_arr = np.array([ surf.A(z) for z in self.z_arr ])
 
 		# arrays of the cylindrical coordinate r and the spherical coordinate rho for each z
-		r_arr = np.array([ surf.R(z) for z in z_arr ])
-		r_arr_sq = np.power(r_arr, 2)
-		rho_arr = r_arr = np.array([ surf.rho(z) for z in z_arr ])
-		# effective gravitational acceleration in units of G*M/Re^2 
+		self.r_arr1 = np.array([ surf.R(z) for z in self.z_arr1 ])
+		self.r_arr2 = np.array([ surf.R(z) for z in self.z_arr2 ])
+		self.r_arr = np.concatenate(( self.r_arr1, self.r_arr2 ))
+		r_arr_sq = np.power(self.r_arr, 2)
+		self.rho_arr1 = np.array([ surf.rho(z) for z in self.z_arr1 ])
+		self.rho_arr2 = np.array([ surf.rho(z) for z in self.z_arr2 ])
+		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
+		
+		# effective gravitational acceleration in units of G M / Re**2 
 		# as in equations 7 and 31 of EL, for each z
-		self.geff_arr = np.sqrt( rho_arr**-4 + omega**4 * r_arr_sq - 2 * omega**2 * r_arr_sq * rho_arr**-3 )
+		omega = self.omega
+		self.geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
+			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
+		# effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
+		# as in EL eqn 31, for each z
+		self.temp_arr = self.geff_arr**(1./4) * self.Tc()
 
-	def curly(self):
-		pass
+
+	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
+	# at every value of z; runs a bisection algorithm that acts on the entire array 
+	# of positive, non-one values of z at its every step
+	def Tc(self):
+		## variable initializations
+		# values of the arrays for positive values of z, excluding z = 1
+		z_arr = self.z_arr2[1:-1] 
+		rho_arr = self.rho_arr2[1:-1]
+		r_arr = self.r_arr2[1:-1]
+		# values at z = 1 and 0, for which the correction will be computed separately
+		rho1 = self.rho_arr2[-1] # rho at z = 1
+		rho0 = self.rho_arr2[0] # rho at z = 0
+		r1 = self.r_arr2[-1] # rho at z = 1
+		r0 = self.r_arr2[0] # rho at z = 0
+		# star / surface parameters
+		omega = self.omega
+		f = self.f
+
+		## array operations
+		cosn_arr = z_arr / (f * rho_arr) # cosine theta for every z
+		tan2_arr = (rho_arr - z_arr / f) / r_arr # tan(theta / 2) for every z
+		tan_arr = f * r_arr / z_arr # tan theta for every z
+		# an array of the function tau evaluated at every value of z, 
+		# with tau defined in EL eqn 21, with rho and theta both functions of z
+		tau_arr = (1./3) * omega**2 * cosn_arr**3 + cosn_arr + np.log(tan2_arr)
+
+		# at z = 1 (see EL eqn 27), the correction factor is
+		Tc1 = math.exp((1./6) * omega**2 * rho1**3)
+		# at z = 0 (see EL eqn 28), the correction factor is
+		Tc0 = (1 - omega**2 * rho0**3)**(-1./6)
+
+		# initialize to zeros the array of curly theta (EL eqn 24) 
+		# for the bisection algorithm
+		curly_arr = np.zeros_like(z_arr)
+		# size of the range of curly theta
+		s = math.pi / 2
+		# step through the bisection algorithm the number of times 
+		# that guarantees convergence within the precision of floats
+		n = int(math.ceil(math.log2( s / np.finfo(1.0).resolution )))
+		for i in range(n):
+			# turn off RuntimeWarning: divide by zero encountered in log;
+			# numpy.log evaluates to -inf when curly theta = 0, which is the 
+			# the value we will enter in our array at such values of curly theta
+			np.seterr(divide = 'ignore')
+			# the function whose root we are looking for, evaluated at the 
+			# current values of curly theta 
+			f1 = np.where(curly_arr == 0, -np.inf, 
+				np.cos(curly_arr) + np.log(np.tan(curly_arr / 2)) - tau_arr)
+			# turn on RuntimeWarning: divide by zero encountered in log
+			np.seterr(divide = 'warn') 
+			# the length of the subintervals into which we are subdividing the range of
+			# curly theta at this step of the bisection algorithm
+			x = s / 2**(i + 1) 
+			# the function evaluated at the sum of the current values of curly theta
+			# and the length of a subinterval
+			f2 = np.cos(curly_arr + x) + np.log(np.tan((curly_arr + x)/ 2)) - tau_arr
+			# compute an array of boolean values for each z; the value says whether the algorithm
+			# should add the value of the subinterval to the current estimate of curly theta
+			# at a given value of z; then add (or don't add) the value of the subinterval accordingly
+			curly_arr = curly_arr + x * np.greater(f1 * f2, 0)
+		# the temperature correction for positive values of z
+		Tc_arr2 = np.concatenate(( np.sqrt(np.tan(curly_arr) / tan_arr), np.array([Tc1]) ))
+		# compute the mirror image of the temperature correction for negative z values
+		Tc_arr1 = np.flip( Tc_arr2[:len(self.z_arr1)] )
+		# compile the temperature corrections and return
+		return np.concatenate(( Tc_arr1, np.array([Tc0]), Tc_arr2 ))
