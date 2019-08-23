@@ -2,13 +2,18 @@ import limbdark.fit as ft
 import star.surface as sf
 import numpy as np
 import math
+import scipy.interpolate as interp
 
 class Map:
-	""" Contains a map of intensity integrals, area elements, gravity and temperature across
-	a set of z values on the surface of a rotating star. Based on Espinosa Lara 2011 (EL)."""
+	""" Contains a map of intensity integrals and their wavelength-dependent coefficients 
+	(a.k.a. parameters of the corresponding intensity fits), area elements, 
+	gravity and temperature values across a set of z values on the surface of a rotating star. 
+	Gravity and temperature calculations are based on Espinosa Lara 2011 (EL)."""
 
-	# initialize with the surface shape of the star and the step in z
-	def __init__(self, surf, z_step):
+	# initialize with the surface shape of the star, the step in z, the constants
+	# needed for temperature and gravity unit conversions, wavelengths
+	# and an array of intensity parameter fits
+	def __init__(self, surf, z_step, add_logg, mult_temp, wl_arr, fit_params):
 		z1 = surf.Z1 # an integration bound on the surface
 		self.f = surf.f # flatness of the surface
 		self.omega = surf.omega # rotational velocity of the star with this surface
@@ -43,14 +48,34 @@ class Map:
 		self.rho_arr2 = np.array([ surf.rho(z) for z in self.z_arr2 ])
 		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
 		
+		omega = self.omega
+
 		# effective gravitational acceleration in units of G M / Re**2 
 		# as in equations 7 and 31 of EL, for each z
-		omega = self.omega
-		self.geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
+		geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
 			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
+		# log10(gravity in cm / s**2)
+		self.logg_arr = add_logg + np.log10(geff_arr)
+		
 		# effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		# as in EL eqn 31, for each z
-		self.temp_arr = self.geff_arr**(1./4) * self.Tc()
+		t_arr = geff_arr**(1./4) * self.Tc()
+		# temperature in Kelvin
+		self.temp_arr = mult_temp * t_arr
+
+		# for each wavelength and intensity fit parameter, interpolate the parameter
+		# as a function of temperature and gravity, then calculate the parameter for each z;
+		# results in an array indexed by the wavelength, value of z and parameter index
+		n_params = ft.Fit.m * ft.n
+		n_wl = len(wl_arr)
+		self.params_arr = np.empty( (n_wl, len(self.z_arr), n_params) )
+		for ind_wl in range(n_wl):
+			for ind_p in range(n_params):
+				temp = fit_params[ind_wl, ind_p, :, 0] # temperatures for this parameter and wavelength
+				logg = fit_params[ind_wl, ind_p, :, 1] # log g for this parameter and wavelength
+				p = fit_params[ind_wl, ind_p, :, 2] # parameter values for this parameter and wavelength
+				func = interp.interp2d(temp, logg, p, kind='cubic')
+				self.params_arr[ind_wl, :, ind_p] = func(self.temp_arr, self.logg_arr)
 
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)

@@ -22,11 +22,11 @@ parser.add_argument("mass", help="mass in solar masses", type=float)
 parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
 args = parser.parse_args()
 
-### Inputs
+## inputs
 pkl_sfile = args.pkl_sfile # spectrum file
 pkl_lfile = args.pkl_lfile # limb darkening file
 z_step = args.z_step
-## star parameters 
+## star parameter inputs 
 omega = args.omega # dimensionless rotation speed
 inclination = args.inclination # the angle between the axis of rotation and the line of sight
 luminosity = args.luminosity # luminosity of the star in solar luminosities
@@ -37,12 +37,15 @@ Req = args.Req # equatorial radius of the star in solar radii
 with open(pkl_lfile, 'rb') as f:
 	ld = pickle.load(f)
 wl_arr = ld.wl_arr
+fit_params = ld.fit_params
 # set the bounds between mu intervals in the Fit class
 # with the bounds in the limb darkening information
 ft.Fit.set_muB(ld.bounds)
 
-### Initialize and pickle the star
-st = star.Star(omega, inclination, luminosity, mass, Req, z_step)
+## Initialize the star with its physical parameters, the resolution of its map, 
+## the wavelength array and the array of intensity fit parameter values
+st = star.Star(omega, inclination, luminosity, mass, Req, z_step, wl_arr, fit_params)
+# pickle the star
 with open(pkl_sfile, 'wb') as f:
 	pickle.dump(st, f)
 

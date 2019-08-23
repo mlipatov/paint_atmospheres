@@ -104,17 +104,21 @@ class LimbDark:
         ft.Fit.set_muB(bounds)
 
         g_temp_shape = np.shape(g_temp_arr)
-        # re-structure the array of intensities to become an array of fit objects
-        # initialize each fit object, thus calculating the fit at that combination of wavelength,
-        #    log g and temperature; if the combination doesn't exist, set the fit object to None
-        self.fits = [[[None for k in range(g_temp_shape[1])] \
-            for j in range(g_temp_shape[0])] for i in range(len(wl_arr))]
-        print ("Computing fits of intensity versus mu. "),
+        n_wl = len(wl_arr)
+        n_param = ft.n * ft.Fit.m
+        # initialize a 3D list for interpolation; indices 1 and 2 are wavelength and fit parameter index;
+        # index 3 goes through the tuples of (temperature, log g, fit parameter value); this will
+        # be used in interpolation of fit parameter values
+        self.fit_params = [[[] for j in range(n_param)] for i in range(n_wl)]
+        # for each combination of wavelength, gravity and temperature, initialize a fit object, 
+        # thus calculating the fit at these values; record the fit parameters in the array needed for 
+        # interpolation
+        print ("Computing fits of intensity versus mu. ")
         sys.stdout.flush()
         start = time.time()
-        for ind_wl in np.arange(len(wl_arr)):
+        for ind_wl in np.arange(n_wl):
             if (ind_wl % 100 == 0):
-                ut.printf(str(ind_wl) + " out of " + str(len(wl_arr)) + " wavelengths completed.\n")
+                ut.printf(str(ind_wl) + " out of " + str(n_wl) + " wavelength fits completed.\n")
                 sys.stdout.flush()
             for ind_g in np.arange(g_temp_shape[0]):
                 for ind_temp in np.arange(g_temp_shape[1]):
@@ -125,7 +129,9 @@ class LimbDark:
                         temp = temp_arr[ind_temp]
                         # initialize and fit
                         fit = ft.Fit(I_slice, wl, g, temp, check)
-                        self.fits[ind_wl][ind_g][ind_temp] = fit
+                        # record the fit parameters in the array needed for interpolation
+                        for ind_p in range(n_param):
+                            self.fit_params[ind_wl][ind_p].append( (temp, g, fit.p[ind_p]) )
             if check:
                 print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
         end = time.time()
@@ -139,5 +145,7 @@ class LimbDark:
         ind_wl = np.where(self.wl_arr == wl)[0][0]
         ind_g = np.where(self.g_arr == g)[0][0]
         ind_temp = np.where(self.temp_arr == temp)[0][0]
-        fit = self.fits[ind_wl][ind_g][ind_temp]
+        I_slice = self.I_arr[ind_wl, :, ind_g, ind_temp]
+        check = False
+        fit = ft.Fit(I_slice, wl, g, temp, check)
         fit.plot()
