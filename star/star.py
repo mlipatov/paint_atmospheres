@@ -7,7 +7,6 @@ class Star:
 	""" Contains all the information pertaining to a rotating star, including its surface shape,
 	a map of physical and geometrical features across its surface,
 	its size, mass and luminosity. """
-
 	def __init__(self, omega, inclination, luminosity, mass, Req, z_step, wl_arr, fit_params):
 		self.luminosity = luminosity
 		self.mass = mass

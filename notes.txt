@@ -35,6 +35,6 @@ Done in about 1 hour 18 minutes
 ----------------------------------
 Runtimes and file sizes with the fits immediately above:
 
-Calculation and pickling of limb darkening fits without checks: 1 minute 20 seconds
+Calculation and pickling of limb darkening fits without checks: 1 minute
 Pickled limb darkening information file size: 379 Mb
 Pre-processing for the integral with z steps of 0.0005: 

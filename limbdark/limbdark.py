@@ -109,7 +109,7 @@ class LimbDark:
         # initialize a 3D list for interpolation; indices 1 and 2 are wavelength and fit parameter index;
         # index 3 goes through the tuples of (temperature, log g, fit parameter value); this will
         # be used in interpolation of fit parameter values
-        self.fit_params = [[[] for j in range(n_param)] for i in range(n_wl)]
+        fit_params = [[[] for j in range(n_param)] for i in range(n_wl)]
         # for each combination of wavelength, gravity and temperature, initialize a fit object, 
         # thus calculating the fit at these values; record the fit parameters in the array needed for 
         # interpolation
@@ -131,9 +131,11 @@ class LimbDark:
                         fit = ft.Fit(I_slice, wl, g, temp, check)
                         # record the fit parameters in the array needed for interpolation
                         for ind_p in range(n_param):
-                            self.fit_params[ind_wl][ind_p].append( (temp, g, fit.p[ind_p]) )
+                            fit_params[ind_wl][ind_p].append( (temp, g, fit.p[ind_p]) )
             if check:
                 print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
+        # convert the fit parameter information to a numpy array
+        self.fit_params = np.array(fit_params)
         end = time.time()
         print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()

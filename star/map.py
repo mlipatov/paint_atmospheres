@@ -63,6 +63,10 @@ class Map:
 		# temperature in Kelvin
 		self.temp_arr = mult_temp * t_arr
 
+		# make sure that we are not extrapolating: that all combinations of temperature and gravity
+		# on the star are between some four combinations in Kurucz's files
+		# np.searchsorted(temp_arr, )
+
 		# for each wavelength and intensity fit parameter, interpolate the parameter
 		# as a function of temperature and gravity, then calculate the parameter for each z;
 		# results in an array indexed by the wavelength, value of z and parameter index
@@ -75,8 +79,8 @@ class Map:
 				logg = fit_params[ind_wl, ind_p, :, 1] # log g for this parameter and wavelength
 				p = fit_params[ind_wl, ind_p, :, 2] # parameter values for this parameter and wavelength
 				func = interp.interp2d(temp, logg, p, kind='cubic')
-				self.params_arr[ind_wl, :, ind_p] = func(self.temp_arr, self.logg_arr)
-
+				self.params_arr[ind_wl, :, ind_p] = \
+					np.array( [func(t, g)[0] for t, g in zip(self.temp_arr, self.logg_arr)] )
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
