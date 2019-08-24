@@ -1,8 +1,10 @@
 import limbdark.fit as ft
 import star.surface as sf
+import util as ut
 import numpy as np
 import math
-import scipy.interpolate as interp
+import sys, time
+from scipy.interpolate import Rbf
 
 class Map:
 	""" Contains a map of intensity integrals and their wavelength-dependent coefficients 
@@ -73,14 +75,23 @@ class Map:
 		n_params = ft.Fit.m * ft.n
 		n_wl = len(wl_arr)
 		self.params_arr = np.empty( (n_wl, len(self.z_arr), n_params) )
+		print ("Interpolating to find the parameters of the fits at all values of z. ")
+		sys.stdout.flush()
+		start = time.time()
 		for ind_wl in range(n_wl):
+			if (ind_wl % 100 == 0):
+				ut.printf("interpolation for " + str(ind_wl) + " out of " +\
+					str(n_wl) + " wavelengths completed.\n")
+			sys.stdout.flush()
 			for ind_p in range(n_params):
 				temp = fit_params[ind_wl, ind_p, :, 0] # temperatures for this parameter and wavelength
 				logg = fit_params[ind_wl, ind_p, :, 1] # log g for this parameter and wavelength
 				p = fit_params[ind_wl, ind_p, :, 2] # parameter values for this parameter and wavelength
-				func = interp.interp2d(temp, logg, p, kind='cubic')
-				self.params_arr[ind_wl, :, ind_p] = \
-					np.array( [func(t, g)[0] for t, g in zip(self.temp_arr, self.logg_arr)] )
+				func = Rbf(temp, logg, p, function='cubic')
+				self.params_arr[ind_wl, :, ind_p] = np.array( func(self.temp_arr, self.logg_arr) )
+				# [func(t, g)[0] for t, g in zip(self.temp_arr, self.logg_arr)]
+		end = time.time()
+		print("Done in " + str(end - start) + " seconds")
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
