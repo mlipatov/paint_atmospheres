@@ -36,15 +36,13 @@ Req = args.Req # equatorial radius of the star in solar radii
 ## unpickle the limb darkening information
 with open(pkl_lfile, 'rb') as f:
 	ld = pickle.load(f)
-wl_arr = ld.wl_arr
-fit_params = ld.fit_params
 # set the bounds between mu intervals in the Fit class
 # with the bounds in the limb darkening information
 ft.Fit.set_muB(ld.bounds)
 
 ## Initialize the star with its physical parameters, the resolution of its map, 
-## the wavelength array and the array of intensity fit parameter values
-st = star.Star(omega, inclination, luminosity, mass, Req, z_step, wl_arr, fit_params)
+## and the limbdarkening information
+st = star.Star(omega, inclination, luminosity, mass, Req, z_step, ld)
 # pickle the star
 with open(pkl_sfile, 'wb') as f:
 	pickle.dump(st, f)

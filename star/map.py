@@ -1,4 +1,5 @@
 import limbdark.fit as ft
+import limbdark.limbdark as limbdark
 import star.surface as sf
 import util as ut
 import numpy as np
@@ -7,25 +8,26 @@ import sys, time
 from scipy.interpolate import Rbf
 
 class Map:
-	""" Contains a map of intensity integrals and their wavelength-dependent coefficients 
-	(a.k.a. parameters of the corresponding intensity fits), area elements, 
+	""" Contains a map of intensity integrals and the wavelength-dependent parameters of the 
+	corresponding intensity fits, area elements, and
 	gravity and temperature values across a set of z values on the surface of a rotating star. 
 	Gravity and temperature calculations are based on Espinosa Lara 2011 (EL)."""
 
 	# initialize with the surface shape of the star, the step in z, the constants
-	# needed for temperature and gravity unit conversions, wavelengths
-	# and an array of intensity parameter fits
-	def __init__(self, surf, z_step, add_logg, mult_temp, wl_arr, fit_params):
+	# needed for temperature and gravity unit conversions, and limb darkening information
+	def __init__(self, surf, z_step, add_logg, mult_temp, ld):
+		## initialize surface and limb darkening information
 		z1 = surf.Z1 # an integration bound on the surface
+		self.ld = ld
 		self.f = surf.f # flatness of the surface
 		self.omega = surf.omega # rotational velocity of the star with this surface
-
+		omega = self.omega
+		## initialize the array of z values
 		self.z_arr1 = np.arange(-z1, 0, z_step) # negative z values
 		self.z_arr2 = np.arange(0, 1, z_step) # positive z values
 		self.z_arr = np.concatenate(( self.z_arr1, self.z_arr2 )) # an array of z values for integration
-
-		# a 2D array of integrated fit functions, 
-		# one for each z value and each parameter / interval combination of the fit
+		## compute a 2D array of fit function integrals, 
+		## one for each z value and each parameter / interval combination of the fit
 		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
 		## compute the integrated fit functions
 		c = 0
@@ -37,11 +39,9 @@ class Map:
 			a, b = surf.ab(z)
 			self.fitint[c] = ft.Fit.integrate(phi1, a, b)
 			c += 1
-
-		# an array of area elements for integration, one for each value of z
+		## compute an array of area elements for integration, one for each value of z
 		self.A_arr = np.array([ surf.A(z) for z in self.z_arr ])
-
-		# arrays of the cylindrical coordinate r and the spherical coordinate rho for each z
+		## compute arrays of the cylindrical coordinate r and the spherical coordinate rho for each z
 		self.r_arr1 = np.array([ surf.R(z) for z in self.z_arr1 ])
 		self.r_arr2 = np.array([ surf.R(z) for z in self.z_arr2 ])
 		self.r_arr = np.concatenate(( self.r_arr1, self.r_arr2 ))
@@ -49,49 +49,21 @@ class Map:
 		self.rho_arr1 = np.array([ surf.rho(z) for z in self.z_arr1 ])
 		self.rho_arr2 = np.array([ surf.rho(z) for z in self.z_arr2 ])
 		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
-		
-		omega = self.omega
-
-		# effective gravitational acceleration in units of G M / Re**2 
-		# as in equations 7 and 31 of EL, for each z
+		## compute the effective gravitational acceleration in units of G M / Re**2 
+		## as in equations 7 and 31 of EL, for each z
 		geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
 			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
-		# log10(gravity in cm / s**2)
+		# convert to log10(gravity in cm / s**2)
 		self.logg_arr = add_logg + np.log10(geff_arr)
-		
-		# effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
-		# as in EL eqn 31, for each z
+		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
+		## as in EL eqn 31, for each z
 		t_arr = geff_arr**(1./4) * self.Tc()
-		# temperature in Kelvin
+		# convert the temperature to Kelvin
 		self.temp_arr = mult_temp * t_arr
+		## compute the interpolated values of limb darkening fit parameters
+		self.params_arr = self.interp()
 
-		# make sure that we are not extrapolating: that all combinations of temperature and gravity
-		# on the star are between some four combinations in Kurucz's files
-		# np.searchsorted(temp_arr, )
-
-		# for each wavelength and intensity fit parameter, interpolate the parameter
-		# as a function of temperature and gravity, then calculate the parameter for each z;
-		# results in an array indexed by the wavelength, value of z and parameter index
-		n_params = ft.Fit.m * ft.n
-		n_wl = len(wl_arr)
-		self.params_arr = np.empty( (n_wl, len(self.z_arr), n_params) )
-		print ("Interpolating to find the parameters of the fits at all values of z. ")
-		sys.stdout.flush()
-		start = time.time()
-		for ind_wl in range(n_wl):
-			if (ind_wl % 100 == 0):
-				ut.printf("interpolation for " + str(ind_wl) + " out of " +\
-					str(n_wl) + " wavelengths completed.\n")
-			sys.stdout.flush()
-			for ind_p in range(n_params):
-				temp = fit_params[ind_wl, ind_p, :, 0] # temperatures for this parameter and wavelength
-				logg = fit_params[ind_wl, ind_p, :, 1] # log g for this parameter and wavelength
-				p = fit_params[ind_wl, ind_p, :, 2] # parameter values for this parameter and wavelength
-				func = Rbf(temp, logg, p, function='cubic')
-				self.params_arr[ind_wl, :, ind_p] = np.array( func(self.temp_arr, self.logg_arr) )
-				# [func(t, g)[0] for t, g in zip(self.temp_arr, self.logg_arr)]
-		end = time.time()
-		print("Done in " + str(end - start) + " seconds")
+			
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
@@ -159,3 +131,54 @@ class Map:
 		Tc_arr1 = np.flip( Tc_arr2[:len(self.z_arr1)] )
 		# compile the temperature corrections and return
 		return np.concatenate(( Tc_arr1, np.array([Tc0]), Tc_arr2 ))
+
+
+	# for each wavelength and intensity fit parameter, interpolate the parameter
+	# as a function of temperature and gravity, then calculate the parameter for each z;
+	def interp(self):
+		# initialize
+		ld = self.ld
+		wl_arr = ld.wl_arr
+		fit_params = ld.fit_params
+		n_params = ft.Fit.m * ft.n
+		n_wl = len(wl_arr)
+		n_z = len(self.z_arr)
+		# an array of parameters, indexed by the wavelength, value of z and parameter index
+		params_arr = np.empty( (n_wl, n_z, n_params) )
+		# for each value of z, look to see where in the limb darkening arrays these values of 
+		# log g and temperature are; if the resulting index of an array is ind, 
+		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
+		ind_g_arr = np.searchsorted(ld.g_arr, self.logg_arr, side='right') - 1
+		ind_temp_arr = np.searchsorted(ld.temp_arr, self.temp_arr, side='right') - 1
+		# for each value of z, 
+		# find the values of log g and temperature between which we are interpolating
+		g1_arr = ld.g_arr[ind_g_arr] 
+		g2_arr = ld.g_arr[ind_g_arr + 1] 
+		temp1_arr = ld.temp_arr[ind_temp_arr]
+		temp2_arr = ld.temp_arr[ind_temp_arr + 1]
+		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
+		# index 1: wavelength
+		# index 2: z value
+		# index 3: fit parameter index
+		f00 = ld.fit_params[ :, ind_g_arr, ind_temp_arr, : ]
+		f01 = ld.fit_params[ :, ind_g_arr, ind_temp_arr + 1, : ]
+		f10 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr, : ]
+		f11 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr + 1, : ]
+		# a boolean array, saying whether for the log g and temperature combination at each z 
+		# the fit parameters aren't given;
+		# checks the first wavelength and the first parameter at each value of z
+		no_fits = np.logical_or.reduce( (np.isnan(f00[0, :, 0]), np.isnan(f01[0, :, 0]), \
+										np.isnan(f10[0, :, 0]), np.isnan(f11[0, :, 0])) )
+		if True in no_fits:
+			print ('We do not have the data to interpolate to find intensity at z = ' + str(z_arr[no_fits]) + \
+				', where the temperatures are ' + str(self.temp_arr[no_fits]) + ' and log gravity values are ' +\
+				 str(self.logg_arr[no_fits]) + ".")
+		# bilinear interpolation (see Wikipedia: Bilinear Interpolation)
+		const = (1 / ((g2_arr - g1_arr) * (temp2_arr - temp1_arr)))
+		g0 = g2_arr - self.logg_arr
+		g1 = self.logg_arr - g1_arr
+		t0 = temp2_arr - self.temp_arr
+		t1 = self.temp_arr - temp1_arr
+		params_arr = const * (f00*g0[None,:,None]*t0[None,:,None] + f10*g1[None,:,None]*t0[None,:,None] + \
+			f01*g0[None,:,None]*t1[None,:,None] + f11*g1[None,:,None]*t1[None,:,None])
+		return params_arr	

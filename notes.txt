@@ -1,4 +1,5 @@
 pass all limb darkening information to Map
+Consider using JSON as opposed to pickle
 
 ----------------------------------
 Results of goodness of fit checks:
@@ -39,5 +40,5 @@ Runtimes and file sizes with the fits immediately above:
 
 Calculation and pickling of limb darkening fits without checks: 1 minute
 Pickled limb darkening information file size: 180 Mb
-Interpolation of the parameters for the integral with z steps of 0.0005, using interpolate.Rbf: 8.5 minutes
+Interpolation of the parameters for the integral with z steps of 0.0005, using interpolate.Rbf: 8.5 minutes (interp2d and griddata didn't seem to work)
 (check that we are not extrapolating and consider trying to do vectorized nearest-neighbor interpolation)
