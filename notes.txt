@@ -1,4 +1,8 @@
 Consider using JSON as opposed to pickle
+# converting from CR (old Apple style) to LF (unix style) newlines
+tr '\r' '\n' < im01k2.pck > im01k2.unix
+# finding the intensities at some temperature, gravity and wavelength = 401
+grep -A 385 'TEFF\s*5750.\s*GRAVITY\s*2.0' im01k2.unix
 
 ----------------------------------
 Results of goodness of fit checks:

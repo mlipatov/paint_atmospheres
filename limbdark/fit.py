@@ -168,7 +168,7 @@ class Fit:
 				phiL = 0
 			if mu1 >= interval[1]:
 				phiL = phi(interval[1])
-			# if both the upper and the lower limits of integrations are defined in this interval
+			# if both the upper and the lower limits of integration are defined for this interval
 			if not np.isnan(phiL) and not np.isnan(phiU):
 				# compute the integral on this interval
 				result[i * n : (i + 1) * n] += intgrt(phiU) - intgrt(phiL)
@@ -235,6 +235,7 @@ class Fit:
 		g = self.g
 		temp = self.temp
 		params = self.p
+		print(params)
 		# construct the label string
 		lab = ""
 		c = 0 # count

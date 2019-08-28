@@ -40,21 +40,25 @@ with open(pkl_lfile, 'rb') as f:
 # with the bounds in the limb darkening information
 ft.Fit.set_muB(ld.bounds)
 
+# print a message
+ut.printf ("Mass: " + str(mass) + " sun(s)\nLuminosity: "+ str(luminosity) + " sun(s)\n" +\
+	"Equatorial radius: " + str(Req) + " solar radi(i/us)\nRotation speed: " + str(omega) +\
+	" of the Keplerian angular velocity at the equator\nInclination: " +\
+	str(inclination) + " radians.\n")
 ## Integrate light from a star with given physical parameters, resolution of map, 
 ## and limb darkening information
 st = star.Star(omega, inclination, luminosity, mass, Req, z_step, ld)
 
-# print a message
-ut.printf ("Calculated the spectrum of a star with a mass of " + str(mass) + " sun(s), a luminosity of "\
-	+ str(luminosity) + " sun(s), an equatorial radius equal to " + str(Req) + \
-	" solar radii, a rotation speed " + str(omega) +\
-	" of the Keplerian angular velocity at the equator, and an inclination of " +\
-	str(inclination) + " radians.\n")
-
-# for Vega at 401 nm, 4.918108154053354e+19 ergs/s/nm/ster
+# for Vega at 401 nm, 
+# 4.918108154053354e+19 ergs/s/nm/ster for zstep = 0.0005 (4.4 sec),
+# 4.92012754246987e+19 for z = 0.0001 (45.6 sec, 0.04% more) 
 wl = 401
 ind_wl = np.argwhere(ld.wl_arr == wl)[0][0]
-print(st.light_arr[ind_wl])
+# print(st.light_arr[ind_wl])
+# print(st.map.params_arr[ind_wl])
+# print(st.map.fitint)
+print(st.map.logg_arr)
+# print(st.map.temp_arr)
 
 # pickle the star
 with open(pkl_sfile, 'wb') as f:

@@ -1,7 +1,7 @@
 import star.surface as sf
 import star.map as mp
 import util as ut
-# import limbdark.limbdark as ld
+import sys
 import math
 
 class Star:
@@ -21,4 +21,6 @@ class Star:
 		# and other features across the surface of the star
 		self.map = mp.Map(self.surface, z_step, add_logg, mult_temp, ld)
 		# obtain the integrated light at each wavelength, in ergs/s/Hz/ster
+		print ("Calculating the integrals...")        
+		sys.stdout.flush()
 		self.light_arr = self.map.intgrt() * (Req * ut.Rsun)**2

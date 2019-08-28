@@ -31,6 +31,8 @@ class Map:
 		## one for each z value and each parameter / interval combination of the fit
 		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
 		## compute the integrated fit functions
+		print ("Integrating the fit functions...")        
+		sys.stdout.flush()
 		c = 0
 		for z in self.z_arr: 
 			if z < z1:
@@ -41,6 +43,8 @@ class Map:
 			self.fitint[c] = ft.Fit.integrate(phi1, a, b)
 			c += 1
 		## compute an array of area elements for integration, one for each value of z
+		print ("Computing the area elements, as well as the cylindrical and spherical coordinates...")        
+		sys.stdout.flush()
 		self.A_arr = np.array([ surf.A(z) for z in self.z_arr ])
 		## compute arrays of the cylindrical coordinate r and the spherical coordinate rho for each z
 		self.r_arr1 = np.array([ surf.R(z) for z in self.z_arr1 ])
@@ -52,16 +56,22 @@ class Map:
 		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		## as in equations 7 and 31 of EL, for each z
+		print ("Computing the gravities and temperatures...")        
+		sys.stdout.flush()
 		geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
 			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
 		# convert to log10(gravity in cm / s**2)
 		self.logg_arr = add_logg + np.log10(geff_arr)
+		print(add_logg)
+		print(geff_arr)
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z
 		t_arr = geff_arr**(1./4) * self.Tc()
 		# convert the temperature to Kelvin
 		self.temp_arr = mult_temp * t_arr
 		## compute the interpolated values of limb darkening fit parameters
+		print ("Interpolating the fit parameters...")        
+		sys.stdout.flush()
 		self.params_arr = self.interp()
 	
 
@@ -192,7 +202,10 @@ class Map:
 		# at each wavelength and z value, obtain the integral of the total fit function over phi;
 		# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 		# along the fit parameter dimension
-		fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
+		self.fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
+
+# don't need to store the fit_arr object
+
 		# at each wavelength, sum up the product of the phi integral of the fit function and
 		# the dimensionless area element at each z, multiply by the z step
-		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * fit_arr, axis=1)
+		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * self.fit_arr, axis=1)
