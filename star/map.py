@@ -18,6 +18,7 @@ class Map:
 	def __init__(self, surf, z_step, add_logg, mult_temp, ld):
 		## initialize surface and limb darkening information
 		z1 = surf.Z1 # an integration bound on the surface
+		self.z_step = z_step
 		self.ld = ld
 		self.f = surf.f # flatness of the surface
 		self.omega = surf.omega # rotational velocity of the star with this surface
@@ -62,8 +63,7 @@ class Map:
 		self.temp_arr = mult_temp * t_arr
 		## compute the interpolated values of limb darkening fit parameters
 		self.params_arr = self.interp()
-
-			
+	
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
@@ -136,7 +136,7 @@ class Map:
 	# for each wavelength and intensity fit parameter, interpolate the parameter
 	# as a function of temperature and gravity, then calculate the parameter for each z;
 	def interp(self):
-		# initialize
+		# initialize local variables
 		ld = self.ld
 		wl_arr = ld.wl_arr
 		fit_params = ld.fit_params
@@ -165,8 +165,8 @@ class Map:
 		f10 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr, : ]
 		f11 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr + 1, : ]
 		# a boolean array, saying whether for the log g and temperature combination at each z 
-		# the fit parameters aren't given;
-		# checks the first wavelength and the first parameter at each value of z
+		# the fit parameters at either of the four nearest neighbors aren't given;
+		# use the first wavelength and the first parameter at each value of z to perform this check
 		no_fits = np.logical_or.reduce( (np.isnan(f00[0, :, 0]), np.isnan(f01[0, :, 0]), \
 										np.isnan(f10[0, :, 0]), np.isnan(f11[0, :, 0])) )
 		if True in no_fits:
@@ -179,6 +179,20 @@ class Map:
 		g1 = self.logg_arr - g1_arr
 		t0 = temp2_arr - self.temp_arr
 		t1 = self.temp_arr - temp1_arr
-		params_arr = const * (f00*g0[None,:,None]*t0[None,:,None] + f10*g1[None,:,None]*t0[None,:,None] + \
-			f01*g0[None,:,None]*t1[None,:,None] + f11*g1[None,:,None]*t1[None,:,None])
-		return params_arr	
+		params_arr = const[np.newaxis, :, np.newaxis] * (\
+			f00 * g0[np.newaxis, :, np.newaxis] * t0[np.newaxis, :, np.newaxis] + \
+			f10 * g1[np.newaxis, :, np.newaxis] * t0[np.newaxis, :, np.newaxis] + \
+			f01 * g0[np.newaxis, :, np.newaxis] * t1[np.newaxis, :, np.newaxis] + \
+			f11 * g1[np.newaxis, :, np.newaxis] * t1[np.newaxis, :, np.newaxis])
+		return params_arr
+
+	# using the pre-calculated, mapped out features, integrate to find the light at all wavelengths,
+	# in ergs/s/Hz/ster per squared equatorial radius of the star
+	def intgrt(self):
+		# at each wavelength and z value, obtain the integral of the total fit function over phi;
+		# to do this, sum up the products of the fit parameters and the corresponding fit integrals
+		# along the fit parameter dimension
+		fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
+		# at each wavelength, sum up the product of the phi integral of the fit function and
+		# the dimensionless area element at each z, multiply by the z step
+		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * fit_arr, axis=1)

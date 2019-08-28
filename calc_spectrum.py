@@ -10,7 +10,7 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python setup_star.py \'star.pkl\' \'limbdark.pkl\' 0.0005 " +\
+	"python calc_spectrum.py \'star.pkl\' \'limbdark.pkl\' 0.0005 " +\
 	"0.8760 0.08683 40.124 2.135 2.818")
 parser.add_argument("pkl_sfile", help="a name for a .pkl spectrum file to create")
 parser.add_argument("pkl_lfile", help="name of the limb darkening .pkl file to access")
@@ -40,16 +40,22 @@ with open(pkl_lfile, 'rb') as f:
 # with the bounds in the limb darkening information
 ft.Fit.set_muB(ld.bounds)
 
-## Initialize the star with its physical parameters, the resolution of its map, 
-## and the limbdarkening information
+## Integrate light from a star with given physical parameters, resolution of map, 
+## and limb darkening information
 st = star.Star(omega, inclination, luminosity, mass, Req, z_step, ld)
-# pickle the star
-with open(pkl_sfile, 'wb') as f:
-	pickle.dump(st, f)
 
-# print an initialization message
-ut.printf ("Initialized a star with a mass of " + str(mass) + " sun(s), a luminosity of "\
+# print a message
+ut.printf ("Calculated the spectrum of a star with a mass of " + str(mass) + " sun(s), a luminosity of "\
 	+ str(luminosity) + " sun(s), an equatorial radius equal to " + str(Req) + \
 	" solar radii, a rotation speed " + str(omega) +\
 	" of the Keplerian angular velocity at the equator, and an inclination of " +\
 	str(inclination) + " radians.\n")
+
+# for Vega at 401 nm, 4.918108154053354e+19 ergs/s/nm/ster
+wl = 401
+ind_wl = np.argwhere(ld.wl_arr == wl)[0][0]
+print(st.light_arr[ind_wl])
+
+# pickle the star
+with open(pkl_sfile, 'wb') as f:
+	pickle.dump(st, f)

@@ -94,13 +94,15 @@ class LimbDark:
     """ Class containing all limbdarkening information """
 
     # initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
-    def __init__(self, datafile, bounds, check):
+    def __init__(self, datafile, bounds, check, save):
         wl_arr, g_arr, temp_arr, I_arr, g_temp_arr = getdata(datafile)
         self.wl_arr = wl_arr
         self.g_arr = g_arr
         self.temp_arr = temp_arr
         self.g_temp_arr = g_temp_arr
         self.bounds = bounds
+        if save:
+            self.I_arr = I_arr
         ft.Fit.set_muB(bounds)
 
         g_temp_shape = np.shape(g_temp_arr)
@@ -140,7 +142,7 @@ class LimbDark:
         sys.stdout.flush()
 
 
-    # plots the information in the Fit object corresponding to given wavelength, log g and temperature
+    # plots the information corresponding to given wavelength, log g and temperature
     def plotFit(self, wl, g, temp):
         # create a fit object
         ind_wl = np.where(self.wl_arr == wl)[0][0]

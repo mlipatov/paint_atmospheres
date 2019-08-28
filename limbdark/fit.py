@@ -150,8 +150,8 @@ class Fit:
 		# initialize the total integral for function on each interval
 		result = np.zeros(n * cls.m)
 		# find the values of mu that correspond to the two integration boundaries:
-		# mu(phi1) should be zero; mu(0) should be between 0 and 1
-		mu0, mu1 = [0, mu(0)]
+		# mu(phi1) and mu(0) should be between 0 and 1
+		mu0, mu1 = [mu(phi1), mu(0)]
 		# go through the mu intervals in the order of increasing mu values
 		# this corresponds to going through the phi intervals in the order of decreasing phi values
 		for i, interval in enumerate(cls.muB_tup):
