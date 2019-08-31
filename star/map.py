@@ -62,8 +62,6 @@ class Map:
 			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
 		# convert to log10(gravity in cm / s**2)
 		self.logg_arr = add_logg + np.log10(geff_arr)
-		print(add_logg)
-		print(geff_arr)
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z
 		t_arr = geff_arr**(1./4) * self.Tc()

@@ -49,15 +49,12 @@ ut.printf ("Mass: " + str(mass) + " sun(s)\nLuminosity: "+ str(luminosity) + " s
 ## and limb darkening information
 st = star.Star(omega, inclination, luminosity, mass, Req, z_step, ld)
 
-# for Vega at 401 nm, 
-# 4.918108154053354e+19 ergs/s/nm/ster for zstep = 0.0005 (4.4 sec),
-# 4.92012754246987e+19 for z = 0.0001 (45.6 sec, 0.04% more) 
-wl = 401
-ind_wl = np.argwhere(ld.wl_arr == wl)[0][0]
+# wl = 393
+# ind_wl = np.argwhere(ld.wl_arr == wl)[0][0]
 # print(st.light_arr[ind_wl])
-# print(st.map.params_arr[ind_wl])
-# print(st.map.fitint)
-print(st.map.logg_arr)
+# print(st.map.params_arr[ind_wl, :, -5:])
+# print(st.map.fitint[:, -5:])
+# print(st.map.logg_arr)
 # print(st.map.temp_arr)
 
 # pickle the star

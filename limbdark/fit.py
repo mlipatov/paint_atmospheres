@@ -136,15 +136,20 @@ class Fit:
 			sin2 = math.sin(2*phi)
 			sin3 = math.sin(3*phi)
 			sin4 = math.sin(4*phi)
+			sin5 = math.sin(5*phi)
 			# integral of the polynomial
 			integr = [
-				phi,
 				b*phi + a*sine,
 				(a**2/2. + b**2)*phi + (2*a*b + (a**2*cosn)/2.)*sine,
 				((3*a**2*b)/2. + b**3)*phi + ((5*a**3)/6. + 3*a*b**2 + \
 					(3*a**2*b*cosn)/2. + (a**3*cos2)/6.)*sine,
 				((3*a**4)/8. + 3*a**2*b**2 + b**4)*phi + (3*a**3*b + 4*a*b**3)*sine + \
-					(a**4/4. + (3*a**2*b**2)/2.)*sin2 + (a**3*b*sin3)/3. + (a**4*sin4)/32.
+					(a**4/4. + (3*a**2*b**2)/2.)*sin2 + (a**3*b*sin3)/3. + (a**4*sin4)/32.,
+				((15*a**4*b)/8. + 5*a**2*b**3 + b**5)*phi + \
+					((5*a**5)/8. + (15*a**3*b**2)/2. + 5*a*b**4)*sine + \
+					((5*a**4*b)/4. + (5*a**2*b**3)/2.)*sin2 + \
+					(5*a**5*sin3)/48. + (5*a**3*b**2*sin3)/6. + \
+					(5*a**4*b*sin4)/32. + (a**5*sin5)/80.
 			]
 			return np.array(integr)
 		# initialize the total integral for function on each interval
@@ -235,7 +240,6 @@ class Fit:
 		g = self.g
 		temp = self.temp
 		params = self.p
-		print(params)
 		# construct the label string
 		lab = ""
 		c = 0 # count
