@@ -1,0 +1,16 @@
+python calc_spectrum.py 'star.pkl' 'limbdark.pkl' 0.0005 0 0 1 1 1
+Mass: 1.0 sun(s)
+Luminosity: 1.0 sun(s)
+Equatorial radius: 1.0 solar radi(i/us)
+Rotation speed: 0.0 of the Keplerian angular velocity at the equator
+Inclination: 0.0 radians.
+Integrating the fit functions...
+/Users/mike/Code/paint_atmospheres/limbdark/fit.py:123: RuntimeWarning: invalid value encountered in double_scalars
+  cosn = (mu - b) / a
+/Users/mike/Code/paint_atmospheres/limbdark/fit.py:123: RuntimeWarning: divide by zero encountered in double_scalars
+  cosn = (mu - b) / a
+Computing the area elements, as well as the cylindrical and spherical coordinates...
+Computing the gravities and temperatures...
+Interpolating the fit parameters...
+Calculating the integrals...
+3.283825991047651e+17

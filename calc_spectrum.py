@@ -10,11 +10,11 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_spectrum.py \'star.pkl\' \'limbdark.pkl\' 0.0005 " +\
+	"python calc_spectrum.py \'vega.txt\' \'limbdark.pkl\' 0.0005 " +\
 	"0.8760 0.08683 40.124 2.135 2.818")
-parser.add_argument("pkl_sfile", help="a name for a .pkl spectrum file to create")
-parser.add_argument("pkl_lfile", help="name of the limb darkening .pkl file to access")
-parser.add_argument("z_step", help="step for normalized z coordinate", type=float)
+parser.add_argument("output", help="an output spectrum text file to create")
+parser.add_argument("pkl_lfile", help="the limb darkening .pkl file to access")
+parser.add_argument("z_step", help="integration step for the normalized z coordinate", type=float)
 parser.add_argument("omega", help="rotation speed divided by its Keplerian value at the equator", type=float)
 parser.add_argument("inclination", help="angle between line of sight and rotation axis", type=float)
 parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)
@@ -23,7 +23,7 @@ parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
 args = parser.parse_args()
 
 ## inputs
-pkl_sfile = args.pkl_sfile # spectrum file
+txt_sfile = args.output # spectrum text file
 pkl_lfile = args.pkl_lfile # limb darkening file
 z_step = args.z_step
 ## star parameter inputs 
@@ -57,6 +57,21 @@ st = star.Star(omega, inclination, luminosity, mass, Req, z_step, ld)
 # print(st.map.logg_arr)
 # print(st.map.temp_arr)
 
-# pickle the star
-with open(pkl_sfile, 'wb') as f:
-	pickle.dump(st, f)
+# write the spectrum of the star in text format
+# create this file if it doesn't exist, open it for writing
+f = open(txt_sfile,'w+') 
+# write the header
+f.write('# omega: ' + str(omega) + '\n')
+f.write('# inclination: ' + str(inclination) + '\n')
+f.write('# luminosity: ' + str(luminosity) + '\n')
+f.write('# mass: ' + str(mass) + '\n')
+f.write('# Req: ' + str(Req) + '\n')
+f.write('# wavelength(nm)\tintensity(ergs/s/Hz/ster)\n') 
+f.close() # close the file
+f = open(txt_sfile, 'a') # open the file for appending
+# write the spectrum to the file
+ind = 0
+while (ind < len(ld.wl_arr)):
+	f.write(str(ld.wl_arr[ind]) + '\t %.5E\n' % st.light_arr[ind])
+	ind += 1
+f.close()
