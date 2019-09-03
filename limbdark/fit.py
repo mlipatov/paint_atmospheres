@@ -120,7 +120,10 @@ class Fit:
 			return a * math.cos(phi) + b
 		# mu in terms of phi
 		def phi(mu):
-			cosn = (mu - b) / a
+			if a == 0:
+				return np.NAN
+			else:
+				cosn = (mu - b) / a
 			if cosn > 1 or cosn < -1:
 				return np.NAN
 			else:

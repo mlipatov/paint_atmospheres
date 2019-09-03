@@ -27,7 +27,23 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
-# input: wavelength in nm
-# output: frequency in Hz
-def wl_to_freq(wl):
-	return 1.e7 * c / wl
+# inputs: an array of intensity per Angstrom of wavelength, 
+# 	an array of corresponding wavelengths in nanometers
+# output: an array of intensity per Hertz of frequency
+def convert_from_A(I_arr, wl_arr):
+	cA = 1.e8 * c # speed of light in angstroms per second
+	wl_A = 1.e1 * wl_arr # wavelengths in angstroms
+	return I_arr * wl_A**2 / cA
+
+# inputs: an array of intensity per nanometer of wavelength, 
+# 	an array of corresponding wavelengths in nanometers
+# output: an array of intensity per Hertz of frequency
+def convert_from_nm(I_arr, wl_arr):
+	c_nm = 1.e7 * c # speed of light in nm per second
+	return I_arr * wl_arr**2 / c_nm
+
+# input: an array of intensity per square centimeter of photoreceptor, 
+# 	distance to the star in centimeters
+# output: an array of intensity per steradian
+def convert_to_ster(I_arr, distance):
+	return I_arr * distance**2

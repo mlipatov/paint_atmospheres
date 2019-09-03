@@ -56,7 +56,7 @@ class Map:
 		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		## as in equations 7 and 31 of EL, for each z
-		print ("Computing the gravities and temperatures...")        
+		print ("Computing gravities and temperatures...")        
 		sys.stdout.flush()
 		geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
 			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
