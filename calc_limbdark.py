@@ -12,7 +12,7 @@ parser.add_argument("pkl_lfile", help="name for a .pkl file with limb darkening 
 parser.add_argument('-b', type=float, nargs='+', help='list of boundaries between intervals', required=True)
 parser.add_argument("-c", help="check each fit for non-negativity, monotonicity and goodness", 
 					action="store_true")
-parser.add_argument("-s", help="save the original discrete intensities in the .pkl file", 
+parser.add_argument("-s", help="save the original discrete intensities in the .pkl file for plotting", 
 					action="store_true")
 args = parser.parse_args()
 
