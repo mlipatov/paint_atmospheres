@@ -78,14 +78,14 @@ class Surface:
 		b = - self.cosi * drz / sqt
 		return [a, b]
 
-	## integration bound on phi for a given z
+	## deprecated: integration bound on phi for a given z
 	# input: z
 	# output: integration bound on phi
-	def phi1(self, z): 
-		if z == -self.Z1:
-			return 0
-		else:
-		  	return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
+	# def phi1(self, z): 
+	# 	if z == -self.Z1:
+	# 		return 0
+	# 	else:
+	# 	  	return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
 
 	# spherical coordinate rho as a function of z
 	def rho(self, z):

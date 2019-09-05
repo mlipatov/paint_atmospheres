@@ -35,12 +35,9 @@ class Map:
 		sys.stdout.flush()
 		c = 0
 		for z in self.z_arr: 
-			if z < z1:
-				phi1 = surf.phi1(z)
-			else:
-				phi1 = math.pi
 			a, b = surf.ab(z)
-			self.fitint[c] = ft.Fit.integrate(phi1, a, b)
+			belowZ1 = (z < z1)
+			self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
 			c += 1
 		## compute an array of area elements for integration, one for each value of z
 		print ("Computing the area elements, as well as the cylindrical and spherical coordinates...")        

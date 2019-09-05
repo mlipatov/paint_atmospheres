@@ -110,24 +110,15 @@ class Fit:
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
 
-	# Given the upper integration boundary phi1, for each function of the fit on each interval of the fit, 
+	# Given the integration boundaries on mu, for each function of the fit on each interval of the fit, 
 	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
-	# on the intersection of the interval and [0, phi1]
+	# on the intersection of the interval and the integration boundaries on mu
 	@classmethod
-	def integrate(cls, phi1, a, b):
+	def integrate(cls, belowZ1, a, b):
 		# phi in terms of mu
-		def mu(phi):
-			return a * math.cos(phi) + b
-		# mu in terms of phi
 		def phi(mu):
-			if a == 0:
-				return np.NAN
-			else:
-				cosn = (mu - b) / a
-			if cosn > 1 or cosn < -1:
-				return np.NAN
-			else:
-				return math.acos(cosn)
+			cosn = (mu - b) / a
+			return math.acos(cosn)
 		# indefinite integrals of the non-zero fit functions as functions of phi,
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
@@ -157,6 +148,32 @@ class Fit:
 			return np.array(integr)
 		# initialize the total integral for function on each interval
 		result = np.zeros(n * cls.m)
+		# start at phi = 0
+		ph = 0
+		# upper bound on integration w.r.t. mu
+		mu1 = a + b
+		# lower bound on integration w.r.t. mu 
+		if belowZ1:
+			mu0 = 0
+		else:
+			mu0 = b - a
+		# find the mu interval that has the upper mu bound
+		ind = np.searchsorted(cls.muB_arr, mu1, side='right')
+		# find the lower endpoint of this interval
+		mu_int = cls.muB_arr[ind]
+		# while the lower mu bound is below the lower endpoint of the current interval
+		while mu0 < mu_int:
+			# compute the integral on this interval
+			result[ind * n : (ind + 1) * n] += intgrt(phi(mu_int)) - intgrt(ph)
+			# set phi to the lower endpoint of this interval
+			ph = phi(mu_int)
+			# set the index and the lower endpoint of the next interval
+			ind =- 1
+			
+			mu_int = cls.muB_arr[ind]
+		# compute the integral on the last interval
+		result[ind * n : (ind + 1) * n] += intgrt(phi(mu_int)) - intgrt(ph)
+
 		# find the values of mu that correspond to the two integration boundaries:
 		# mu(phi1) and mu(0) should be between 0 and 1
 		mu0, mu1 = [mu(phi1), mu(0)]
