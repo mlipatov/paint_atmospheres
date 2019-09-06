@@ -10,7 +10,7 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_spectrum.py \'vega.txt\' \'limbdark.pkl\' 0.0005 " +\
+	"python calc_spectrum.py \'vega.txt\' \'limbdark_m01.pkl\' 0.0005 " +\
 	"0.8760 0.08683 40.124 2.135 2.818")
 parser.add_argument("output", help="an output spectrum text file to create")
 parser.add_argument("pkl_lfile", help="the limb darkening .pkl file to access")

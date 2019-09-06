@@ -21,7 +21,7 @@ class Surface:
 		self.f = 1 + omega**2 / 2
 		self.sini = math.sin(inclination)
 		self.cosi = math.cos(inclination)
-		self.Z1 = self.Z1()
+		self.z1 = self.Z1()
 
 	## conversions between z and a related variable
 	def U(self, z):

@@ -17,7 +17,7 @@ class Map:
 	# needed for temperature and gravity unit conversions, and limb darkening information
 	def __init__(self, surf, z_step, add_logg, mult_temp, ld):
 		## initialize surface and limb darkening information
-		z1 = surf.Z1 # an integration bound on the surface
+		z1 = surf.z1 # an integration bound on the surface
 		self.z_step = z_step
 		self.ld = ld
 		self.f = surf.f # flatness of the surface
@@ -33,8 +33,9 @@ class Map:
 		## compute the integrated fit functions
 		print ("Integrating the fit functions...")        
 		sys.stdout.flush()
-		c = 0
-		for z in self.z_arr: 
+		self.fitint[0] = np.zeros(ft.n * ft.Fit.m) # at z = -z1, the integral is zero
+		c = 1
+		for z in self.z_arr[1:]: 
 			a, b = surf.ab(z)
 			belowZ1 = (z < z1)
 			self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
