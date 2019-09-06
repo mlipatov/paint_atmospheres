@@ -24,9 +24,10 @@ class Map:
 		self.omega = surf.omega # rotational velocity of the star with this surface
 		omega = self.omega
 		## initialize the array of z values
-		self.z_arr1 = np.arange(-z1, 0, z_step) # negative z values
-		self.z_arr2 = np.arange(0, 1, z_step) # positive z values
-		self.z_arr = np.concatenate(( self.z_arr1, self.z_arr2 )) # an array of z values for integration
+		za = np.arange(-z1, 1, z_step)
+		self.z_arr1 = za[za <  0] # negative z values
+		self.z_arr2 = za[za >= 0] # non-negative z values
+		self.z_arr = za # an array of z values for integration
 		## compute a 2D array of fit function integrals, 
 		## one for each z value and each parameter / interval combination of the fit
 		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
@@ -198,10 +199,7 @@ class Map:
 		# at each wavelength and z value, obtain the integral of the total fit function over phi;
 		# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 		# along the fit parameter dimension
-		self.fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
-
-# don't need to store the fit_arr object
-
+		fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
 		# at each wavelength, sum up the product of the phi integral of the fit function and
 		# the dimensionless area element at each z, multiply by the z step
-		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * self.fit_arr, axis=1)
+		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * fit_arr, axis=1)

@@ -32,8 +32,8 @@ class Fit:
 
 	# the boundaries for the intervals of the fit: [0, x0], [x0, x1], ... [x(n), 1]
 	muB_arr = np.array([])
-	# the tuples of boundaries
-	muB_tup = []
+	# the tuples of boundaries - deprecated
+	# muB_tup = []
 	# the number of intervals
 	m = 0	
 	# mu array split into a list of arrays according to the boundaries
@@ -52,12 +52,12 @@ class Fit:
 		cls.muB_arr = np.array([0] + b)
 		# set the number of intervals
 		cls.m = len(b) + 1
-		# set the array of tuples describing the intervals
-		cls.muB_tup = []
-		cls.muB_tup.append((0, b[0]))
-		for c in range(len(b) - 1):
-			cls.muB_tup.append((b[c], b[c+1]))
-		cls.muB_tup.append((b[-1], 1))
+		# set the array of tuples describing the intervals - deprecated
+		# cls.muB_tup = []
+		# cls.muB_tup.append((0, b[0]))
+		# for c in range(len(b) - 1):
+		# 	cls.muB_tup.append((b[c], b[c+1]))
+		# cls.muB_tup.append((b[-1], 1))
 		# set local variable for this function
 		m = cls.m
 		# split the array of Kurucz's mu values according to the boundaries between intervals
@@ -106,7 +106,8 @@ class Fit:
 	# mu has to be in [0, 1]
 	def I(self, mu):
 		# interval of the form [mu1, mu2) where this mu value is found
-		i = np.searchsorted(self.muB_arr, mu) 
+		# intervals numbered 0, 1, 2, ...
+		i = np.searchsorted(self.muB_arr, mu, side='right') - 1 
 		Fi = self.F[i] # all the functions on this interval
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
@@ -149,43 +150,48 @@ class Fit:
 			return np.array(integr)
 		# initialize the total integral for function on each interval
 		result = np.zeros(n * cls.m)
-		# start at phi = 0
+		# start at phi = 0; phi will increase
 		ph = 0
-		# upper bound on integration w.r.t. mu
+		# upper bound on integration w.r.t. mu; mu will decrease
 		mu1 = a + b
-		# find the mu interval of the form [mu1, mu2) that contains the upper mu integration bound
-		# intervals numbered 0, 1, 2,...
+		# find the mu interval of the form [muX, muY) that contains the upper mu integration bound;
+		# intervals are numbered 0, 1, 2,...
 		i = np.searchsorted(cls.muB_arr, mu1, side='right') - 1
 		# if we are looking at the star pole-on, mu doesn't change as phi changes,
-		# so we integrate from zero to pi
+		# so we integrate from zero to pi in the current (and only) mu interval
 		if a == 0:
 			result[i  * n : (i + 1) * n] += intgrt(math.pi) - intgrt(ph)
 		# otherwise, mu changes as phi changes, 
 		# so we keep track of whether we enter different mu intervals
 		else: 
-			# lower bound on integration w.r.t. mu 
+			# set the lower bound on integration w.r.t. mu, between 0 and 1
+			# and the corresponding upper bound on integration w.r.t. phi, between 0 and pi
 			if belowZ1:
 				mu0 = 0
+				phi_mu0 = phi(mu0)
 			else:
 				mu0 = b - a
-			# the lower endpoint of the current interval
+				phi_mu0 = math.pi
+			# lower endpoint of the current mu interval
 			mu_int = cls.muB_arr[i]
-			# while the lower mu bound is below the lower endpoint of the current interval
-			while mu0 < mu_int:
-				# compute the integral on this interval
-				print(mu_int, i)
-				result[i  * n : (i + 1) * n] += intgrt(phi(mu_int)) - intgrt(ph)
-				# set phi to the lower endpoint of this interval
-				ph = phi(mu_int)
-				# set the index and the lower endpoint of the next interval
-				i =- 1
-				# if there is no next interval
-				# if i < 0:
-				# 	break # 
-				# else:
+			# while the lower endpoint of the current mu interval 
+			# is higher than the lower mu integration bound,
+			# keep integrating up to the value of phi that corresponds to that lower endpoint
+			while mu_int > mu0:
+				# phi corresponding to the lower endpoint of the current mu interval
+				phi_int = phi(mu_int)
+				# compute the integral on this interval, from the current value of phi 
+				# to that corresponding to the lower endpoint of the current mu interval
+				result[i  * n : (i + 1) * n] += intgrt(phi_int) - intgrt(ph)
+				# set the current value of phi 
+				# to that corresponding to the lower endpoint of the current mu interval
+				ph = phi_int
+				# move one interval to the left
+				i -= 1
+				# set the lower endpoint of the current interval
 				mu_int = cls.muB_arr[i]
 			# compute the integral on the remaining part of the last interval
-			result[i  * n : (i + 1) * n] += intgrt(phi(mu0)) - intgrt(ph)
+			result[i  * n : (i + 1) * n] += intgrt(phi_mu0) - intgrt(ph)
 		# return twice the computed integrals
 		return 2 * result
 

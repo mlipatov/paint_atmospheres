@@ -6,17 +6,19 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Examples: \n" +\
-	"python plot_spectrum.py \'vega1.dat\' 3000,\
-	 python plot_spectrum.py \'sun1.dat\' 4000")
-parser.add_argument("txt_file", help="spectrum text file")
+	"python plot_spectrum.py \'vega_pa.png\' \'vega.txt\' 3000,\
+	 python plot_spectrum.py \'sun_pa.png\' \'sun.txt\' 3000")
+parser.add_argument("ofile", help="output: spectrum .png file")
+parser.add_argument("ifile", help="input: spectrum text file")
 parser.add_argument("wl", help="upper cutoff for wavelength, in nanometers", type=int)
 args = parser.parse_args()
 
-txt_file = args.txt_file # spectrum file
+ofile = args.ofile # output file
+ifile = args.ifile # input file
 wl = args.wl # cutoff wavelength
 
 # obtain the wavelengths and the intensities from the file
-f = open(txt_file)
+f = open(ifile)
 wl_arr = []
 I_arr = []
 count = 0;
@@ -37,7 +39,7 @@ offset_y = delta_y * 0.1
 fig = plt.figure()
 plt.axes().set_ylim([min(I_arr) - offset_y, max(I_arr) + offset_y])
 plt.scatter(wl_arr, I_arr, marker='o', c='b', s=3)
-plt.title('intensity vs wavelength from ' + txt_file)
+plt.title('intensity vs wavelength from ' + ifile)
 plt.xlabel('wavelength (nm)')
 plt.ylabel('intensity (erg/s/Hz/ster)')
-fig.savefig('I_vs_wl.png')
+fig.savefig(ofile)
