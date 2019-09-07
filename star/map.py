@@ -76,20 +76,20 @@ class Map:
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
 	# of positive, non-one values of z at its every step
 	def Tc(self):
-		## variable initializations
-		# values of the arrays for positive values of z, excluding z = 1
-		z_arr = self.z_arr2[1:-1] 
-		rho_arr = self.rho_arr2[1:-1]
-		r_arr = self.r_arr2[1:-1]
-		# values at z = 1 and 0, for which the correction will be computed separately
-		rho1 = self.rho_arr2[-1] # rho at z = 1
-		rho0 = self.rho_arr2[0] # rho at z = 0
-		r1 = self.r_arr2[-1] # rho at z = 1
-		r0 = self.r_arr2[0] # rho at z = 0
+		## local variable initializations
+		# look to see if the array of z values contains a zero
+		zero = (self.z_arr2[0] == 0)
+		# look to see if the array of z values contains a one
+		one = (self.z_arr2[-1] == 1)
+		# a boolean array that says which non-negative values of z are not equal to 0 or 1
+		boo = [True] * len(self.z_arr1) + [not zero] + [True] * ( len(self.z_arr2) - 2 ) + [not one]
+		# z, rho and r for all positive z excluding z = 1 and z = 0
+		z_arr = self.z_arr[boo]
+		rho_arr = self.rho_arr[boo]
+		r_arr = self.r_arr[boo]
 		# star / surface parameters
 		omega = self.omega
 		f = self.f
-
 		## array operations
 		cosn_arr = z_arr / (f * rho_arr) # cosine theta for every z
 		tan2_arr = (rho_arr - z_arr / f) / r_arr # tan(theta / 2) for every z
@@ -97,12 +97,6 @@ class Map:
 		# an array of the function tau evaluated at every value of z, 
 		# with tau defined in EL eqn 21, with rho and theta both functions of z
 		tau_arr = (1./3) * omega**2 * cosn_arr**3 + cosn_arr + np.log(tan2_arr)
-
-		# at z = 1 (see EL eqn 27), the correction factor is
-		Tc1 = math.exp((1./6) * omega**2 * rho1**3)
-		# at z = 0 (see EL eqn 28), the correction factor is
-		Tc0 = (1 - omega**2 * rho0**3)**(-1./6)
-
 		# initialize to zeros the array of curly theta (EL eqn 24) 
 		# for the bisection algorithm
 		curly_arr = np.zeros_like(z_arr)
@@ -132,12 +126,24 @@ class Map:
 			# should add the value of the subinterval to the current estimate of curly theta
 			# at a given value of z; then add (or don't add) the value of the subinterval accordingly
 			curly_arr = curly_arr + x * np.greater(f1 * f2, 0)
-		# the temperature correction for positive values of z
-		Tc_arr2 = np.concatenate(( np.sqrt(np.tan(curly_arr) / tan_arr), np.array([Tc1]) ))
-		# compute the mirror image of the temperature correction for negative z values
-		Tc_arr1 = np.flip( Tc_arr2[:len(self.z_arr1)] )
-		# compile the temperature corrections and return
-		return np.concatenate(( Tc_arr1, np.array([Tc0]), Tc_arr2 ))
+		# the temperature correction for all values of z except for z = 0 and z = 1
+		Tc_arr = np.sqrt(np.tan(curly_arr) / tan_arr)
+		# if there was z = 0
+		if zero:
+			rho0 = self.rho_arr2[0] # rho at z = 0	
+			# at z = 0 (see EL eqn 28), the correction factor is
+			Tc0 = (1 - omega**2 * rho0**3)**(-1./6)		
+			# insert the temperature correction for z = 0
+			Tc_arr = np.insert(Tc_arr, len(z_arr1), Tc0)
+		# if there was z = 1
+		if one:
+			rho1 = self.rho_arr2[-1] # rho at z = 1
+			# at z = 1 (see EL eqn 27), the correction factor is
+			Tc1 = math.exp((1./6) * omega**2 * rho1**3)
+			# insert the temperature correction at z = 1
+			Tc_arr = np.append(Tc_arr, Tc1)
+		# return
+		return Tc_arr
 
 
 	# for each wavelength and intensity fit parameter, interpolate the parameter

@@ -27,6 +27,15 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
+# not needed
+# modification of a function from Python documentation on bisect
+# def index(a, x):
+#     'Locate the leftmost value exactly equal to x'
+#     i = bisect_left(a, x)
+#     if i != len(a) and a[i] == x:
+#         return i
+#     return None # this is the line that was modified
+
 # inputs: an array of intensity per Angstrom of wavelength, 
 # 	an array of corresponding wavelengths in nanometers
 # output: an array of intensity per Hertz of frequency
