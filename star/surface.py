@@ -78,18 +78,9 @@ class Surface:
 		b = - self.cosi * drz / sqt
 		return [a, b]
 
-	## deprecated: integration bound on phi for a given z
-	# input: z
-	# output: integration bound on phi
-	# def phi1(self, z): 
-	# 	if z == -self.Z1:
-	# 		return 0
-	# 	else:
-	# 	  	return math.acos(self.f * self.Drz(z) * self.cosi / self.sini)
-
-	# spherical coordinate rho as a function of z
-	def rho(self, z):
-		return math.sqrt( self.R(z)**2 + (z / self.f)**2 )
+	# spherical coordinate rho, given sets of r and z values
+	def rho(self, r_arr, z_arr):
+		return np.sqrt( r_arr**2 + (z_arr / self.f)**2 )
 
 	## integration bound on z
 	## this should be computed only once for a given star

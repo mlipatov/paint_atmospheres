@@ -19,10 +19,9 @@ class Map:
 		## initialize surface and limb darkening information
 		z1 = surf.z1 # an integration bound on the surface
 		self.z_step = z_step
-		self.ld = ld
-		self.f = surf.f # flatness of the surface
-		self.omega = surf.omega # rotational velocity of the star with this surface
-		omega = self.omega
+		self.ld = ld # limb darkening information
+		self.surf = surf # surface shape information
+		omega = self.surf.omega
 		## initialize the array of z values
 		za = np.arange(-z1, 1, z_step)
 		self.z_arr1 = za[za <  0] # negative z values
@@ -50,8 +49,8 @@ class Map:
 		self.r_arr2 = np.array([ surf.R(z) for z in self.z_arr2 ])
 		self.r_arr = np.concatenate(( self.r_arr1, self.r_arr2 ))
 		r_arr_sq = np.power(self.r_arr, 2)
-		self.rho_arr1 = np.array([ surf.rho(z) for z in self.z_arr1 ])
-		self.rho_arr2 = np.array([ surf.rho(z) for z in self.z_arr2 ])
+		self.rho_arr1 = surf.rho(self.r_arr1, self.z_arr1)
+		self.rho_arr2 = surf.rho(self.r_arr2, self.z_arr2)
 		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		## as in equations 7 and 31 of EL, for each z
@@ -74,22 +73,33 @@ class Map:
 
 	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
 	# at every value of z; runs a bisection algorithm that acts on the entire array 
-	# of positive, non-one values of z at its every step
+	# of z values that aren't equal to 0, 1 or -1 at its every step
 	def Tc(self):
 		## local variable initializations
+		# star / surface parameters
+		surf = self.surf
+		omega = surf.omega
+		f = surf.f
+		# special coordinates that aren't treated with the algorithm
+		rho0 = surf.rho(surf.R(0), 0) # rho at z = 0
+		rho1 = surf.rho(surf.R(1), 1) # rho at z = 1 or -1
+		# at z = 0 (see EL eqn 28), the correction factor is
+		Tc0 = (1 - omega**2 * rho0**3)**(-1./6)	
+		# at z = 1 or -1 (see EL eqn 27), the correction factor is
+		Tc1 = math.exp((1./6) * omega**2 * rho1**3)
+		# look to see if the array of z values contains a minus one
+		minusone = (self.z_arr1[0] == -1)
 		# look to see if the array of z values contains a zero
 		zero = (self.z_arr2[0] == 0)
 		# look to see if the array of z values contains a one
 		one = (self.z_arr2[-1] == 1)
-		# a boolean array that says which non-negative values of z are not equal to 0 or 1
-		boo = [True] * len(self.z_arr1) + [not zero] + [True] * ( len(self.z_arr2) - 2 ) + [not one]
-		# z, rho and r for all positive z excluding z = 1 and z = 0
+		# a boolean array that says which non-negative values of z are not equal to -1, 0 or 1
+		boo = [not minusone] + [True] * ( len(self.z_arr1) - 1) + \
+			[not zero] + [True] * ( len(self.z_arr2) - 2 ) + [not one]
+		# z, rho and r for all positive z excluding z = -1, z = 1 and z = 0
 		z_arr = self.z_arr[boo]
 		rho_arr = self.rho_arr[boo]
 		r_arr = self.r_arr[boo]
-		# star / surface parameters
-		omega = self.omega
-		f = self.f
 		## array operations
 		cosn_arr = z_arr / (f * rho_arr) # cosine theta for every z
 		tan2_arr = (rho_arr - z_arr / f) / r_arr # tan(theta / 2) for every z
@@ -101,14 +111,14 @@ class Map:
 		# for the bisection algorithm
 		curly_arr = np.zeros_like(z_arr)
 		# size of the range of curly theta
-		s = math.pi / 2
+		s = math.pi
 		# step through the bisection algorithm the number of times 
 		# that guarantees convergence within the precision of floats
 		n = int(math.ceil(math.log2( s / np.finfo(1.0).resolution )))
 		for i in range(n):
 			# turn off RuntimeWarning: divide by zero encountered in log;
 			# numpy.log evaluates to -inf when curly theta = 0, which is the 
-			# the value we will enter in our array at such values of curly theta
+			# the value we want in our array at such values of curly theta
 			np.seterr(divide = 'ignore')
 			# the function whose root we are looking for, evaluated at the 
 			# current values of curly theta 
@@ -126,22 +136,31 @@ class Map:
 			# should add the value of the subinterval to the current estimate of curly theta
 			# at a given value of z; then add (or don't add) the value of the subinterval accordingly
 			curly_arr = curly_arr + x * np.greater(f1 * f2, 0)
-		# the temperature correction for all values of z except for z = 0 and z = 1
-		Tc_arr = np.sqrt(np.tan(curly_arr) / tan_arr)
-		# if there was z = 0
+		# create an array of temperature correction values for all values of z 
+		# that were treated with the bisection algorithm, initialize it with 1, i.e. no correction
+		Tc_arr = np.full_like(curly_arr, 1.)
+		# tan curly theta for every z not equal to 0, 1 or -1
+		tan_curly_arr =	np.tan(curly_arr)
+		# near z = 0 the errors in calculating curly theta can cause it 
+		# not to be on the same side of pi/2 as theta; at these values of z, 
+		# set the temperature correction to that which we expect at z = 0
+		boo1 = np.greater(tan_curly_arr * tan_arr, 0)
+		Tc_arr[ np.logical_not(boo1) ].fill(Tc0)
+		# the temperature correction for all values of z except those near 0, z = -1 and z = 1
+		Tc_arr[boo1] = np.sqrt( tan_curly_arr[boo1] / tan_arr[boo1] )
+		# if there was a z = -1
+		if minusone:
+			# insert the temperature correction at z = -1
+			Tc_arr = np.insert(Tc_arr, 0, Tc1)			
+		# if there was a z = 0
 		if zero:
-			rho0 = self.rho_arr2[0] # rho at z = 0	
-			# at z = 0 (see EL eqn 28), the correction factor is
-			Tc0 = (1 - omega**2 * rho0**3)**(-1./6)		
 			# insert the temperature correction for z = 0
 			Tc_arr = np.insert(Tc_arr, len(z_arr1), Tc0)
-		# if there was z = 1
+		# if there was a z = 1
 		if one:
 			rho1 = self.rho_arr2[-1] # rho at z = 1
-			# at z = 1 (see EL eqn 27), the correction factor is
-			Tc1 = math.exp((1./6) * omega**2 * rho1**3)
 			# insert the temperature correction at z = 1
-			Tc_arr = np.append(Tc_arr, Tc1)
+			Tc_arr = np.append(Tc_arr, Tc1)	
 		# return
 		return Tc_arr
 
@@ -183,7 +202,7 @@ class Map:
 		no_fits = np.logical_or.reduce( (np.isnan(f00[0, :, 0]), np.isnan(f01[0, :, 0]), \
 										np.isnan(f10[0, :, 0]), np.isnan(f11[0, :, 0])) )
 		if True in no_fits:
-			print ('We do not have the data to interpolate to find intensity at z = ' + str(z_arr[no_fits]) + \
+			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[no_fits]) + \
 				', where the temperatures are ' + str(self.temp_arr[no_fits]) + ' and log gravity values are ' +\
 				 str(self.logg_arr[no_fits]) + ".")
 		# bilinear interpolation (see Wikipedia: Bilinear Interpolation)
