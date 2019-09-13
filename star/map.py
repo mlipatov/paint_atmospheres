@@ -113,7 +113,8 @@ class Map:
 		# size of the range of curly theta
 		s = math.pi
 		# step through the bisection algorithm the number of times 
-		# that guarantees convergence within the precision of floats
+		# that guarantees convergence within the precision of floats;
+		# after this many steps, the limitation is due to the precision of each arithmetic operation
 		n = int(math.ceil(math.log2( s / np.finfo(1.0).resolution )))
 		for i in range(n):
 			# turn off RuntimeWarning: divide by zero encountered in log;
