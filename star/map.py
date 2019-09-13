@@ -62,7 +62,7 @@ class Map:
 		self.logg_arr = add_logg + np.log10(geff_arr)
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z
-		t_arr = geff_arr**(1./4) * self.Tc()
+		t_arr = ( geff_arr * self.F() )**(1./4)
 		# convert the temperature to Kelvin
 		self.temp_arr = mult_temp * t_arr
 		## compute the interpolated values of limb darkening fit parameters
@@ -71,99 +71,85 @@ class Map:
 		self.params_arr = self.interp()
 	
 
-	# returns, as an array, the temperature correction factors (EL equations 31 and 26)
-	# at every value of z; runs a bisection algorithm that acts on the entire array 
-	# of z values that aren't equal to 0, 1 or -1 at its every step
-	def Tc(self):
-		## local variable initializations
+	# returns, as an array, the temperature correction factors (EL equation 26)
+	# at every value of z; runs the Newton's method algorithm that acts on the entire array 
+	# of z values that aren't too close to 0 at its every step; for values that 
+	# are close to 0, returns the temperature correction expected at z = 0
+	def F(self):
+		# helper function
+		# inputs: squared rotation speed, 
+		#	an array of rho and an array of x = cos(theta)
+		def add(o2, rho_arr, x_arr):
+			return -x_arr - (1/3) * o2 * rho_arr**3 * x_arr**3
+		# helper function
+		# inputs: an array of temperature correction values and 
+		#	an array of x = cos(theta) values
+		def G(F_arr, x_arr):
+			return np.sqrt(F_arr * (1 - x_arr**2) + x_arr**2)
+		# the function whose root we are looking for, 
+		# derived from EL24, with x = cos(theta) and F as defined in EL26
+		def f(F_arr, x_arr, G_arr, add_arr): 
+			result1 = x_arr / G_arr
+			result2 = np.log( np.sqrt(F_arr) * (1 + x_arr) / (x_arr + G_arr) )
+			return result1 + result2 + add_arr
+		# the derivative of the function we are looking for,
+		# with respect to the temperature correction F
+		def Df(F_arr, x_arr, G_arr):
+			result = (x_arr / G_arr)**3 / (2 * F_arr)
+			return result
+		# a step of the Newton's method
+		# inputs: an array of F values, corresponding arrays of x values and values of 
+		#	the additive term that doesn't depend on F
+		def step(F_arr, x_arr, add_arr):
+			# helper function at the current values of F
+			G_arr = G(F_arr, x_arr)
+			# the function whose root we are looking for
+			f_arr = f(F_arr, x_arr, G_arr, add_arr)
+			# the derivative of the function whose root we are looking for
+			Df_arr = Df(F_arr, x_arr, G_arr)
+			# step
+			result = F_arr - f_arr / Df_arr
+			return result
+		# x is defined as abs(cos(theta))
+		# optimal smallest value of x for which to compute using Newton's method
+		# assumes float precision = 1e-15
+		delta = 0.0015 
 		# star / surface parameters
 		surf = self.surf
 		omega = surf.omega
-		f = surf.f
-		# special coordinates that aren't treated with the algorithm
-		rho0 = surf.rho(surf.R(0), 0) # rho at z = 0
-		rho1 = surf.rho(surf.R(1), 1) # rho at z = 1 or -1
-		# at z = 0 (see EL eqn 28), the correction factor is
-		Tc0 = (1 - omega**2 * rho0**3)**(-1./6)	
-		# at z = 1 or -1 (see EL eqn 27), the correction factor is
-		Tc1 = math.exp((1./6) * omega**2 * rho1**3)
-		# look to see if the array of z values contains a minus one
-		minusone = (self.z_arr1[0] == -1)
-		# look to see if the array of z values contains a zero
-		zero = (self.z_arr2[0] == 0)
-		# look to see if the array of z values contains a one
-		one = (self.z_arr2[-1] == 1)
-		# a boolean array that says which non-negative values of z are not equal to -1, 0 or 1
-		boo = [not minusone] + [True] * ( len(self.z_arr1) - 1) + \
-			[not zero] + [True] * ( len(self.z_arr2) - 2 ) + [not one]
-		# z, rho and r for all positive z excluding z = -1, z = 1 and z = 0
-		z_arr = self.z_arr[boo]
-		rho_arr = self.rho_arr[boo]
-		r_arr = self.r_arr[boo]
-		## array operations
-		cosn_arr = z_arr / (f * rho_arr) # cosine theta for every z
-		tan2_arr = (rho_arr - z_arr / f) / r_arr # tan(theta / 2) for every z
-		tan_arr = f * r_arr / z_arr # tan theta for every z
-		# an array of the function tau evaluated at every value of z, 
-		# with tau defined in EL eqn 21, with rho and theta both functions of z
-		tau_arr = (1./3) * omega**2 * cosn_arr**3 + cosn_arr + np.log(tan2_arr)
-		# initialize to zeros the array of curly theta (EL eqn 24) 
-		# for the bisection algorithm
-		curly_arr = np.zeros_like(z_arr)
-		# size of the range of curly theta
-		s = math.pi
-		# step through the bisection algorithm the number of times 
-		# that guarantees convergence within the precision of floats;
-		# after this many steps, the limitation is due to the precision of each arithmetic operation
-		n = int(math.ceil(math.log2( s / np.finfo(1.0).resolution )))
-		for i in range(n):
-			# turn off RuntimeWarning: divide by zero encountered in log;
-			# numpy.log evaluates to -inf when curly theta = 0, which is the 
-			# the value we want in our array at such values of curly theta
-			np.seterr(divide = 'ignore')
-			# the function whose root we are looking for, evaluated at the 
-			# current values of curly theta 
-			f1 = np.where(curly_arr == 0, -np.inf, 
-				np.cos(curly_arr) + np.log(np.tan(curly_arr / 2)) - tau_arr)
-			# turn on RuntimeWarning: divide by zero encountered in log
-			np.seterr(divide = 'warn') 
-			# the length of the subintervals into which we are subdividing the range of
-			# curly theta at this step of the bisection algorithm
-			x = s / 2**(i + 1) 
-			# the function evaluated at the sum of the current values of curly theta
-			# and the length of a subinterval
-			f2 = np.cos(curly_arr + x) + np.log(np.tan((curly_arr + x)/ 2)) - tau_arr
-			# compute an array of boolean values for each z; the value says whether the algorithm
-			# should add the value of the subinterval to the current estimate of curly theta
-			# at a given value of z; then add (or don't add) the value of the subinterval accordingly
-			curly_arr = curly_arr + x * np.greater(f1 * f2, 0)
-		# create an array of temperature correction values for all values of z 
-		# that were treated with the bisection algorithm, initialize it with 1, i.e. no correction
-		Tc_arr = np.full_like(curly_arr, 1.)
-		# tan curly theta for every z not equal to 0, 1 or -1
-		tan_curly_arr =	np.tan(curly_arr)
-		# near z = 0 the errors in calculating curly theta can cause it 
-		# not to be on the same side of pi/2 as theta; at these values of z, 
-		# set the temperature correction to that which we expect at z = 0
-		boo1 = np.greater(tan_curly_arr * tan_arr, 0)
-		Tc_arr[ np.logical_not(boo1) ].fill(Tc0)
-		# the temperature correction for all values of z except those near 0, z = -1 and z = 1
-		Tc_arr[boo1] = np.sqrt( tan_curly_arr[boo1] / tan_arr[boo1] )
-		# if there was a z = -1
-		if minusone:
-			# insert the temperature correction at z = -1
-			Tc_arr = np.insert(Tc_arr, 0, Tc1)			
-		# if there was a z = 0
-		if zero:
-			# insert the temperature correction for z = 0
-			Tc_arr = np.insert(Tc_arr, len(z_arr1), Tc0)
-		# if there was a z = 1
-		if one:
-			rho1 = self.rho_arr2[-1] # rho at z = 1
-			# insert the temperature correction at z = 1
-			Tc_arr = np.append(Tc_arr, Tc1)	
+		o2 = omega**2
+		rho0 = 1 # rho at x = 0
+		rho1 = 1 / surf.f # rho at x = 1
+		F0 = (1 - o2 * rho0**3)**(-2/3) # F at x = 0
+		F1 = math.exp((2/3) * o2 * rho1**3) # F at x = 1
+		z_arr = self.z_arr
+		rho_arr = self.rho_arr
+		# absolute value of cosine theta, a.k.a. x
+		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
+		# a boolean array that says which x elements are so close to zero
+		# that we don't want to be using Newton's method
+		boo = np.less(x_arr, delta)
+		# for Newton method's operation, remove such elements from the arrays
+		not_boo = np.logical_not(boo)
+		x_arr = x_arr[not_boo]
+		rho_arr = rho_arr[not_boo] # get the corresponding values of rho
+		# an additive term that doesn't depend on F, for every z
+		add_arr = add(o2, rho_arr, x_arr) 
+		# initial estimates of F
+		F_arr = np.full_like(x_arr, (F0 + F1) / 2)
+		# Newton's algorithm; 
+		# ten steps is about twice the number we need
+		for i in range(10):
+			# compute the new values of F
+			F_arr = step(F_arr, x_arr, add_arr)
+			# check if we end up below the lower bound on F 
+			# and come back to that lower bound if we did overshoot it
+			F_arr[F_arr < F1] = F1
+		# reinsert the temperature correction at values of x very close to zero
+		ind = np.nonzero(boo)[0]
+		F_arr = np.insert(F_arr, ind, F0)
 		# return
-		return Tc_arr
+		return F_arr
 
 
 	# for each wavelength and intensity fit parameter, interpolate the parameter
