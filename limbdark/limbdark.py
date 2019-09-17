@@ -99,7 +99,7 @@ class LimbDark:
         self.wl_arr = wl_arr
         self.g_arr = g_arr
         self.temp_arr = temp_arr
-        self.g_temp_arr = g_temp_arr
+        # self.g_temp_arr = g_temp_arr # deprecated, use None in the parameter array instead
         self.bounds = bounds
         if save:
             self.I_arr = I_arr
@@ -108,35 +108,39 @@ class LimbDark:
         g_temp_shape = np.shape(g_temp_arr)
         n_wl = len(wl_arr)
         n_param = ft.n * ft.Fit.m
-        # initialize a list of fit coefficients for interpolation to NAN values; 
-        # index 1 : wavelength;
-        # index 2 : log g;
-        # index 3 : temperature;
-        # index 4 : fit parameter index.
-        self.fit_params = np.full( (n_wl, g_temp_shape[0], g_temp_shape[1], n_param), np.nan )
+        # initialize a list of fit coefficients for interpolation to NAN values for each 
+        # combination of gravity and temperature; for the combinations where coefficients exist,
+        # the last two indices will stand for the wavelength and the fit parameter index: 
+        # index 1 : log g;
+        # index 2 : temperature;
+        # index 3 : wavelength; (if applicable)
+        # index 4 : fit parameter index (if applicable).
+        fit_params = [[None for j in range(g_temp_shape[1])] for i in range(g_temp_shape[0])]
         # for each combination of wavelength, gravity and temperature, initialize a fit object, 
         # thus calculating the fit at these values; record the fit parameters in the array needed for 
         # interpolation
         print ("Computing fits of intensity versus mu. ")
         sys.stdout.flush()
         start = time.time()
-        for ind_wl in np.arange(n_wl):
-            if (ind_wl % 100 == 0):
-                ut.printf(str(ind_wl) + " out of " + str(n_wl) + " wavelength fits completed.\n")
-                sys.stdout.flush()
-            for ind_g in np.arange(g_temp_shape[0]):
-                for ind_temp in np.arange(g_temp_shape[1]):
-                    if g_temp_arr[ind_g][ind_temp] != -1:
+        for ind_g in np.arange(g_temp_shape[0]):
+            ut.printf(str(ind_g) + " out of " + str(g_temp_shape[0]) + " gravity values completed.\n")
+            sys.stdout.flush()
+            for ind_temp in np.arange(g_temp_shape[1]):
+                if g_temp_arr[ind_g][ind_temp] != -1:
+                    fp = np.empty( (n_wl, n_param) )
+                    for ind_wl in np.arange(n_wl):
                         I_slice = I_arr[ind_wl, :, ind_g, ind_temp] # get the intensities at different mus
                         wl = wl_arr[ind_wl]
                         g = g_arr[ind_g]
                         temp = temp_arr[ind_temp]
                         # initialize and fit
                         fit = ft.Fit(I_slice, wl, g, temp, check)
-                        # record the fit parameters in the array needed for interpolation
-                        self.fit_params[ind_wl][ind_g][ind_temp] = fit.p
+                        # record the fit parameters in the array that is later used by interpolation
+                        fp[ind_wl] = fit.p
+                    fit_params[ind_g][ind_temp] = fp
             if check:
                 print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
+        self.fit_params = fit_params
         end = time.time()
         print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()

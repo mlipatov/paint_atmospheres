@@ -4,7 +4,7 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python plot_Imu.py \'limbdark.pkl\' 401 0 3500")
+	"python plot_Imu.py \'limbdark_m01.pkl\' 401 0 3500")
 parser.add_argument("pkl_lfile", help="a name of a .pkl file with limb darkening information " + \
 	"that includes discrete intensity values")
 parser.add_argument("wavelength", help="wavelength in nm", type=float)

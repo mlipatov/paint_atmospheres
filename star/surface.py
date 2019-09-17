@@ -54,7 +54,12 @@ class Surface:
 
 	## r(z) and its derivative
 	def R(self, z):
-		return math.sqrt(self.S(self.U(z)))
+		if np.abs(z) == 1: # at z = 1 or -1
+			return 0 # r = 0
+		elif np.abs(z) == 0: # at z = 0
+			return 1 # r = 1
+		else: # at all other values of z, calculate
+			return math.sqrt(self.S(self.U(z)))
 	def Drz(self, z):
 		if z == 1:
 			return np.NINF

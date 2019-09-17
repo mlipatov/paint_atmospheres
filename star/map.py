@@ -5,7 +5,7 @@ import util as ut
 import numpy as np
 import math
 import sys, time
-from scipy.interpolate import Rbf
+from scipy import ndimage
 
 class Map:
 	""" Contains a map of intensity integrals and the wavelength-dependent parameters of the 
@@ -22,56 +22,73 @@ class Map:
 		self.ld = ld # limb darkening information
 		self.surf = surf # surface shape information
 		omega = self.surf.omega
-		## initialize the array of z values
-		za = np.arange(-z1, 1, z_step)
-		self.z_arr1 = za[za <  0] # negative z values
-		self.z_arr2 = za[za >= 0] # non-negative z values
-		self.z_arr = za # an array of z values for integration
+		## initialize the array of z values for integration
+		za = np.arange(-1 + z_step / 2, 1 - z_step / 2, z_step)
+		self.z_arr = za[za >= -z1]
 		## compute a 2D array of fit function integrals, 
 		## one for each z value and each parameter / interval combination of the fit
-		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) )
+		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) ) # initialize the fit functions
 		## compute the integrated fit functions
 		print ("Integrating the fit functions...")        
 		sys.stdout.flush()
-		self.fitint[0] = np.zeros(ft.n * ft.Fit.m) # at z = -z1, the integral is zero
-		c = 1
-		for z in self.z_arr[1:]: 
-			a, b = surf.ab(z)
-			belowZ1 = (z < z1)
-			self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
+		c = 0
+		for z in self.z_arr: 
+			# at z = -z1, the integral is zero
+			if c == 0 and z == -z1:
+				self.fitint[0] = np.zeros(ft.n * ft.Fit.m)
+			# for z != -z1, compute the integral
+			else:
+				a, b = surf.ab(z)
+				belowZ1 = (z < z1)
+				self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
 			c += 1
-		## compute an array of area elements for integration, one for each value of z
-		print ("Computing the area elements, as well as the cylindrical and spherical coordinates...")        
+		## compute area elements for integration
+		## as well as cylindrical coordinate r and the spherical coordinate rho
+		print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
 		sys.stdout.flush()
 		self.A_arr = np.array([ surf.A(z) for z in self.z_arr ])
-		## compute arrays of the cylindrical coordinate r and the spherical coordinate rho for each z
-		self.r_arr1 = np.array([ surf.R(z) for z in self.z_arr1 ])
-		self.r_arr2 = np.array([ surf.R(z) for z in self.z_arr2 ])
-		self.r_arr = np.concatenate(( self.r_arr1, self.r_arr2 ))
-		r_arr_sq = np.power(self.r_arr, 2)
-		self.rho_arr1 = surf.rho(self.r_arr1, self.z_arr1)
-		self.rho_arr2 = surf.rho(self.r_arr2, self.z_arr2)
-		self.rho_arr = np.concatenate(( self.rho_arr1, self.rho_arr2 ))
+		self.r_arr = np.array([ surf.R(z) for z in self.z_arr ])
+		self.rho_arr = surf.rho(self.r_arr, self.z_arr)
+		r0, r1 = [ surf.R(0), surf.R(1) ] # r at z = 0 and 1
+		self.rho0, self.rho1 = [ surf.rho(r0, 0), surf.rho(r1, 1) ] # rho at z = 0 and 1
 		## compute the effective gravitational acceleration in units of G M / Re**2 
-		## as in equations 7 and 31 of EL, for each z
 		print ("Computing gravities and temperatures...")        
 		sys.stdout.flush()
-		geff_arr = np.sqrt( self.rho_arr**-4 + omega**4 * r_arr_sq - \
-			2 * omega**2 * r_arr_sq * self.rho_arr**-3 )
+		geff_arr = self.geff(self.rho_arr, self.r_arr)
+		g0 = self.geff(self.rho0, r0) # gravity at z = 0 (minimum)
+		g1 = self.geff(self.rho1, r1) # gravity at z = 1 (maximum)
 		# convert to log10(gravity in cm / s**2)
 		self.logg_arr = add_logg + np.log10(geff_arr)
+		self.logg0 = add_logg + math.log10(g0)
+		self.logg1 = add_logg + math.log10(g1)
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
-		## as in EL eqn 31, for each z
-		t_arr = ( geff_arr * self.F() )**(1./4)
-		# convert the temperature to Kelvin
-		self.temp_arr = mult_temp * t_arr
+		## as in EL eqn 31, for each z; then convert it to Kelvin
+		self.F() # compute all the F values
+		self.temp_arr = mult_temp * self.Teff( geff_arr, self.F_arr ) # the temperatures
+		self.T0 = mult_temp * self.Teff( g0, self.F0 ) # minimum temperature, at z = 0
+		self.T1 = mult_temp * self.Teff( g1, self.F1 ) # maximum temperature, at z = 1
 		## compute the interpolated values of limb darkening fit parameters
 		print ("Interpolating the fit parameters...")        
 		sys.stdout.flush()
 		self.params_arr = self.interp()
 	
+	# returns the effective gravitational acceleration in units of G M / Re**2 
+	# as in equations 7 and 31 of EL, for each z
+	# inputs: arrays of rho and r coordinates
+	def geff(self, rho_arr, r_arr):
+		omega = self.surf.omega
+		r_arr_sq = np.power(r_arr, 2) # r squared
+		geff_arr = np.sqrt( rho_arr**-4 + omega**4 * r_arr_sq - \
+			2 * omega**2 * r_arr_sq * rho_arr**-3 )
+		return geff_arr
 
-	# returns, as an array, the temperature correction factors (EL equation 26)
+	# compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
+	# as in EL eqn 31, for each z
+	# inputs: arrays of effective gravity and the temperature correction
+	def Teff(self, geff_arr, F_arr):
+		return ( geff_arr * F_arr )**(1./4)
+
+	# computes the temperature correction factors (EL equation 26)
 	# at every value of z; runs the Newton's method algorithm that acts on the entire array 
 	# of z values that aren't too close to 0 at its every step; for values that 
 	# are close to 0, returns the temperature correction expected at z = 0
@@ -118,10 +135,8 @@ class Map:
 		surf = self.surf
 		omega = surf.omega
 		o2 = omega**2
-		rho0 = 1 # rho at x = 0
-		rho1 = 1 / surf.f # rho at x = 1
-		F0 = (1 - o2 * rho0**3)**(-2/3) # F at x = 0
-		F1 = math.exp((2/3) * o2 * rho1**3) # F at x = 1
+		F0 = (1 - o2 * self.rho0**3)**(-2/3) # F at x = 0
+		F1 = math.exp((2/3) * o2 * self.rho1**3) # F at x = 1
 		z_arr = self.z_arr
 		rho_arr = self.rho_arr
 		# absolute value of cosine theta, a.k.a. x
@@ -148,22 +163,63 @@ class Map:
 		# reinsert the temperature correction at values of x very close to zero
 		ind = np.nonzero(boo)[0]
 		F_arr = np.insert(F_arr, ind, F0)
-		# return
-		return F_arr
-
+		# save the results and return
+		self.F0 = F0
+		self.F1 = F1
+		self.F_arr = F_arr
 
 	# for each wavelength and intensity fit parameter, interpolate the parameter
 	# as a function of temperature and gravity, then calculate the parameter for each z;
 	def interp(self):
-		# initialize local variables
+		# limb darkening information
 		ld = self.ld
+		# all the wavelengths and their number
 		wl_arr = ld.wl_arr
-		fit_params = ld.fit_params
-		n_params = ft.Fit.m * ft.n
 		n_wl = len(wl_arr)
+		# total number of parameters describing each intensity fit
+		n_params = ft.Fit.m * ft.n
+		# number of z values for integration
 		n_z = len(self.z_arr)
-		# an array of parameters, indexed by the wavelength, value of z and parameter index
+		# initialize an array of parameters, 
+		# indexed by the wavelength, value of z and parameter index
 		params_arr = np.empty( (n_wl, n_z, n_params) )
+		# limb darkening information relevant for this star
+		ind_gmin = np.searchsorted(ld.g_arr, self.g0, side='right') - 1
+		ind_gmax = np.searchsorted(ld.g_arr, self.g1, side='left') + 1
+		ind_Tmin = np.searchsorted(ld.temp_arr, self.T0, side='right') - 1
+		ind_Tmax = np.searchsorted(ld.temp_arr, self.T1, side='left') + 1
+		g_arr = ld.g_arr[ ind_gmin:ind_gmax ]
+		temp_arr = ld.temp_arr[ ind_Tmin:ind_Tmax ]
+		fit_params = ld.fit_params[ ind_gmin:ind_gmax, ind_Tmin:ind_Tmax ]
+		# if the data for one of the relevant combinations of gravity and temperature doesn't exist,
+		# fill it in with the data for the same temperature and closest gravity
+		for ind_g in range(fit_params.shape[0]):
+			for ind_temp in range(fit_params.shape[1]):
+				if fit_params[ind_g, ind_temp] is None:
+					fp = ld.fit_params[ :, ind_temp ]
+					for ind in range(len(fp)): 
+						if fp[ind] is not None:
+							break
+					print ('At temperatures near ' + str(temp_arr[ind_temp]) + ' Kelvins '\
+						   ' and log gravity values near ' + str(g_arr[ind_g]) + ' will be extrapolated from '  +\
+						   'the same temperature and log gravity equal to ' + str(ld.g_arr[ind]))
+					fit_params[ind_g, ind_temp] = np.copy(fp[ind])
+		# if the temperatures are not on a grid, complete the temperature grid 
+		# and the fit parameters grid by interpolation
+		res = 0.1
+		t_step = temp_arr[1] - temp_arr[0]
+		if t_step != temp_arr[-1] - temp_arr[-2]:
+			temp_arr_complete = np.arange( temp_arr[0], temp_arr[-1] + res, t_step )
+			fit_params_complete = np.empty_like( fit_params.shape[0], len(temp_arr_complete))
+			for ind_g in range(fit_params.shape[0]):
+				for ind_params in range(n_params):
+					fit_params_complete[ ind_g, : ] = griddata(
+						temp_arr, fit_params[ ind_g, :, ind_wl, ind_params ], 
+						temp_arr_complete, method='linear')
+			temp_arr = temp_arr_complete
+			fit_params = fit_params_complete
+
+
 		# for each value of z, look to see where in the limb darkening arrays these values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
@@ -205,7 +261,7 @@ class Map:
 			f11 * g1[np.newaxis, :, np.newaxis] * t1[np.newaxis, :, np.newaxis])
 		return params_arr
 
-	# using the pre-calculated, mapped out features, integrate to find the light at all wavelengths,
+	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
 	# in ergs/s/Hz/ster per squared equatorial radius of the star
 	def intgrt(self):
 		# at each wavelength and z value, obtain the integral of the total fit function over phi;
