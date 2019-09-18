@@ -47,7 +47,7 @@ class Map:
 		## as well as cylindrical coordinate r and the spherical coordinate rho
 		print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
 		sys.stdout.flush()
-		self.A_arr = np.array([ surf.A(z) for z in self.z_arr ])
+		self.A_arr = surf.A( self.z_arr )
 		self.r_arr = np.array([ surf.R(z) for z in self.z_arr ])
 		self.rho_arr = surf.rho(self.r_arr, self.z_arr)
 		r0, r1 = [ surf.R(0), surf.R(1) ] # r at z = 0 and 1

@@ -32,11 +32,11 @@ class Surface:
 	## helper functions for computing r(z) and its derivative 
 	def T(self, u):
 		w = self.w
-		return math.acos(\
+		return np.arccos(\
 			(27. - 2*u**6 - 54*w - 6*u**4*w + 27*w**2 - 6*u**2*w**2 - 2*w**3) / \
 			(2.*(u**2 + w)**3))
 	def V(self, u):
-		return math.cos((1./3) * (2 * math.pi + self.T(u))) 
+		return np.cos((1./3) * (2 * np.pi + self.T(u))) 
 	# s(u)
 	def S(self, u):
 		w = self.w
@@ -54,38 +54,43 @@ class Surface:
 
 	## r(z) and its derivative
 	def R(self, z):
+		# def r(z):
 		if np.abs(z) == 1: # at z = 1 or -1
 			return 0 # r = 0
-		elif np.abs(z) == 0: # at z = 0
+		elif z == 0: # at z = 0
 			return 1 # r = 1
 		else: # at all other values of z, calculate
-			return math.sqrt(self.S(self.U(z)))
+			return np.sqrt(self.S(self.U(z)))
+		# rv = np.vectorize(r)
+		# return rv(z)
+
+
 	def Drz(self, z):
 		if z == 1:
 			return np.NINF
 		elif z == -1:
 			return np.inf
 		else:
-			return self.Ds(self.U(z)) / (2. * self.f * math.sqrt(self.S(self.U(z))))
+			return self.Ds(self.U(z)) / (2. * self.f * np.sqrt(self.S(self.U(z))))
 
 	# input: z
 	# output: the differential element of area in the units of equatorial radius squared
 	#	times the product of the differential element of phi and
 	# 	the differential element of z
 	def A(self, z):
-		return (1./self.f) * math.sqrt(self.S(self.U(z)) + self.Ds(self.U(z))**2 / 4)
+		return (1./self.f) * np.sqrt(self.S(self.U(z)) + self.Ds(self.U(z))**2 / 4)
 
 	# coefficients in the expression mu = a * cos(phi) + b, returned as a tuple
 	def ab(self, z):
 		drz = self.f * self.Drz(z)
-		sqt = math.sqrt(1 + drz**2)
+		sqt = np.sqrt(1 + drz**2)
 		a = self.sini / sqt
 		b = - self.cosi * drz / sqt
 		return [a, b]
 
 	# spherical coordinate rho, given sets of r and z values
-	def rho(self, r_arr, z_arr):
-		return np.sqrt( r_arr**2 + (z_arr / self.f)**2 )
+	def rho(self, r, z):
+		return np.sqrt( r**2 + (z / self.f)**2 )
 
 	## integration bound on z
 	## this should be computed only once for a given star
