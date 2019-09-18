@@ -6,7 +6,7 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Examples: \n" +\
-	"python plot_spectrum.py \'vega_pa.png\' \'vega.txt\' 3000,\
+	"python plot_spectrum.py \'vega.png\' \'vega.txt\' 3000,\
 	 python plot_spectrum.py \'sun_pa.png\' \'sun.txt\' 3000")
 parser.add_argument("ofile", help="output: spectrum .png file")
 parser.add_argument("ifile", help="input: spectrum text file")

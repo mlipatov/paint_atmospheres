@@ -6,6 +6,7 @@ import numpy as np
 import math
 import sys, time
 from scipy import ndimage
+from scipy.interpolate import griddata
 
 class Map:
 	""" Contains a map of intensity integrals and the wavelength-dependent parameters of the 
@@ -70,7 +71,7 @@ class Map:
 		## compute the interpolated values of limb darkening fit parameters
 		print ("Interpolating the fit parameters...")        
 		sys.stdout.flush()
-		self.params_arr = self.interp()
+		self.interp()
 	
 	# returns the effective gravitational acceleration in units of G M / Re**2 
 	# as in equations 7 and 31 of EL, for each z
@@ -97,7 +98,7 @@ class Map:
 		# inputs: squared rotation speed, 
 		#	an array of rho and an array of x = cos(theta)
 		def add(o2, rho_arr, x_arr):
-			return -x_arr - (1/3) * o2 * rho_arr**3 * x_arr**3
+			return -x_arr - (1./3) * o2 * rho_arr**3 * x_arr**3
 		# helper function
 		# inputs: an array of temperature correction values and 
 		#	an array of x = cos(theta) values
@@ -135,19 +136,18 @@ class Map:
 		surf = self.surf
 		omega = surf.omega
 		o2 = omega**2
-		F0 = (1 - o2 * self.rho0**3)**(-2/3) # F at x = 0
-		F1 = math.exp((2/3) * o2 * self.rho1**3) # F at x = 1
+		F0 = (1 - o2 * self.rho0**3)**(-2./3) # F at x = 0
+		F1 = math.exp((2./3) * o2 * self.rho1**3) # F at x = 1
 		z_arr = self.z_arr
 		rho_arr = self.rho_arr
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# a boolean array that says which x elements are so close to zero
 		# that we don't want to be using Newton's method
-		boo = np.less(x_arr, delta)
+		mask = np.less(x_arr, delta)
 		# for Newton method's operation, remove such elements from the arrays
-		not_boo = np.logical_not(boo)
-		x_arr = x_arr[not_boo]
-		rho_arr = rho_arr[not_boo] # get the corresponding values of rho
+		x_arr = x_arr[~mask]
+		rho_arr = rho_arr[~mask] # get the corresponding values of rho
 		# an additive term that doesn't depend on F, for every z
 		add_arr = add(o2, rho_arr, x_arr) 
 		# initial estimates of F
@@ -161,7 +161,7 @@ class Map:
 			# and come back to that lower bound if we did overshoot it
 			F_arr[F_arr < F1] = F1
 		# reinsert the temperature correction at values of x very close to zero
-		ind = np.nonzero(boo)[0]
+		ind = np.nonzero(mask)[0]
 		F_arr = np.insert(F_arr, ind, F0)
 		# save the results and return
 		self.F0 = F0
@@ -169,97 +169,80 @@ class Map:
 		self.F_arr = F_arr
 
 	# for each wavelength and intensity fit parameter, interpolate the parameter
-	# as a function of temperature and gravity, then calculate the parameter for each z;
+	# as a function of temperature and gravity, at each z;
 	def interp(self):
-		# limb darkening information
+		# initialize local variables
 		ld = self.ld
-		# all the wavelengths and their number
-		wl_arr = ld.wl_arr
-		n_wl = len(wl_arr)
-		# total number of parameters describing each intensity fit
-		n_params = ft.Fit.m * ft.n
-		# number of z values for integration
+		ld.fit_params = np.array(ld.fit_params)
+		wl = ld.wl_arr
+		fit_params = ld.fit_params
+		n_p = ft.Fit.m * ft.n
+		n_wl = len(wl)
 		n_z = len(self.z_arr)
-		# initialize an array of parameters, 
-		# indexed by the wavelength, value of z and parameter index
-		params_arr = np.empty( (n_wl, n_z, n_params) )
-		# limb darkening information relevant for this star
-		ind_gmin = np.searchsorted(ld.g_arr, self.g0, side='right') - 1
-		ind_gmax = np.searchsorted(ld.g_arr, self.g1, side='left') + 1
-		ind_Tmin = np.searchsorted(ld.temp_arr, self.T0, side='right') - 1
-		ind_Tmax = np.searchsorted(ld.temp_arr, self.T1, side='left') + 1
-		g_arr = ld.g_arr[ ind_gmin:ind_gmax ]
-		temp_arr = ld.temp_arr[ ind_Tmin:ind_Tmax ]
-		fit_params = ld.fit_params[ ind_gmin:ind_gmax, ind_Tmin:ind_Tmax ]
-		# if the data for one of the relevant combinations of gravity and temperature doesn't exist,
-		# fill it in with the data for the same temperature and closest gravity
-		for ind_g in range(fit_params.shape[0]):
-			for ind_temp in range(fit_params.shape[1]):
-				if fit_params[ind_g, ind_temp] is None:
-					fp = ld.fit_params[ :, ind_temp ]
-					for ind in range(len(fp)): 
-						if fp[ind] is not None:
-							break
-					print ('At temperatures near ' + str(temp_arr[ind_temp]) + ' Kelvins '\
-						   ' and log gravity values near ' + str(g_arr[ind_g]) + ' will be extrapolated from '  +\
-						   'the same temperature and log gravity equal to ' + str(ld.g_arr[ind]))
-					fit_params[ind_g, ind_temp] = np.copy(fp[ind])
-		# if the temperatures are not on a grid, complete the temperature grid 
-		# and the fit parameters grid by interpolation
-		res = 0.1
-		t_step = temp_arr[1] - temp_arr[0]
-		if t_step != temp_arr[-1] - temp_arr[-2]:
-			temp_arr_complete = np.arange( temp_arr[0], temp_arr[-1] + res, t_step )
-			fit_params_complete = np.empty_like( fit_params.shape[0], len(temp_arr_complete))
-			for ind_g in range(fit_params.shape[0]):
-				for ind_params in range(n_params):
-					fit_params_complete[ ind_g, : ] = griddata(
-						temp_arr, fit_params[ ind_g, :, ind_wl, ind_params ], 
-						temp_arr_complete, method='linear')
-			temp_arr = temp_arr_complete
-			fit_params = fit_params_complete
-
-
+		# an array of parameters, indexed by the wavelength, value of z and parameter index
+		params = np.empty( (n_wl, n_z, n_p) )
 		# for each value of z, look to see where in the limb darkening arrays these values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
-		ind_g_arr = np.searchsorted(ld.g_arr, self.logg_arr, side='right') - 1
-		ind_temp_arr = np.searchsorted(ld.temp_arr, self.temp_arr, side='right') - 1
+		ig = np.searchsorted(ld.g_arr, self.logg_arr, side='right') - 1
+		iT = np.searchsorted(ld.temp_arr, self.temp_arr, side='right') - 1
 		# for each value of z, 
 		# find the values of log g and temperature between which we are interpolating
-		g1_arr = ld.g_arr[ind_g_arr] 
-		g2_arr = ld.g_arr[ind_g_arr + 1] 
-		temp1_arr = ld.temp_arr[ind_temp_arr]
-		temp2_arr = ld.temp_arr[ind_temp_arr + 1]
+		g1 = ld.g_arr[ig] 
+		g2 = ld.g_arr[ig + 1] 
+		T1 = ld.temp_arr[iT]
+		T2 = ld.temp_arr[iT + 1]
 		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
-		# index 1: wavelength
-		# index 2: z value
-		# index 3: fit parameter index
-		f00 = ld.fit_params[ :, ind_g_arr, ind_temp_arr, : ]
-		f01 = ld.fit_params[ :, ind_g_arr, ind_temp_arr + 1, : ]
-		f10 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr, : ]
-		f11 = ld.fit_params[ :, ind_g_arr + 1, ind_temp_arr + 1, : ]
-		# a boolean array, saying whether for the log g and temperature combination at each z 
-		# the fit parameters at either of the four nearest neighbors aren't given;
-		# use the first wavelength and the first parameter at each value of z to perform this check
-		no_fits = np.logical_or.reduce( (np.isnan(f00[0, :, 0]), np.isnan(f01[0, :, 0]), \
-										np.isnan(f10[0, :, 0]), np.isnan(f11[0, :, 0])) )
-		if True in no_fits:
-			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[no_fits]) + \
-				', where the temperatures are ' + str(self.temp_arr[no_fits]) + ' and log gravity values are ' +\
-				 str(self.logg_arr[no_fits]) + ".")
-		# bilinear interpolation (see Wikipedia: Bilinear Interpolation)
-		const = (1 / ((g2_arr - g1_arr) * (temp2_arr - temp1_arr)))
-		g0 = g2_arr - self.logg_arr
-		g1 = self.logg_arr - g1_arr
-		t0 = temp2_arr - self.temp_arr
-		t1 = self.temp_arr - temp1_arr
-		params_arr = const[np.newaxis, :, np.newaxis] * (\
-			f00 * g0[np.newaxis, :, np.newaxis] * t0[np.newaxis, :, np.newaxis] + \
-			f10 * g1[np.newaxis, :, np.newaxis] * t0[np.newaxis, :, np.newaxis] + \
-			f01 * g0[np.newaxis, :, np.newaxis] * t1[np.newaxis, :, np.newaxis] + \
-			f11 * g1[np.newaxis, :, np.newaxis] * t1[np.newaxis, :, np.newaxis])
-		return params_arr
+		# entries are numpy.NAN when no information is available
+		# limb darkening array:
+		#	index 1: temperature
+		#	index 2: gravity
+		#	index 3: wavelength
+		#	index 4: parameter index
+		# result:
+		# 	index 1: z
+		# 	index 2: wavelength
+		# 	index 3: parameter index
+		f11 = ld.fit_params[iT    , ig    ]
+		f21 = ld.fit_params[iT + 1, ig    ]
+		f12 = ld.fit_params[iT    , ig + 1]
+		f22 = ld.fit_params[iT + 1, ig + 1]
+		## The following assumes that limb darkening (LD) information for some of the 
+		## lowest gravity values at each temperature is missing, as in Castelli and Kurucz 2004
+		# boolean arrays, one for each of the neighboring temperatures,
+		# saying whether the LD information is missing for the lower gravity value at that temperature
+		# use the first wavelength and the first parameter to perform this check
+		noinfo1 = np.isnan(f11[:, 0, 0])
+		noinfo2 = np.isnan(f21[:, 0, 0])
+		noinfo = np.logical_or(noinfo1, noinfo2)
+		if np.any(noinfo):
+			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[noinfo]) + \
+				', where the temperatures are ' + str(self.temp_arr[noinfo]) + ' and log gravity values are ' +\
+				 str(self.logg_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
+				 'we use the intensity information at the closest gravity where such information is available.')
+			## at each of the neighboring temperatures, 
+			## keep adding to the gravity index until fit parameters are available
+			# gravity indices for lower and upper temperature neighbors, respectively
+			ig1, ig2 = [np.copy(ig), np.copy(ig)]
+			while np.any(noinfo1):
+				ig1 += 1
+				f11 = f12 = ld.fit_params[iT, ig1]
+				noinfo1 = np.isnan(f11[:, 0, 0])
+			while np.any(noinfo2):
+				ig2 += 1
+				f21 = f22 = ld.fit_params[iT + 1, ig2]
+				noinfo1 = np.isnan(f21[:, 0, 0])				
+		## bilinear interpolation (see Wikipedia: Bilinear Interpolation: Algorithm)
+		const = (1 / ((g2 - g1) * (T2 - T1)))
+		Dg1 = g2 - self.logg_arr
+		Dg2 = self.logg_arr - g1
+		Dt1 = T2 - self.temp_arr
+		Dt2 = self.temp_arr - T1
+		self.params_arr = const[:, np.newaxis, np.newaxis] * (\
+			f11 * Dt1[:, np.newaxis, np.newaxis] * Dg1[:, np.newaxis, np.newaxis] + \
+			f21 * Dt2[:, np.newaxis, np.newaxis] * Dg1[:, np.newaxis, np.newaxis] + \
+			f12 * Dt1[:, np.newaxis, np.newaxis] * Dg2[:, np.newaxis, np.newaxis] + \
+			f22 * Dt2[:, np.newaxis, np.newaxis] * Dg2[:, np.newaxis, np.newaxis])
 
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
 	# in ergs/s/Hz/ster per squared equatorial radius of the star
@@ -267,7 +250,7 @@ class Map:
 		# at each wavelength and z value, obtain the integral of the total fit function over phi;
 		# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 		# along the fit parameter dimension
-		fit_arr = np.sum(self.params_arr * self.fitint[np.newaxis, ...], axis=2)
+		fit_arr = np.sum(self.params_arr * self.fitint[:, np.newaxis, :], axis=2)
 		# at each wavelength, sum up the product of the phi integral of the fit function and
 		# the dimensionless area element at each z, multiply by the z step
-		return self.z_step * np.sum(self.A_arr[np.newaxis, ...] * fit_arr, axis=1)
+		return self.z_step * np.sum(self.A_arr[:, np.newaxis] * fit_arr, axis=0)

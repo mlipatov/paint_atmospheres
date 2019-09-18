@@ -91,7 +91,10 @@ def getdata(filename):
 
 
 class LimbDark:
-    """ Class containing all limbdarkening information """
+    """ Class containing all limbdarkening information.
+    Uses single-precision floating point to conserve space. Specifically, uses python's numpy.float32, which
+    is precise to 6 decimal digits; Kurucz gives 5 decimal digits for each intensity, so that the derived 
+    coefficients of intensity fits are only meaningful to 5 decimal digits. """
 
     # initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
     def __init__(self, datafile, bounds, check, save):
@@ -109,13 +112,13 @@ class LimbDark:
         n_wl = len(wl_arr)
         n_param = ft.n * ft.Fit.m
         # initialize a list of fit coefficients for interpolation to NAN values for each 
-        # combination of gravity and temperature; for the combinations where coefficients exist,
-        # the last two indices will stand for the wavelength and the fit parameter index: 
-        # index 1 : log g;
-        # index 2 : temperature;
+        # combination of gravity, temperature, wavelength and the fit parameter index: 
+        # index 1 : temperature;
+        # index 2 : log g;
         # index 3 : wavelength; (if applicable)
         # index 4 : fit parameter index (if applicable).
-        fit_params = [[None for j in range(g_temp_shape[1])] for i in range(g_temp_shape[0])]
+        self.fit_params = \
+            np.full( (g_temp_shape[1], g_temp_shape[0], n_wl, n_param), np.nan, dtype=np.float32 ) 
         # for each combination of wavelength, gravity and temperature, initialize a fit object, 
         # thus calculating the fit at these values; record the fit parameters in the array needed for 
         # interpolation
@@ -137,10 +140,9 @@ class LimbDark:
                         fit = ft.Fit(I_slice, wl, g, temp, check)
                         # record the fit parameters in the array that is later used by interpolation
                         fp[ind_wl] = fit.p
-                    fit_params[ind_g][ind_temp] = fp
+                    self.fit_params[ind_temp][ind_g] = fp
             if check:
                 print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
-        self.fit_params = fit_params
         end = time.time()
         print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()
