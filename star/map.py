@@ -40,7 +40,7 @@ class Map:
 			# for z != -z1, compute the integral
 			else:
 				a, b = surf.ab(z)
-				belowZ1 = (z < z1)
+				belowZ1 = np.array( (z < z1) )
 				self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
 			c += 1
 		## compute area elements for integration
@@ -48,10 +48,10 @@ class Map:
 		print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
 		sys.stdout.flush()
 		self.A_arr = surf.A( self.z_arr )
-		self.r_arr = np.array([ surf.R(z) for z in self.z_arr ])
-		self.rho_arr = surf.rho(self.r_arr, self.z_arr)
-		r0, r1 = [ surf.R(0), surf.R(1) ] # r at z = 0 and 1
-		self.rho0, self.rho1 = [ surf.rho(r0, 0), surf.rho(r1, 1) ] # rho at z = 0 and 1
+		self.r_arr = surf.R( self.z_arr )
+		self.rho_arr = surf.rho( self.r_arr, self.z_arr )
+		r0, r1 = [ surf.R(0), surf.R(1) ] # r at z = 0 and +/-1
+		self.rho0, self.rho1 = [ surf.rho(r0, 0), surf.rho(r1, 1) ] # rho at z = 0 and +/-1
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		print ("Computing gravities and temperatures...")        
 		sys.stdout.flush()

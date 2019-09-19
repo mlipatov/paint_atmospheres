@@ -52,12 +52,6 @@ class Fit:
 		cls.muB_arr = np.array([0] + b)
 		# set the number of intervals
 		cls.m = len(b) + 1
-		# set the array of tuples describing the intervals - deprecated
-		# cls.muB_tup = []
-		# cls.muB_tup.append((0, b[0]))
-		# for c in range(len(b) - 1):
-		# 	cls.muB_tup.append((b[c], b[c+1]))
-		# cls.muB_tup.append((b[-1], 1))
 		# set local variable for this function
 		m = cls.m
 		# split the array of Kurucz's mu values according to the boundaries between intervals
@@ -112,27 +106,30 @@ class Fit:
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
 
-	# Given the integration boundaries on mu, for each function of the fit on each interval of the fit, 
-	# computes twice the integral of the function as a function of mu = a * cos(phi) + b,
-	# on the intersection of the interval and the integration boundaries on mu
+	# For each function of the fit on each mu interval of the fit, 
+	# 	computes twice the integral of the function on the intersection of the interval 
+	# 	and the integration boundaries on mu
+	# Inputs: coefficients a and b in the relationship between mu and phi: mu = a * cos(phi) + b,
+	#	a boolean saying whether the integration is not for all values of phi in [-pi, pi]
+	# Output: an array of integrated functions, one for each function on each mu interval
 	@classmethod
 	def integrate(cls, belowZ1, a, b):
 		# phi in terms of mu
 		def phi(mu):
 			cosn = (mu - b) / a
-			return math.acos(cosn)
+			return np.arccos(cosn)
 		# indefinite integrals of the non-zero fit functions as functions of phi,
 		# w.r.t. phi on interval i, given the evaluated elliptic integral; 
 		# this function should be modified if the fit functions change
 		def intgrt(phi):
 			# cosine phi
-			cosn = math.cos(phi)
-			cos2 = math.cos(2*phi)
-			sine = math.sin(phi)
-			sin2 = math.sin(2*phi)
-			sin3 = math.sin(3*phi)
-			sin4 = math.sin(4*phi)
-			sin5 = math.sin(5*phi)
+			cosn = np.cos(phi)
+			cos2 = np.cos(2*phi)
+			sine = np.sin(phi)
+			sin2 = np.sin(2*phi)
+			sin3 = np.sin(3*phi)
+			sin4 = np.sin(4*phi)
+			sin5 = np.sin(5*phi)
 			# integral of the polynomial
 			integr = [
 				b*phi + a*sine,
@@ -148,50 +145,64 @@ class Fit:
 					(5*a**4*b*sin4)/32. + (a**5*sin5)/80.
 			]
 			return np.array(integr)
-		# initialize the total integral for function on each interval
-		result = np.zeros(n * cls.m)
+		# initialize the total integral for each function on each interval
+		# index 1: interval, numbered 0, 1, 2, ...
+		# index 2: function index
+		# index 3: z
+		result = np.zeros( (cls.m, n) + a.shape )
+		# a mask telling us where a = 0
+		azero = np.array(a == 0)
+		# remove the results and the input arrays where a = 0
+		result = result[:, :, ~azero] # the a = 0 integrals will be reinserted later
+		a = a[ ~azero ]
+		b = b[ ~azero ]
+		belowZ1 = belowZ1[ ~azero ]
 		# start at phi = 0; phi will increase
-		ph = 0
+		ph = np.zeros_like(a)
 		# upper bound on integration w.r.t. mu; mu will decrease
 		mu1 = a + b
 		# find the mu interval of the form [muX, muY) that contains the upper mu integration bound;
 		# intervals are numbered 0, 1, 2,...
 		i = np.searchsorted(cls.muB_arr, mu1, side='right') - 1
+		# when a != 0, mu changes as phi changes, 
+		# so we keep track of whether we enter different mu intervals
+		# set the lower bound on integration w.r.t. mu, between 0 and 1
+		mu0 = np.zeros_like(a)
+		mu0[ ~belowZ1 ] = b - a
+		# set the corresponding upper bound on integration w.r.t. phi, between 0 and pi
+		phi_mu0 = np.full_like(a, np.pi)
+		phi_mu0[  belowZ1 ] = phi(0)
+		# lower endpoint of the current mu interval
+		mu_int = cls.muB_arr[i]
+		#
+		while mu_int.size > 0:
+			# a mask telling us where the lower endpoint of the current mu interval 
+			# is higher than the lower mu integration bound
+			mask = (mu_int > mu0)
+			# where the lower endpoint of the current mu interval 
+			# is higher than the lower mu integration bound,
+			# integrate up to the value of phi that corresponds to that lower endpoint
+			mu_int = mu_int[mask]
+			# phi corresponding to the lower endpoint of the current mu interval
+			phi_int = phi(mu_int)
+			# compute the integral on this interval, from the current value of phi 
+			# to that corresponding to the lower endpoint of the current mu interval
+			result[i, :, :] += intgrt(phi_int) - intgrt(ph[mask])
+			# set the current value of phi 
+			# to that corresponding to the lower endpoint of the current mu interval
+			ph = np.copy(phi_int)
+			# move one interval to the left
+			i -= 1
+			# set the lower endpoint of the current interval
+			mu_int = cls.muB_arr[i]
+		# compute the integral on the remaining part of the last interval
+		result[i, :, :] += intgrt(phi_mu0) - intgrt(ph)
+
+
+		# insert the integral where a = 0 (use the technique at the end of Map.F())
 		# if we are looking at the star pole-on, mu doesn't change as phi changes,
 		# so we integrate from zero to pi in the current (and only) mu interval
-		if a == 0:
-			result[i  * n : (i + 1) * n] += intgrt(math.pi) - intgrt(ph)
-		# otherwise, mu changes as phi changes, 
-		# so we keep track of whether we enter different mu intervals
-		else: 
-			# set the lower bound on integration w.r.t. mu, between 0 and 1
-			# and the corresponding upper bound on integration w.r.t. phi, between 0 and pi
-			if belowZ1:
-				mu0 = 0
-				phi_mu0 = phi(mu0)
-			else:
-				mu0 = b - a
-				phi_mu0 = math.pi
-			# lower endpoint of the current mu interval
-			mu_int = cls.muB_arr[i]
-			# while the lower endpoint of the current mu interval 
-			# is higher than the lower mu integration bound,
-			# keep integrating up to the value of phi that corresponds to that lower endpoint
-			while mu_int > mu0:
-				# phi corresponding to the lower endpoint of the current mu interval
-				phi_int = phi(mu_int)
-				# compute the integral on this interval, from the current value of phi 
-				# to that corresponding to the lower endpoint of the current mu interval
-				result[i  * n : (i + 1) * n] += intgrt(phi_int) - intgrt(ph)
-				# set the current value of phi 
-				# to that corresponding to the lower endpoint of the current mu interval
-				ph = phi_int
-				# move one interval to the left
-				i -= 1
-				# set the lower endpoint of the current interval
-				mu_int = cls.muB_arr[i]
-			# compute the integral on the remaining part of the last interval
-			result[i  * n : (i + 1) * n] += intgrt(phi_mu0) - intgrt(ph)
+		result[i, :, azero] += intgrt(math.pi) - intgrt(0)
 		# return twice the computed integrals
 		return 2 * result
 

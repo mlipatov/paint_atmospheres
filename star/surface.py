@@ -54,24 +54,14 @@ class Surface:
 
 	## r(z) and its derivative
 	def R(self, z):
-		# def r(z):
-		if np.abs(z) == 1: # at z = 1 or -1
-			return 0 # r = 0
-		elif z == 0: # at z = 0
-			return 1 # r = 1
-		else: # at all other values of z, calculate
-			return np.sqrt(self.S(self.U(z)))
-		# rv = np.vectorize(r)
-		# return rv(z)
-
+		result = np.sqrt(self.S(self.U(z)))
+		# just in case we tried to take a square root of a negative number
+		# because of limited precision, set the result at z = 1 or -1 to zero
+		result[np.abs(z) == 1] = 0
+		return 
 
 	def Drz(self, z):
-		if z == 1:
-			return np.NINF
-		elif z == -1:
-			return np.inf
-		else:
-			return self.Ds(self.U(z)) / (2. * self.f * np.sqrt(self.S(self.U(z))))
+		return self.Ds(self.U(z)) / (2. * self.f * self.R(z))
 
 	# input: z
 	# output: the differential element of area in the units of equatorial radius squared
