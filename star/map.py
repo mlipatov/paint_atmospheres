@@ -8,6 +8,8 @@ import sys, time
 from scipy import ndimage
 from scipy.interpolate import griddata
 
+np01 = np.array([0, 1]) # a numpy array containing 0 and 1
+
 class Map:
 	""" Contains a map of intensity integrals and the wavelength-dependent parameters of the 
 	corresponding intensity fits, area elements, and
@@ -17,6 +19,7 @@ class Map:
 	# initialize with the surface shape of the star, the step in z, the constants
 	# needed for temperature and gravity unit conversions, and limb darkening information
 	def __init__(self, surf, z_step, add_logg, mult_temp, ld):
+
 		## initialize surface and limb darkening information
 		z1 = surf.z1 # an integration bound on the surface
 		self.z_step = z_step
@@ -27,22 +30,25 @@ class Map:
 		za = np.arange(-1 + z_step / 2, 1 - z_step / 2, z_step)
 		self.z_arr = za[za >= -z1]
 		## compute a 2D array of fit function integrals, 
-		## one for each z value and each parameter / interval combination of the fit
-		self.fitint = np.zeros( (len(self.z_arr), ft.n * ft.Fit.m) ) # initialize the fit functions
-		## compute the integrated fit functions
+		## one for each combination of z value, interval and fit function
 		print ("Integrating the fit functions...")        
 		sys.stdout.flush()
-		c = 0
-		for z in self.z_arr: 
-			# at z = -z1, the integral is zero
-			if c == 0 and z == -z1:
-				self.fitint[0] = np.zeros(ft.n * ft.Fit.m)
-			# for z != -z1, compute the integral
-			else:
-				a, b = surf.ab(z)
-				belowZ1 = np.array( (z < z1) )
-				self.fitint[c] = ft.Fit.integrate(belowZ1, a, b)
-			c += 1
+		# if the first z value is the point where none of the surface is visible,
+		# exclude this value from the calculated integrals
+		if self.z_arr[0] == -z1:
+			z = self.z_arr[1:]
+		else:
+			z = self.z_arr
+		# calculate the integrals
+		a, b = surf.ab(z)
+		belowZ1 = np.array( (z < z1) )
+		fitint = ft.Fit.integrate(belowZ1, a, b)
+		# if the first z value is the point where none of the surface is visible,
+		# insert zero for the corresponding integral
+		if self.z_arr[0] == -z1:
+			fitint = np.insert(fitint, 0, np.zeros(ft.Fit.m, ft.n), axis=0)
+		# store the integrals
+		self.fitint = fitint
 		## compute area elements for integration
 		## as well as cylindrical coordinate r and the spherical coordinate rho
 		print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
@@ -50,14 +56,14 @@ class Map:
 		self.A_arr = surf.A( self.z_arr )
 		self.r_arr = surf.R( self.z_arr )
 		self.rho_arr = surf.rho( self.r_arr, self.z_arr )
-		r0, r1 = [ surf.R(0), surf.R(1) ] # r at z = 0 and +/-1
-		self.rho0, self.rho1 = [ surf.rho(r0, 0), surf.rho(r1, 1) ] # rho at z = 0 and +/-1
+		r01 = surf.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
+		self.rho0, self.rho1 = surf.rho( r01, np01 ) # rho at z = 0 and +/-1
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		print ("Computing gravities and temperatures...")        
 		sys.stdout.flush()
 		geff_arr = self.geff(self.rho_arr, self.r_arr)
-		g0 = self.geff(self.rho0, r0) # gravity at z = 0 (minimum)
-		g1 = self.geff(self.rho1, r1) # gravity at z = 1 (maximum)
+		g0 = self.geff(self.rho0, r01[0]) # gravity at z = 0 (minimum)
+		g1 = self.geff(self.rho1, r01[1]) # gravity at z = 1 (maximum)
 		# convert to log10(gravity in cm / s**2)
 		self.logg_arr = add_logg + np.log10(geff_arr)
 		self.logg0 = add_logg + math.log10(g0)

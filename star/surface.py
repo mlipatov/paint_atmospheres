@@ -58,10 +58,12 @@ class Surface:
 		# just in case we tried to take a square root of a negative number
 		# because of limited precision, set the result at z = 1 or -1 to zero
 		result[np.abs(z) == 1] = 0
-		return 
+		return result
 
 	def Drz(self, z):
-		return self.Ds(self.U(z)) / (2. * self.f * self.R(z))
+		numerator = self.Ds(self.U(z))
+		denominator = (2. * self.f * self.R(z))
+		return numerator / denominator
 
 	# input: z
 	# output: the differential element of area in the units of equatorial radius squared
