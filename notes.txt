@@ -1,0 +1,55 @@
+-----------------------------------
+Discuss the possibility of using the python Decimal module / mpmath in Newton's method
+Mention structured arrays as a possible way to store limb darkening data
+Think about re-using information for multiple inclinations of a given star
+----------------------------------
+Results of goodness of fit checks:
+
+Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, x^4.
+
+metallicity = [-0.1]
+[deviation / I1,		wavelength		logg	temperature	mu]
+[-0.009491111111106017, 	54.0, 		3.0, 	16000.0] 				deviation = I(0)
+[-0.002573739524375959, 	124.5, 		4.0, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
+[0.00554109010298971, 	111.5, 		3.0, 	9000.0, 		0.9]	deviation = abs(Imu - I(mu))
+Done in about 1 hour 18 minutes
+
+python calc_limbdark.py 'im05k2.pck' 'limbdark05.pkl' -b 0.1 0.25 -s -c
+metallicity = [-0.5]
+[-0.011240512820506292, 52.0, 		2.5, 	16000.0] 				deviation = I(0)
+[-0.0029765257851622905,102.5, 		3.5, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
+[0.0070647571757599505, 111.5, 		2.0, 	8500.0, 		0.9]	deviation = abs(Imu - I(mu))
+Done in about 1 hour 19 minutes
+
+----------------------------------
+Runtimes:
+
+Calculation and pickling of limb darkening fits without checks: 1 minute
+Using vectorized bilinear interpolation of Vega with z_step = 0.0005: 
+	2.677s (user) + 1.351s (sys) = 4.0s.
+	2.850s (user) + 1.494s (sys) = 4.3s.
+...of the Sun, pole on:
+	2.704s (user) + 1.802s (sys) = 4.5s.
+Using map_coordinates with Vega
+	3.054s (user) + 0.339s (sys) = 3.4s.
+
+----------------------------------------
+# converting from CR (old Apple style) to LF (unix style) newlines
+tr '\r' '\n' < im01k2.pck > im01k2.unix
+# finding the intensities at some temperature, gravity and wavelength = 401
+grep -A 385 'TEFF\s*5750.\s*GRAVITY\s*2.0' im01k2.unix
+# pre-pend pound signs to lines without intensity numbers in a .pck file from Castelli and Kurucz
+sed '/TEFF/{s/^/#/;n;s/^/#/;n;s/^/#/;}' im05k2.pck > im05k2.pck
+---------------------------------------
+git checkout -b feature/faster_interpolation  # create a branch and switch to it
+git checkout feature/faster_interpolation # switch to a branch 
+# update the remote reference, add an upstream reference to the new branch
+git push --set-upstream origin feature/faster_interpolation 
+git checkout master # switch back to master branch
+git merge feature/faster_interpolation # merge the history of the feature branch onto master
+git commit -a # may not be necessary here
+git push # push the merge 
+-------------------------
+# look at function definitions in python
+import sys, inspect
+sys.stdout.write(inspect.getsource(surf.R))
