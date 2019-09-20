@@ -145,35 +145,34 @@ class Fit:
 					(5*a**4*b*sin4)/32. + (a**5*sin5)/80.
 			]
 			return np.transpose( np.array(integr) )
-		# initialize the total integral for each function on each interval
+		# upper bound on integration w.r.t. mu; mu will decrease
+		mu1 = a + b
+		# indices of the mu intervals that contain the upper mu integration bound;
+		i = np.searchsorted(cls.muB_arr, mu1, side='right') - 1
+		# initialize (to zeros) the total integral (divided by 2) for each function on each interval
 		# index 0: z
-		# index 1: interval, numbered 0, 1, 2, ...
-		# index 2: function index
+		# index 1: interval
+		# index 2: function
 		result = np.zeros( a.shape + (cls.m, n) )
 		# a mask telling us where a != 0 in the result array
 		anz = ~np.array(a == 0)
-		## record the integrals at locations where a = 0
+		## record the integrals at the locations where a = 0
 		# if we are looking at the star pole-on, mu doesn't change as phi changes,
 		# so we integrate from zero to pi in the current (and only) mu interval
 		result_azero = intgrt(math.pi, a[~anz], b[~anz]) - intgrt(0, a[~anz], b[~anz])
-		# copy the array of function integrals to all mu intervals for each z
-		sh = result_azero.shape
-		result_azero = np.tile(result_azero, [1, cls.m]).reshape(sh[0], cls.m, sh[1])
 		# set the results at a != 0
-		result[ ~anz, :, : ] = result_azero
-		## everything below is done for the locations where a != 0, until
-		## the a = 0 integrals are inserted into the results at the end
+		result[ ~anz, i[~anz], : ] = result_azero
+		### everything below is done for the locations where a != 0
+		# set all the arrays we will use to be for a != 0 locations only, 
+		# excepting the results array
 		a = a[anz]
 		b = b[anz]
 		belowZ1 = belowZ1[anz]
-		# when a != 0, mu changes as phi changes, 
-		# so we keep track of whether we enter different mu intervals.
-		# upper bound on integration w.r.t. mu; mu will decrease
-		mu1 = a + b
+		i = i[anz]
+		## when a != 0, mu changes as phi changes, 
+		## so we will keep track of whether we enter different mu intervals.
 		# lower bound on integration w.r.t. phi; phi will increase
 		ph = np.zeros_like(a)
-		# indices of the mu intervals that contain the upper mu integration bound;
-		i = np.searchsorted(cls.muB_arr, mu1, side='right') - 1
 		# the lower bound on integration w.r.t. mu, between 0 and 1;
 		# when integrating over phi between -pi and pi, this lower bound is some number above zero,
 		# otherwise it is zero
