@@ -102,16 +102,16 @@ class Map:
 	def F(self):
 		# helper function
 		# inputs: squared rotation speed, 
-		#	an array of rho and an array of x = cos(theta)
+		#	an array of rho and an array of x = abs(cos(theta))
 		def add(o2, rho_arr, x_arr):
 			return -x_arr - (1./3) * o2 * rho_arr**3 * x_arr**3
 		# helper function
 		# inputs: an array of temperature correction values and 
-		#	an array of x = cos(theta) values
+		#	an array of x = abs(cos(theta)) values
 		def G(F_arr, x_arr):
 			return np.sqrt(F_arr * (1 - x_arr**2) + x_arr**2)
 		# the function whose root we are looking for, 
-		# derived from EL24, with x = cos(theta) and F as defined in EL26
+		# derived from EL24, with x = abs(cos(theta)) and F as defined in EL26
 		def f(F_arr, x_arr, G_arr, add_arr): 
 			result1 = x_arr / G_arr
 			result2 = np.log( np.sqrt(F_arr) * (1 + x_arr) / (x_arr + G_arr) )
