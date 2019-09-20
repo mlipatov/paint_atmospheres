@@ -148,27 +148,27 @@ class Map:
 		rho_arr = self.rho_arr
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
-		# a boolean array that says which x elements are so close to zero
+		# a mask that says which x elements are not so close to zero (x ~ 0)
 		# that we don't want to be using Newton's method
-		mask = np.less(x_arr, delta)
-		# for Newton method's operation, remove such elements from the arrays
-		x_arr = x_arr[~mask]
-		rho_arr = rho_arr[~mask] # get the corresponding values of rho
+		mask = np.greater(x_arr, delta)
+		# initialize the result array (to the half-way point in the possible range)
+		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
+		# set the result array at the locations where x ~ 0
+		F_arr[ ~mask ] = F0
+		# for Newton method's operation, remove the locations where x ~ 0
+		# from all arrays except the result array
+		x_arr = x_arr[mask]
+		rho_arr = rho_arr[mask] # get the corresponding values of rho
 		# an additive term that doesn't depend on F, for every z
 		add_arr = add(o2, rho_arr, x_arr) 
-		# initial estimates of F
-		F_arr = np.full_like(x_arr, (F0 + F1) / 2)
 		# Newton's algorithm; 
 		# ten steps is about twice the number we need
 		for i in range(10):
 			# compute the new values of F
-			F_arr = step(F_arr, x_arr, add_arr)
+			F_arr[ mask ] = step(F_arr[mask], x_arr, add_arr)
 			# check if we end up below the lower bound on F 
 			# and come back to that lower bound if we did overshoot it
-			F_arr[F_arr < F1] = F1
-		# reinsert the temperature correction at values of x very close to zero
-		ind = np.nonzero(mask)[0]
-		F_arr = np.insert(F_arr, ind, F0)
+			F_arr[ mask & (F_arr < F1) ] = F1
 		# save the results and return
 		self.F0 = F0
 		self.F1 = F1
