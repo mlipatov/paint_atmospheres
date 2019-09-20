@@ -1,4 +1,5 @@
 *.txt
+!notes.txt
 *.dat
 *.png
 *.pck
