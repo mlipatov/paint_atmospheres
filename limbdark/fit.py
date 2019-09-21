@@ -5,10 +5,9 @@
 #		the function is continuous everywhere in its domain 
 
 import numpy as np
-import math
-import scipy.special as sp
+# import scipy.special as sp
 import matplotlib.pyplot as plt
-import util as ut
+# import util as ut
 
 ## functions on a given interval
 # the non-zero functions on a given interval
@@ -159,7 +158,7 @@ class Fit:
 		## record the integrals at the locations where a = 0
 		# if we are looking at the star pole-on, mu doesn't change as phi changes,
 		# so we integrate from zero to pi in the current (and only) mu interval
-		result_azero = intgrt(math.pi, a[~anz], b[~anz]) - intgrt(0, a[~anz], b[~anz])
+		result_azero = intgrt(np.pi, a[~anz], b[~anz]) - intgrt(0, a[~anz], b[~anz])
 		# set the results at a != 0
 		result[ ~anz, i[~anz], : ] = result_azero
 		### everything below is done for the locations where a != 0

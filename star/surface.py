@@ -10,8 +10,7 @@ class Surface:
 	star, i.e. the equatorial radius divided by the polar radius. theta is the 
 	spherical polar angle. """
 
-	def __init__(self, omega, inclination):
-		self.inclination = inclination
+	def __init__(self, omega):
 		self.omega = omega
 		# derived parameters
 		if omega != 0: 
@@ -19,6 +18,9 @@ class Surface:
 		else:
 			self.w = np.inf
 		self.f = 1 + omega**2 / 2
+
+	# set the inclination of the star's surface
+	def set_inclination(self, inclination):
 		self.sini = math.sin(inclination)
 		self.cosi = math.cos(inclination)
 		self.z1 = self.Z1()

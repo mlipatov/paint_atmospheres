@@ -1,6 +1,7 @@
 -----------------------------------
 Discuss the possibility of using the python Decimal module / mpmath in Newton's method
 Mention structured arrays as a possible way to store limb darkening data
+Mention that currently we do the interpolation in float64, then cast the result to float32
 Think about re-using information for multiple inclinations of a given star
 ----------------------------------
 Results of goodness of fit checks:
@@ -33,6 +34,8 @@ Using vectorized bilinear interpolation of Vega with z_step = 0.0005:
 Using map_coordinates with Vega
 	3.054s (user) + 0.339s (sys) = 3.4s.
 
+0.45s per inclination
+
 ----------------------------------------
 # converting from CR (old Apple style) to LF (unix style) newlines
 tr '\r' '\n' < im01k2.pck > im01k2.unix
@@ -42,12 +45,10 @@ grep -A 385 'TEFF\s*5750.\s*GRAVITY\s*2.0' im01k2.unix
 sed '/TEFF/{s/^/#/;n;s/^/#/;n;s/^/#/;}' im05k2.pck > im05k2.pck
 ---------------------------------------
 git checkout -b feature/faster_interpolation  # create a branch and switch to it
-git checkout feature/faster_interpolation # switch to a branch 
 # update the remote reference, add an upstream reference to the new branch
 git push --set-upstream origin feature/faster_interpolation 
 git checkout master # switch back to master branch
 git merge feature/faster_interpolation # merge the history of the feature branch onto master
-git commit -a # may not be necessary here
 git push # push the merge 
 -------------------------
 # look at function definitions in python

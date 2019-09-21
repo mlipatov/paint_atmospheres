@@ -1,9 +1,7 @@
 # Plot a spectrum
-import util as ut
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import argparse
-import pickle
 
 parser = argparse.ArgumentParser(description="Examples: \n" +\
 	"python plot_spectrum.py \'vega.png\' \'vega.txt\' 3000,\
