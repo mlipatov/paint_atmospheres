@@ -51,7 +51,7 @@ f = open(txt_sfile, 'a')
 leni = len(inclinations)
 for i, inc in np.ndenumerate(inclinations):
 	if i[0] % 10 == 0:		
-		print(str(i[0]) + " out of " + str(leni) + " inclinations calculated.")        
+		print(str(i[0]) + " out of " + str(leni) + " inclinations calculated and printed.")        
 		sys.stdout.flush()
 	f.write('\n')
 	f.write('# inclination(rad): ' + str(inc) + '\n')

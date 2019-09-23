@@ -1,8 +1,6 @@
 -----------------------------------
-Discuss the possibility of using the python Decimal module / mpmath in Newton's method
+Mention the possibility of using the python Decimal module / mpmath in Newton's method
 Mention structured arrays as a possible way to store limb darkening data
-Mention that currently we do the interpolation in float64, then cast the result to float32
-Think about re-using information for multiple inclinations of a given star
 ----------------------------------
 Results of goodness of fit checks:
 
@@ -25,16 +23,31 @@ Done in about 1 hour 19 minutes
 ----------------------------------
 Runtimes:
 
-Calculation and pickling of limb darkening fits without checks: 1 minute
-Using vectorized bilinear interpolation of Vega with z_step = 0.0005: 
-	2.677s (user) + 1.351s (sys) = 4.0s.
-	2.850s (user) + 1.494s (sys) = 4.3s.
-...of the Sun, pole on:
-	2.704s (user) + 1.802s (sys) = 4.5s.
-Using map_coordinates with Vega
-	3.054s (user) + 0.339s (sys) = 3.4s.
+Calculation and pickling of limb darkening fits without checks: 42 seconds. With checks: 1 hour.
 
-0.45s per inclination
+Calculation of pre-processed star data. z_step = 0.0005.
+
+Vega: 
+user	0m1.730s
+sys	0m1.120s
+2.85s
+
+Sun:
+user	0m2.217s
+sys	0m1.046s
+3.26s
+
+Calculation of integrals. Inclinations: 0 1.5707963267948966 0.01 (159)
+
+Vega:
+user	0m52.539s
+sys	0m28.148s
+0.51s per inclination
+
+Sun:
+user	0m54.783s
+sys	0m29.648s
+0.53s per inclination
 
 ----------------------------------------
 # converting from CR (old Apple style) to LF (unix style) newlines
