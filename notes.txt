@@ -62,7 +62,10 @@ git checkout -b feature/faster_interpolation  # create a branch and switch to it
 git push --set-upstream origin feature/faster_interpolation 
 git checkout master # switch back to master branch
 git merge feature/faster_interpolation # merge the history of the feature branch onto master
-git push # push the merge 
+git push # push the merge
+git branch # look at branches  
+git branch -d feature/faster_interpolation # delete a branch
+git push --delete feature/faster_interpolation # tell the remote server to stop tracking the branch
 -------------------------
 # look at function definitions in python
 import sys, inspect
