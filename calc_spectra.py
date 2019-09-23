@@ -29,7 +29,7 @@ if li not in [1, 3]:
 elif li == 1:
 	inclinations = i
 elif li == 3:
-	inclinations = np.concatenate(( np.arange(*i), i[-2:-1] ))
+	inclinations = np.arange(*i)
 # unpickle the star
 with open(pkl_sfile, 'rb') as f:
 	st = pickle.load(f)
@@ -45,20 +45,28 @@ f.write('# luminosity: ' + str(st.luminosity) + '\n')
 f.write('# mass: ' + str(st.mass) + '\n')
 f.write('# Req: ' + str(st.Req) + '\n')
 f.close() # close the file
+
 # open the file for appending
 f = open(txt_sfile, 'a') 
-# calculate and write the spectra to the file
+# calculate the spectra
 leni = len(inclinations)
+light = np.empty( (leni, len(wl)) )
 for i, inc in np.ndenumerate(inclinations):
+	light[i] = st.integrate(inc)
 	if i[0] % 10 == 0:		
-		print(str(i[0]) + " out of " + str(leni) + " inclinations calculated and printed.")        
+		print(str(i[0]) + " out of " + str(leni) + " inclinations calculated.")        
 		sys.stdout.flush()
+
+# write the spectra to file
+f.write('\n')
+f.write('# intensity(ergs/s/Hz/ster) \n')
+f.write('# wavelength(nm)\\inclination(rad)') 
+for i, inc in np.ndenumerate(inclinations):
+	f.write( ' \t' + str(inc) )
+f.write('\n')
+for j, w in np.ndenumerate(wl):
+	f.write( str(w) )
+	for i, inc in np.ndenumerate(inclinations):
+		f.write('\t %.5E' % light[i, j])
 	f.write('\n')
-	f.write('# inclination(rad): ' + str(inc) + '\n')
-	f.write('# wavelength(nm)\tintensity(ergs/s/Hz/ster)\n') 
-	light = st.integrate(inc)
-	ind = 0
-	while (ind < len(wl)):
-		f.write(str(wl[ind]) + '\t %.5E\n' % light[ind])
-		ind += 1
 f.close()

@@ -209,12 +209,17 @@ class Map:
 		Dg2 = logg_arr - g1
 		Dt1 = T2 - temp_arr
 		Dt2 = temp_arr - T1
+		# helper matrix
+		w11 = const * Dt1 * Dg1
+		w21 = const * Dt2 * Dg1
+		w12 = const * Dt1 * Dg2
+		w22 = const * Dt2 * Dg2
 		# an array of fit function parameters 
 		# index 0: z
 		# index 1: wavelength
 		# index 2: parameter index
-		self.params_arr = const[:, np.newaxis, np.newaxis] * (\
-			f11 * Dt1[:, np.newaxis, np.newaxis] * Dg1[:, np.newaxis, np.newaxis] + \
-			f21 * Dt2[:, np.newaxis, np.newaxis] * Dg1[:, np.newaxis, np.newaxis] + \
-			f12 * Dt1[:, np.newaxis, np.newaxis] * Dg2[:, np.newaxis, np.newaxis] + \
-			f22 * Dt2[:, np.newaxis, np.newaxis] * Dg2[:, np.newaxis, np.newaxis])
+		self.params_arr = \
+			f11 * w11[:, np.newaxis, np.newaxis] + \
+			f21 * w21[:, np.newaxis, np.newaxis] + \
+			f12 * w12[:, np.newaxis, np.newaxis] + \
+			f22 * w22[:, np.newaxis, np.newaxis]
