@@ -1,6 +1,4 @@
 import limbdark.fit as ft
-# import star.surface as sf
-# import util as ut
 import numpy as np
 import math
 import sys
@@ -26,16 +24,16 @@ class Map:
 
 		## compute area elements for integration
 		## as well as cylindrical coordinate r and the spherical coordinate rho
-		print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
-		sys.stdout.flush()
+			# print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
+			# sys.stdout.flush()
 		self.A_arr = surf.A( self.z_arr )
 		r_arr = surf.R( self.z_arr )
 		rho_arr = surf.rho( r_arr, self.z_arr )
 		r01 = surf.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
 		rho0, rho1 = surf.rho( r01, np01 ) # rho at z = 0 and +/-1
 		## compute the effective gravitational acceleration in units of G M / Re**2 
-		print ("Computing gravities and temperatures...")        
-		sys.stdout.flush()
+			# print ("Computing gravities and temperatures...")        
+			# sys.stdout.flush()
 		geff_arr = self.geff(rho_arr, r_arr)
 		# convert to log10(gravity in cm / s**2) and to a less memory-intensive data type
 		logg_arr = add_logg + np.log10(geff_arr)
@@ -45,9 +43,9 @@ class Map:
 		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # compute all the F values
 		temp_arr = mult_temp * self.Teff( geff_arr, F_arr ) # the temperatures
 		temp_arr = temp_arr.astype(np.float32)
-		## compute the interpolated values of limb darkening fit parameters
-		print ("Interpolating the fit parameters...")        
-		sys.stdout.flush()
+		# compute the interpolated values of limb darkening fit parameters
+		# print ("Interpolating the fit parameters...")        
+		# sys.stdout.flush()
 		self.interp(logg_arr, temp_arr, ld)
 	
 	# returns the effective gravitational acceleration in units of G M / Re**2 

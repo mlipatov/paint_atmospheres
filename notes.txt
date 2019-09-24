@@ -1,7 +1,5 @@
+Figure out how to run python3 code on Ahab
 -----------------------------------
-Mention the possibility of using the python Decimal module / mpmath in Newton's method
-Mention structured arrays as a possible way to store limb darkening data
-----------------------------------
 Results of goodness of fit checks:
 
 Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, x^4.
@@ -50,6 +48,37 @@ sys	0m29.648s
 0.53s per inclination
 
 ----------------------------------------
+Convergence analysis. 
+
+# Computation of a precise spectrum (on Ahab). The following results in a 3Gb file with 40K values of z.
+time python calc_star.py 'vega_40K_zvalues.pkl' 'limbdark_m01.pkl' 0.00005 0.8760 40.124 2.135 2.818
+real	0m23.522s
+user	0m30.847s
+sys	0m11.503s
+# The following then results in a text version of Vega's spectrum (24 Kb)
+time python calc_spectra.py 'vega_40K_zvalues.txt' 'vega_40K_zvalues.pkl' -i 0.08683
+# Fit to an exponential of the form a*np.exp(b*x)+c
+0.002 0.005662332964403229
+0.0019 0.003346186613059344
+0.0018 0.0004407185731677699
+0.0017 0.0021841783731126403
+0.0015999999999999999 0.004504802387261709
+0.0014999999999999998 0.0013116745195749454
+0.0013999999999999998 0.002185036371358817
+0.0012999999999999997 0.001602279337484602
+0.0011999999999999997 0.002184208129560653
+0.0010999999999999996 0.00043787929558825267
+0.0009999999999999996 0.000144987013584969
+0.0008999999999999995 0.0004374959408164892
+0.0007999999999999995 0.00014515966427212945
+0.0006999999999999995 0.00014599073788204038
+0.0005999999999999994 0.00043756389203760245
+0.0004999999999999994 0.00014576051124033854
+0.0003999999999999993 0.00014580455329854462
+0.00029999999999999927 0.00043731719581837757
+[-14.93243806  -0.15353759  14.93124057]
+
+----------------------------------------
 # converting from CR (old Apple style) to LF (unix style) newlines
 tr '\r' '\n' < im01k2.pck > im01k2.unix
 # finding the intensities at some temperature, gravity and wavelength = 401
@@ -67,6 +96,9 @@ git branch # look at branches
 git branch -d feature/faster_interpolation # delete a branch
 git push --delete feature/faster_interpolation # tell the remote server to stop tracking the branch
 -------------------------
+Mention the possibility of using the python Decimal module / mpmath in Newton's method
+Mention structured arrays as a possible way to store limb darkening data
+----------------------------------
 # look at function definitions in python
 import sys, inspect
 sys.stdout.write(inspect.getsource(surf.R))

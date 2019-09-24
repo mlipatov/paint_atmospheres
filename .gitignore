@@ -1,5 +1,6 @@
 *.txt
 !notes.txt
+!vega_40K_zvalues.txt
 *.dat
 *.png
 *.pck

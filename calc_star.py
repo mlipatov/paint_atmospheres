@@ -43,3 +43,37 @@ st = star.Star(omega, luminosity, mass, Req, z_step, ld)
 ### Pickle the star
 with open(pkl_sfile, 'wb') as f:
 	pickle.dump(st, f)
+
+#### code below is for when the star file is too large to pickle
+
+# # get the wavelengths at which we see light from this star
+# wl = st.wavelengths
+# inc = math.pi / 4
+
+# ## write the spectrum of the star in text format
+# # create this file if it doesn't exist, open it for writing
+# f = open('vega_200K_res.pkl','w+') 
+# # write the header
+# f.write('# omega: ' + str(st.surface.omega) + '\n')
+# f.write('# luminosity: ' + str(st.luminosity) + '\n')
+# f.write('# mass: ' + str(st.mass) + '\n')
+# f.write('# Req: ' + str(st.Req) + '\n')
+# f.write('# z resolution: ' + str(st.map.z_step) + '\n')
+# f.write('# inclination: ' + str(inc) + '\n')
+# f.close() # close the file
+
+# # open the file for appending
+# f = open(txt_sfile, 'a') 
+# # calculate the spectrum
+# light = st.integrate(inc)
+
+# # write the spectra to file
+# f.write('\n')
+# f.write('# intensity(ergs/s/Hz/ster) \n')
+# f.write('# wavelength(nm)') 
+# f.write('\n')
+# for j, w in np.ndenumerate(wl):
+# 	f.write( str(w) )
+# 	f.write('\t %.5E' % light[j])
+# 	f.write('\n')
+# f.close()
