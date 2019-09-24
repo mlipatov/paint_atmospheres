@@ -1,7 +1,9 @@
 Synthetic spectra of rotating stars.
 
-Assumptions: 
-	Roche model of mass distribution, no differential rotation.
+Model: 
+	Roche model of mass distribution, 
+	non-differential rotation,
+	energy flux collinear with effective gravity.
 
 References: 
 	Espinosa Lara, F., & Rieutord, M. 2011, A&A, 533, A43 [EL]
