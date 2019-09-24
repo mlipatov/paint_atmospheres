@@ -1,9 +1,28 @@
 Synthetic spectra of rotating stars.
 
+Authors: 
+	Timothy D. Brandt
+	Mikhail Lipatov
+
 Model: 
 	Roche model of mass distribution, 
 	non-differential rotation,
 	energy flux collinear with effective gravity.
+
+Input:	
+	Specific intensity as a function of 
+		wavelength, 
+		surface inclination, 
+		effective temperature, 
+		effective gravity,
+		metallicity.
+
+Methods:
+	Roche model surface via the cubic formula,
+	Temperature and gravity via Newton's method,
+	Intensity via 
+		piecewize polynomial fits w.r.t. surface inclination,
+		bilinear interpolation w.r.t temperature and gravity
 
 References: 
 	Espinosa Lara, F., & Rieutord, M. 2011, A&A, 533, A43 [EL]
