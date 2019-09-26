@@ -25,6 +25,12 @@ Methods:
 		bilinear interpolation w.r.t temperature and gravity
 	1D integration via a 4th-order scheme
 
+Executables:
+	calc_limbdark computes fits w.r.t surface inclination
+	calc_star performs inclination-independent computations
+	calc_spectra computes spectra for multiple inclinations
+	plot_spectrum plots a spectrum at a single inclination 
+
 References: 
 	Espinosa Lara, F., & Rieutord, M. 2011, A&A, 533, A43 [EL]
 	Castelli, F., & Kurucz, R. L. 2004, arXiv:astro-ph/0405087 [Kurucz]
