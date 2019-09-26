@@ -7,33 +7,32 @@ np01 = np.array([0, 1]) # a numpy array containing 0 and 1
 
 class Map:
 	""" At initialization with a surface, a step in z values and limb darkening information, 
-	computes discrete z values ranging from -1 to 1, as well as
+	computes a number of equally spaced discrete z values on (-1, 1), as well as
 	wavelength-dependent parameters of the intensity fits and area elements at these z values. 
 	Gravity and temperature calculations are based on Espinosa Lara 2011 (EL)."""
 
-	# initialize with the surface shape of the star, the step in z, the constants
-	# needed for temperature and gravity unit conversions, and limb darkening information
-	def __init__(self, surf, z_step, add_logg, mult_temp, ld):
+	# initialize with the surface shape of the star, the number of z values to use for integration, 
+	# the constants needed for temperature and gravity unit conversions, and limb darkening information
+	def __init__(self, surf, n_z, add_logg, mult_temp, ld):
 
 		## initialize surface and limb darkening information
-		self.z_step = z_step
 		self.surface = surf # surface shape information
 		omega = surf.omega
+
 		## initialize the array of z values for integration
-		self.z_arr = np.arange(-1 + z_step / 2, 1 - z_step / 2, z_step)
+		## do not use the boundary values
+		self.z_arr = np.linspace(-1, 1, n_z + 2)[ 1:-1 ]
+		# record the spacing between the z values
+		self.z_step = self.z_arr[1] - self.z_arr[0]
 
 		## compute area elements for integration
 		## as well as cylindrical coordinate r and the spherical coordinate rho
-			# print ("Computing the area elements, cylindrical coordinates and spherical coordinates...")        
-			# sys.stdout.flush()
 		self.A_arr = surf.A( self.z_arr )
 		r_arr = surf.R( self.z_arr )
 		rho_arr = surf.rho( r_arr, self.z_arr )
 		r01 = surf.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
 		rho0, rho1 = surf.rho( r01, np01 ) # rho at z = 0 and +/-1
 		## compute the effective gravitational acceleration in units of G M / Re**2 
-			# print ("Computing gravities and temperatures...")        
-			# sys.stdout.flush()
 		geff_arr = self.geff(rho_arr, r_arr)
 		# convert to log10(gravity in cm / s**2) and to a less memory-intensive data type
 		logg_arr = add_logg + np.log10(geff_arr)
