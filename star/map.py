@@ -23,7 +23,7 @@ class Map:
 		## do not use the boundary values
 		self.z_arr = np.linspace(-1, 1, n_z + 2)[ 1:-1 ]
 		# record the spacing between the z values
-		self.z_step = self.z_arr[1] - self.z_arr[0]
+		self.dz = self.z_arr[1] - self.z_arr[0]
 
 		## compute area elements for integration
 		## as well as cylindrical coordinate r and the spherical coordinate rho

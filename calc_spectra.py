@@ -44,7 +44,7 @@ f.write('# omega: ' + str(st.surface.omega) + '\n')
 f.write('# luminosity: ' + str(st.luminosity) + '\n')
 f.write('# mass: ' + str(st.mass) + '\n')
 f.write('# Req: ' + str(st.Req) + '\n')
-f.write('# z resolution: ' + str(st.map.z_step) + '\n')
+f.write('# z resolution: ' + str(st.map.dz) + '\n')
 f.close() # close the file
 
 # open the file for appending

@@ -5,7 +5,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description="Examples: \n" +\
 	"python plot_spectrum.py \'vega.png\' \'vega.txt\' 3000,\
-	 python plot_spectrum.py \'sun_pa.png\' \'sun.txt\' 3000")
+	 python plot_spectrum.py \'sun.png\' \'sun.txt\' 4000")
 parser.add_argument("ofile", help="output: spectrum .png file")
 parser.add_argument("ifile", help="input: spectrum text file")
 parser.add_argument("wl", help="upper cutoff for wavelength, in nanometers", type=int)
