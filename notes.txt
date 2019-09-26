@@ -87,6 +87,10 @@ git push # push the merge
 git branch # look at branches  
 git branch -d feature/faster_interpolation # delete a branch
 git push --delete feature/faster_interpolation # tell the remote server to stop tracking the branch
+# in the parent directory (not in paint_atmospheres)
+git clone https://github.com/mlipatov/paint_atmospheres # clone the project on a local computer
+git pull # pull the remote repository's latest updates 
+git checkout higher_order_integration # switch to another branch in the newly cloned project
 ----------------------------------
 # look at function definitions in python
 import sys, inspect

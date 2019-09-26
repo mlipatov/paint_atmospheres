@@ -23,6 +23,7 @@ Methods:
 	Intensity via 
 		piecewize polynomial fits w.r.t. surface inclination,
 		bilinear interpolation w.r.t temperature and gravity
+	1D integration via a 4th-order scheme
 
 References: 
 	Espinosa Lara, F., & Rieutord, M. 2011, A&A, 533, A43 [EL]
