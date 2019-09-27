@@ -10,6 +10,12 @@ Model:
 	energy flux collinear with effective gravity.
 
 Input:	
+	Star's 
+		mass, 
+		luminosity,
+		equatorial radius,
+		rotation speed,
+		inclination;
 	Specific intensity as a function of 
 		wavelength, 
 		surface inclination, 
@@ -22,14 +28,17 @@ Methods:
 	Temperature and gravity via Newton's method,
 	Intensity via 
 		piecewize polynomial fits w.r.t. surface inclination,
-		bilinear interpolation w.r.t temperature and gravity
+		bilinear interpolation w.r.t temperature and gravity;
 	1D integration via a 4th-order scheme.
 
+Installation:
+	pip install .
+
 Executables:
-	calc_limbdark computes fits w.r.t surface inclination
-	calc_star performs inclination-independent computations
-	calc_spectra computes spectra for multiple inclinations
-	plot_spectrum plots a spectrum at a single inclination 
+	calc_limbdark.py computes fits w.r.t surface inclination
+	calc_star.py performs inclination-independent computations
+	calc_spectra.py computes spectra for multiple inclinations
+	plot_spectrum.py plots a spectrum at a single inclination 
 	python <command.py> -h provides usage instructions
 
 References: 
