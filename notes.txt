@@ -1,25 +1,18 @@
-Figure out how to run python3 code on Ahab
------------------------------------
-Results of goodness of fit checks:
-
-Three intervals (breaks at 0.1 and 0.25), 1, x, x^2, x^3, x^4.
+# Goodness of fit checks for intensity vs surface inclination:
 
 metallicity = [-0.1]
 [deviation / I1,		wavelength		logg	temperature	mu]
 [-0.009491111111106017, 	54.0, 		3.0, 	16000.0] 				deviation = I(0)
 [-0.002573739524375959, 	124.5, 		4.0, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
 [0.00554109010298971, 	111.5, 		3.0, 	9000.0, 		0.9]	deviation = abs(Imu - I(mu))
-Done in about 1 hour 18 minutes
 
-python calc_limbdark.py 'im05k2.pck' 'limbdark05.pkl' -b 0.1 0.25 -s -c
 metallicity = [-0.5]
 [-0.011240512820506292, 52.0, 		2.5, 	16000.0] 				deviation = I(0)
 [-0.0029765257851622905,102.5, 		3.5, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
 [0.0070647571757599505, 111.5, 		2.0, 	8500.0, 		0.9]	deviation = abs(Imu - I(mu))
-Done in about 1 hour 19 minutes
 
-----------------------------------
-Runtimes:
+
+# Runtimes:
 
 Calculation and pickling of limb darkening fits without checks: 42 seconds. With checks: 1 hour.
 
@@ -48,37 +41,36 @@ sys	0m1.121s
 30ms per inclination
 
 
-----------------------------------------
-Convergence analysis. 
+# Memory usage.
 
-# Computation of a precise spectrum (on Ahab). The following results in a 3Gb file with 40K values of z.
-time python calc_star.py 'vega_40K_zvalues.pkl' 'limbdark_m01.pkl' 0.00005 0.8760 40.124 2.135 2.818
-real	0m23.522s
-user	0m30.847s
-sys	0m11.503s
-# The following then results in a text version of Vega's spectrum (24 Kb)
-time python calc_spectra.py 'vega_40K_zvalues.txt' 'vega_40K_zvalues.pkl' -i 0.08683
-# Fit to an exponential of the form a*np.exp(b*x)
+calc_limbdark -> 50 Mb file.
+calc_star -> 14 Mb file.
 
-----------------------------------------
-Version and outside source comparison
 
-# Average proportional difference of non-zero intensity: ~25% higher in version 1 than version 2, 
-# probably moslty due to our incorrect interpretation of area denominators in Kurucz's information.
+# Convergence analysis. 
 
-# Outside source data looks similar both for the Sun and for Vega, the differences are probably due to the
-# imprecise knowledge of Vega's rotational velocity and luminosity 
--------------------------
-Mention the possibility of using the python Decimal module / mpmath in Newton's method
-Mention structured arrays as a possible way to store limb darkening data
-----------------------------------------
+An etalon spectrum is produced with 40K z values.
+
+
+# Version and outside source comparison
+
+Average proportional difference of non-zero intensity: ~25% higher in version 1 than version 2, probably moslty due to our incorrect interpretation of area denominators in Kurucz's information.
+
+Outside source data looks similar both for the Sun and for Vega, the differences are probably due to the imprecise knowledge of Vega's rotational velocity and luminosity 
+
+
+## Commands useful for working with Kurucz's files
+
 # converting from CR (old Apple style) to LF (unix style) newlines
 tr '\r' '\n' < im01k2.pck > im01k2.unix
 # finding the intensities at some temperature, gravity and wavelength = 401
 grep -A 385 'TEFF\s*5750.\s*GRAVITY\s*2.0' im01k2.unix
 # pre-pend pound signs to lines without intensity numbers in a .pck file from Castelli and Kurucz
 sed '/TEFF/{s/^/#/;n;s/^/#/;n;s/^/#/;}' im05k2.pck > im05k2.pck
----------------------------------------
+
+
+# Useful git commands
+
 git checkout -b feature/faster_interpolation  # create a branch and switch to it
 # update the remote reference, add an upstream reference to the new branch
 git push --set-upstream origin feature/faster_interpolation 
@@ -93,7 +85,10 @@ git push --delete origin feature/faster_interpolation
 git clone https://github.com/mlipatov/paint_atmospheres # clone the project on a local computer
 git pull # pull the remote repository's latest updates 
 git checkout higher_order_integration # switch to another branch in the newly cloned project
-----------------------------------
+
+
+## Useful python command line commands
+
 # look at function definitions in python
 import sys, inspect
 sys.stdout.write(inspect.getsource(surf.R))

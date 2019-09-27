@@ -1,15 +1,15 @@
 # Sets up the spectrum calculation for a star
-import limbdark.fit as ft
-import star.star as star
-import util as ut
+from pa.utils import fit as ft
+from pa.utils import star
+from pa.utils import util as ut
 import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_star.py \'vega.pkl\' \'limbdark_m01.pkl\' 200 " +\
+	"python calc_star.py \'data/limbdark_m01.pkl\' \'data/vega.pkl\' 200 " +\
 	"0.8760 40.124 2.135 2.818")
-parser.add_argument("output", help="an output file containing the pickled star")
 parser.add_argument("ld_file", help="the limb darkening .pkl file to access")
+parser.add_argument("output", help="an output file containing the pickled star")
 parser.add_argument("n_z", help="number of values for the normalized z coordinate", type=int)
 parser.add_argument("omega", help="rotation speed divided by its Keplerian value at the equator", type=float)
 parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)

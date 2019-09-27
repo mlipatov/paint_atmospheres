@@ -1,5 +1,5 @@
 # Plot a spectrum
-import util as ut
+from pa.utils import util as ut
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse

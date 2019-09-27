@@ -1,7 +1,7 @@
-import star.surface as sf
-import star.map as mp
-import limbdark.fit as ft
-import util as ut
+from pa.utils import surface as sf
+import pa.utils.map as mp
+from pa.utils import fit as ft
+from pa.utils import util as ut
 import numpy as np
 import sys
 import math

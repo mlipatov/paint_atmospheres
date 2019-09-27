@@ -5,9 +5,7 @@
 #		the function is continuous everywhere in its domain 
 
 import numpy as np
-# import scipy.special as sp
 import matplotlib.pyplot as plt
-# import util as ut
 
 ## functions on a given interval
 # the non-zero functions on a given interval

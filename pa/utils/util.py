@@ -1,10 +1,7 @@
 # Generally useful functions and classes. Uses cgs units
-import star.surface as sf
 import math
 import sys
 import numpy as np
-import mpmath as mp
-import scipy.interpolate as interp
 
 ### physical constants
 Lsun = 3.839e33 # solar luminosity in erg/s

@@ -1,8 +1,8 @@
 # calculates spectra of a given star at different inclinations
-import limbdark.limbdark as limbdark
-import limbdark.fit as ft
-import star.star as star
-import util as ut
+from pa.utils import limbdark
+from pa.utils import fit as ft
+from pa.utils import star
+from pa.utils import util as ut
 import numpy as np
 import sys
 import time
@@ -10,10 +10,10 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_spectra.py \'vega.txt\' \'vega.pkl\' -i 0 1.5707963267948966 0.01; " +\
-	"python calc_spectra.py \'vega.txt\' \'vega.pkl\' -i 0.08683")
-parser.add_argument("output", help="an output spectrum text file to create")
+	"python calc_spectra.py \'data/vega.pkl\' \'data/vega.txt\' -i 0 1.5707963267948966 0.01; " +\
+	"python calc_spectra.py \'data/vega.pkl\' \'data/vega.txt\' -i 0.08683")
 parser.add_argument("pkl_sfile", help="the pickled star file")
+parser.add_argument("output", help="an output spectrum text file to create")
 parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
 	'or a range specified by minimum, maximum and step', required=True)
 args = parser.parse_args()

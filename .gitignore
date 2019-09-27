@@ -1,10 +1,4 @@
-*.txt
-!notes.txt
-!vega_40K_zvalues.txt
-*.dat
-*.png
-*.pck
-*.unix
-*.pkl
+pa/data/*
 *__pycache__
+*__init__.py
 *.DS_Store

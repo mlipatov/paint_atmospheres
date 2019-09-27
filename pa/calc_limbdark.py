@@ -1,12 +1,12 @@
 # This file calculates the fits of Intensity versus mu
 # from the limb darkening information of Castelli and Kurucz 2004
 
-import limbdark.limbdark as limbdark
+from pa.utils import limbdark
 import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_limbdark.py \'im01k2.pck\' \'limbdark_m01.pkl\' -b 0.1 0.25 -s -c")
+	"python calc_limbdark.py \'data/im01k2.pck\' \'data/limbdark_m01.pkl\' -b 0.1 0.25 -s -c")
 parser.add_argument("ldfile", help="an existing file with limb darkening information")
 parser.add_argument("pkl_lfile", help="name for a .pkl file with limb darkening information to create")
 parser.add_argument('-b', type=float, nargs='+', help='list of boundaries between intervals', required=True)
