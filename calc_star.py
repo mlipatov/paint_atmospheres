@@ -6,7 +6,7 @@ import argparse
 import pickle
 
 parser = argparse.ArgumentParser(description="Example: \n" +\
-	"python calc_star.py \'vega.pkl\' \'limbdark_m01.pkl\' 4000 " +\
+	"python calc_star.py \'vega.pkl\' \'limbdark_m01.pkl\' 200 " +\
 	"0.8760 40.124 2.135 2.818")
 parser.add_argument("output", help="an output file containing the pickled star")
 parser.add_argument("ld_file", help="the limb darkening .pkl file to access")
