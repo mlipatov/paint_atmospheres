@@ -1,4 +1,4 @@
-pa/data/*
+./data/+
 *__pycache__
 *__init__.py
 *.DS_Store
