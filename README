@@ -9,37 +9,18 @@ Model:
 	non-differential rotation,
 	energy flux collinear with effective gravity.
 
-Input:	
-	Star's 
-		mass, 
-		luminosity,
-		equatorial radius,
-		rotation speed,
-		inclination;
-	Specific intensity as a function of 
-		wavelength, 
-		surface inclination, 
-		effective temperature, 
-		effective gravity,
-		metallicity.
-
-Methods:
-	Roche model surface via the cubic formula,
-	Temperature and gravity via Newton's method,
-	Intensity via 
-		piecewize polynomial fits w.r.t. surface inclination,
-		bilinear interpolation w.r.t temperature and gravity;
-	1D integration via a 4th-order scheme.
-
 Installation:
+	git clone https://github.com/mlipatov/paint_atmospheres
+	cd paint_atmospheres
 	pip install .
+	# place a .pck file in ./data
 
 Executables:
-	calc_limbdark.py computes fits w.r.t surface inclination
-	calc_star.py performs inclination-independent computations
-	calc_spectra.py computes spectra for multiple inclinations
-	plot_spectrum.py plots a spectrum at a single inclination 
-	python <command.py> -h provides usage instructions
+	calc_limbdark computes fits of intensity w.r.t surface inclination
+	calc_star performs inclination-independent computations
+	calc_spectra computes spectra for multiple inclinations
+	plot_spectrum plots a spectrum at a single inclination 
+	<command> -h provides usage instructions
 
 References: 
 	Espinosa Lara F & Rieutord M (2011), A&A, 533, A43 [EL]
