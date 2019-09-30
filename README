@@ -9,7 +9,7 @@ Model:
 	non-differential rotation,
 	energy flux collinear with effective gravity.
 
-Installation:
+Installation (UNIX):
 	git clone https://github.com/mlipatov/paint_atmospheres
 	cd paint_atmospheres
 	pip install .
