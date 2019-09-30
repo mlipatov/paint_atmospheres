@@ -1,5 +1,5 @@
 data/*
-!./data/
+!data/.keep
 *__pycache__
 *__init__.py
 *.DS_Store
