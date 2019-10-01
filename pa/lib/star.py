@@ -1,7 +1,7 @@
-from pa.utils import surface as sf
-import pa.utils.map as mp
-from pa.utils import fit as ft
-from pa.utils import util as ut
+from pa.lib import surface as sf
+import pa.lib.map as mp
+from pa.lib import fit as ft
+from pa.lib import util as ut
 import numpy as np
 import sys
 import math
@@ -33,7 +33,8 @@ class Star:
 	# correction to the scheme that is based on the assumption that the integrand vanishes
 	# at the lower integration bound and that the integrand is linear on the interval between
 	# the two successive z values around the lower integration bound.
-	def integrate(self, inclination):
+	# also allows a modified Riemann sum and a modified trapezoidal rule.
+	def integrate(self, inclination, method='quadratic'):
 		# fetch the surface and the map
 		surf = self.surface
 		mapp = self.map
@@ -61,33 +62,42 @@ class Star:
 		# at each z and each wavelength, obtain the product of the phi integral of the fit function and
 		# the dimensionless area element
 		f = mapp.A_arr[mask, np.newaxis] * fit_arr
-		
-		# find the index of the smallest element of the z values array that is 
-		# strictly greater than the lower integration bound
-		i = np.searchsorted(z_arr, -z1, side='right')
-		# find the difference between this element and the lower integration bound
-		d = z_arr[i] + z1
-		## based on this difference, possibly modify the set of integrand values involved
-		## in the Numerical Recipes integration scheme and compute the correction to the scheme 
-		# coefficients of the quadratic approximating the integrand
-		a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
-		b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-		if d >= dz / 2: # if the difference is larger than delta-z
-			# correct by the area to the left of the lower integration bound
-			d1 = dz - d
-			corr = (a / 3) * d1**3 - (b / 2) * d1**2
-		else: # the difference should be above zero
-			# correct by the area to the right of the lower integration bound
-			corr = (a / 3) * d**3 + (b / 2) * d**2
-			f = f[1:] # remove the first integrand value from the integration scheme
-
-		## compute the numerical scheme weights for the set of z values 
+		## initialize the numerical scheme weights for the set of z values 
 		## involved in the integration scheme
 		weights = np.ones(f.shape[0], dtype=np.float) # initialize all weights to 1
-		# set the weights at the boundaries of the open integration interval
-		weights[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
-		weights[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
+		# initialize a correction due to the location of the lower integration bound
+		# w.r.t. the z values
+		corr = 0 
 
+		# depending on the integration method, possibly modify the array of the integrand and set the
+		# integration weights
+		if method == 'quadratic':
+			# find the index of the smallest element of the z values array that is 
+			# strictly greater than the lower integration bound
+			i = np.searchsorted(z_arr, -z1, side='right')
+			# find the difference between this element and the lower integration bound
+			d = z_arr[i] + z1
+			## based on this difference, possibly modify the set of integrand values involved
+			## in the Numerical Recipes integration scheme and compute the correction to the scheme 
+			# coefficients of the quadratic approximating the integrand
+			a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
+			b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
+			if d >= dz / 2: # if the difference is larger than delta-z
+				# correct by the area to the left of the lower integration bound
+				d1 = dz - d
+				corr = (a / 3) * d1**3 - (b / 2) * d1**2
+			else: # the difference should be above zero
+				# correct by the area to the right of the lower integration bound
+				corr = (a / 3) * d**3 + (b / 2) * d**2
+				f = f[1:] # remove the first integrand value from the integration scheme
+				weights = weights[1:] # do the same with the weights array
+			# set the weights at the boundaries of the open integration interval
+			weights[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
+			weights[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
+		elif method == 'riemann':
+			pass # weights remain ones
+		elif method == 'trapezoid':
+			weights[-1] = 0.5 # set the upper boundary weight to 1/2
 		# sum up the product of the integrand and the weights, add the correction
 		result = dz * np.sum(weights[:, np.newaxis] * f, axis=0) + corr
 		# return the result in the appropriate units

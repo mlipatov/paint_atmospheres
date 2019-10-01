@@ -1,5 +1,5 @@
-from pa.utils import util as ut
-from pa.utils import fit as ft
+from pa.lib import util as ut
+from pa.lib import fit as ft
 import numpy as np
 import sys, time
 

@@ -1,7 +1,7 @@
 # This file calculates the fits of Intensity versus mu
 # from the limb darkening information of Castelli and Kurucz 2004
 
-from pa.utils import limbdark
+from pa.lib import limbdark
 import argparse
 import pickle
 

@@ -1,5 +1,5 @@
-from pa.utils import fit as ft
-from pa.utils import limbdark
+from pa.lib import fit as ft
+from pa.lib import limbdark
 import argparse
 import pickle
 

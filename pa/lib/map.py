@@ -1,4 +1,4 @@
-from pa.utils import fit as ft
+from pa.lib import fit as ft
 import numpy as np
 import math
 import sys

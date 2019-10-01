@@ -1,8 +1,8 @@
 # calculates spectra of a given star at different inclinations
-from pa.utils import limbdark
-from pa.utils import fit as ft
-from pa.utils import star
-from pa.utils import util as ut
+from pa.lib import limbdark
+from pa.lib import fit as ft
+from pa.lib import star
+from pa.lib import util as ut
 import numpy as np
 import sys
 import time

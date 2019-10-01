@@ -1,7 +1,7 @@
 # Sets up the spectrum calculation for a star
-from pa.utils import fit as ft
-from pa.utils import star
-from pa.utils import util as ut
+from pa.lib import fit as ft
+from pa.lib import star
+from pa.lib import util as ut
 import argparse
 import pickle
 
