@@ -20,6 +20,8 @@ Executables:
 	calc_star performs inclination-independent computations
 	calc_spectra computes spectra for multiple inclinations
 	plot_spectrum plots a spectrum at a single inclination 
+	plot_Imu plots a fit of intensity w.r.t. surface inclination
+	convert_spectrum converts a spectrum between units
 	<command> -h provides usage instructions
 
 References: 
@@ -28,4 +30,4 @@ References:
 	http://mathworld.wolfram.com/CubicFormula.html
 	Wikipedia:Bilinear interpolation:Algorithm
 	Wikipedia:Newton's method
-	Press WH et al, Numerical Recipes, 3rd ed. (2007)
+	Press WH et al, Numerical Recipes, 3rd ed. (2007) [Recipes]

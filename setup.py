@@ -9,6 +9,8 @@ setup(
     	'calc_limbdark=pa.calc_limbdark:run',
     	'calc_star=pa.calc_star:run',
     	'calc_spectra=pa.calc_spectra:run',
-    	'plot_spectrum=pa.calc_spectrum:run'
+    	'plot_spectrum=pa.calc_spectrum:run',
+        'plot_Imu=pa.utils.plot_Imu:run',
+        'convert_spectrum=pa.utils.convert_spectrum:run'
     	]}
 )

@@ -296,8 +296,13 @@ class Fit:
 		plt.axes().set_ylim([np.min(I_arr) - offset_y, np.max(I_arr) + offset_y])
 		plt.scatter(mu_arr, I_arr, marker='o', c='b', s=6)
 		plt.plot(mu_check_arr, vI(mu_check_arr), 'g--', label=lab % tuple(params))
-		plt.title('I vs mu wl='+str(wl)+' T='+str(temp)+' g='+str(g))
-		plt.xlabel('mu')
-		plt.ylabel('intensity')
-		plt.legend()
-		fig.savefig('I_vs_mu_wl'+str(wl)+'T'+str(temp)+'g'+str(g)+'.png')
+		plt.title('Intensity versus surface inclination')
+		plt.xlabel(r'$\mu$')
+		plt.ylabel(r'Intensity, $ergs \, / \, cm^2 \times s \times Hz \times ster$')
+		plt.text(0.7, 0, r'$\lambda$ = ' + str(wl) + ' nm\n' +\
+					   r'$T$ = ' + str(temp) + ' K\n' +\
+					   r'$log_{10}(g)$ = ' + str(g) + ' \n'
+					   r'$[M \, / \, H]$ = −0.1' ,
+					   fontsize=12)
+		# plt.legend()
+		fig.savefig('data/I_vs_mu_wl'+str(wl)+'T'+str(temp)+'g'+str(g)+'.png')
