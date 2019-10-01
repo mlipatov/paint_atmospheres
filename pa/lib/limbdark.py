@@ -81,7 +81,6 @@ class LimbDark:
         self.wl_arr = wl_arr
         self.g_arr = g_arr
         self.temp_arr = temp_arr
-        # self.g_temp_arr = g_temp_arr # deprecated, use None in the parameter array instead
         self.bounds = bounds
         if save:
             self.I_arr = I_arr

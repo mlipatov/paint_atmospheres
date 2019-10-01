@@ -11,7 +11,7 @@ class Star:
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
 	Also performs the 1D integration in the z dimension,
 	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition."""
-	def __init__(self, omega, luminosity, mass, Req, n_z, ld):
+	def __init__(self, omega, luminosity, mass, Req, n_z, ld, temp_method='linear'):
 		self.wavelengths = ld.wl_arr # wavelengths
 		self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity
@@ -24,7 +24,7 @@ class Star:
 		mult_temp = ut.Tsun * Req**(-0.5) * luminosity**(0.25)
 		# map of gravity, temperature, intensity fit parameters 
 		# and other features across the surface of the star
-		self.map = mp.Map(self.surface, n_z, add_logg, mult_temp, ld)
+		self.map = mp.Map(self.surface, n_z, add_logg, mult_temp, ld, temp_method)
 
 	# for a given inclination,
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,

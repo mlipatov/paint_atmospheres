@@ -92,3 +92,32 @@ git checkout higher_order_integration # switch to another branch in the newly cl
 # look at function definitions in python
 import sys, inspect
 sys.stdout.write(inspect.getsource(surf.R))
+
+## temperature interpolation testing
+Vega's temperature ranges from 7670 to 10660
+The in-between temperatures given in Kurucz are 
+ 7750
+ 8000
+ 8250
+ 8500
+ 8750
+ 9000
+ 9250
+ 9500
+ 9750
+10000
+10250
+10500
+We can test the interpolation methods by eliminating:
+ 7750
+  
+ 8250
+  
+ 
+ 9000
+ 9250
+ 
+  
+10000
+ 
+10500

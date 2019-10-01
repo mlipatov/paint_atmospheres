@@ -13,7 +13,7 @@ class Map:
 
 	# initialize with the surface shape of the star, the number of z values to use for integration, 
 	# the constants needed for temperature and gravity unit conversions, and limb darkening information
-	def __init__(self, surf, n_z, add_logg, mult_temp, ld):
+	def __init__(self, surf, n_z, add_logg, mult_temp, ld, temp_method):
 
 		## initialize surface and limb darkening information
 		self.surface = surf # surface shape information
@@ -38,14 +38,16 @@ class Map:
 		logg_arr = add_logg + np.log10(geff_arr)
 		logg_arr = logg_arr.astype(np.float32)
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
-		## as in EL eqn 31, for each z; then convert it to Kelvin and to a less memory intensive data type
+		## as in EL eqn 31, for each z; then convert it to Kelvin
 		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # compute all the F values
+
 		temp_arr = mult_temp * self.Teff( geff_arr, F_arr ) # the temperatures
+		# temp_arr = np.full_like(F_arr, 5750) # temporary
+
+		# convert temperature values to a less memory-intensive data type
 		temp_arr = temp_arr.astype(np.float32)
 		# compute the interpolated values of limb darkening fit parameters
-		# print ("Interpolating the fit parameters...")        
-		# sys.stdout.flush()
-		self.interp(logg_arr, temp_arr, ld)
+		self.interp(logg_arr, temp_arr, ld, temp_method)
 	
 	# returns the effective gravitational acceleration in units of G M / Re**2 
 	# as in equations 7 and 31 of EL, for each z
@@ -139,27 +141,35 @@ class Map:
 		# return
 		return (F_arr, F0, F1)
 
-	# for each wavelength and intensity fit parameter, interpolate the parameter
-	# as a function of temperature and gravity, at each z; 
+	# for each wavelength and intensity fit parameter, bilinearly interpolate the parameter
+	# as a function of temperature and log gravity, at each z; 
 	# data types of gravity, temperature and intensity fit parameters in the limb darkening information
-	# should be no more than 6 decimal digits, to conserve memory
-	def interp(self, logg_arr, temp_arr, ld):
+	# should be no more than 6 decimal digits, to conserve memory;
+	# temperature scale can be changed to log10.
+	def interp(self, logg_arr, temp_arr, ld, temp_method):
 		# initialize local variables
 		wl = ld.wl_arr
+		temp = np.copy(ld.temp_arr) # copy because this may have to be modified for the use in this function
+		g = ld.g_arr
 		n_p = ft.Fit.m * ft.n
 		n_wl = len(wl)
 		n_z = len(self.z_arr)
+		# if the temperature scale is a log scale, modify the temperature arrays 
+		# in this map and in the limb darkening information accordingly
+		if temp_method == 'log':
+			temp_arr = np.log10(temp_arr)
+			temp = np.log10(temp)
 		# for each value of z, look to see where in the limb darkening arrays these values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
-		ig = np.searchsorted(ld.g_arr, logg_arr, side='right') - 1
-		iT = np.searchsorted(ld.temp_arr, temp_arr, side='right') - 1
+		ig = np.searchsorted(g, logg_arr, side='right') - 1
+		iT = np.searchsorted(temp, temp_arr, side='right') - 1
 		# for each value of z, 
 		# find the values of log g and temperature between which we are interpolating
-		g1 = ld.g_arr[ig] 
-		g2 = ld.g_arr[ig + 1] 
-		T1 = ld.temp_arr[iT]
-		T2 = ld.temp_arr[iT + 1]
+		g1 = g[ig] 
+		g2 = g[ig + 1] 
+		T1 = temp[iT]
+		T2 = temp[iT + 1]
 		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
 		# entries are numpy.NAN when no information is available
 		# limb darkening array:
