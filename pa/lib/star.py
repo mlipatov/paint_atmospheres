@@ -62,6 +62,12 @@ class Star:
 		# at each z and each wavelength, obtain the product of the phi integral of the fit function and
 		# the dimensionless area element
 		f = mapp.A_arr[mask, np.newaxis] * fit_arr
+
+		# # print the z values and the integrand at a wavelength 
+		# wl = 751.
+		# ind_wl = np.where(self.wavelengths == wl)[0][0]
+		# for zval, fval in zip(z, f[:, ind_wl]): print(zval, fval)
+
 		## initialize the numerical scheme weights for the set of z values 
 		## involved in the integration scheme
 		weights = np.ones(f.shape[0], dtype=np.float) # initialize all weights to 1

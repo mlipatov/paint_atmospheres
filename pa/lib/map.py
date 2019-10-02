@@ -147,25 +147,26 @@ class Map:
 	# should be no more than 6 decimal digits, to conserve memory;
 	# temperature scale can be changed to log10.
 	def interp(self, logg_arr, temp_arr, ld, temp_method):
-		# initialize local variables
+		## initialize local variables
 		wl = ld.wl_arr
-		temp = np.copy(ld.temp_arr) # copy because this may have to be modified for the use in this function
 		g = ld.g_arr
 		n_p = ft.Fit.m * ft.n
 		n_wl = len(wl)
 		n_z = len(self.z_arr)
+		# make a copy of the limb darkening temperature array and,
 		# if the temperature scale is a log scale, modify the temperature arrays 
 		# in this map and in the limb darkening information accordingly
+		temp = np.copy(ld.temp_arr) 
 		if temp_method == 'log':
 			temp_arr = np.log10(temp_arr)
 			temp = np.log10(temp)
-		# for each value of z, look to see where in the limb darkening arrays these values of 
+		# for each value of z, look to see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
 		ig = np.searchsorted(g, logg_arr, side='right') - 1
 		iT = np.searchsorted(temp, temp_arr, side='right') - 1
 		# for each value of z, 
-		# find the values of log g and temperature between which we are interpolating
+		# find the values of gravity and temperature between which we are interpolating
 		g1 = g[ig] 
 		g2 = g[ig + 1] 
 		T1 = temp[iT]
