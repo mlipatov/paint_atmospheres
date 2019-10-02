@@ -33,7 +33,7 @@ class Star:
 	# correction to the scheme that is based on the assumption that the integrand vanishes
 	# at the lower integration bound and that the integrand is linear on the interval between
 	# the two successive z values around the lower integration bound.
-	# also allows a modified Riemann sum and a modified trapezoidal rule.
+	# also allows a modified midpoint rule.
 	def integrate(self, inclination, method='quadratic'):
 		# fetch the surface and the map
 		surf = self.surface
@@ -100,10 +100,9 @@ class Star:
 			# set the weights at the boundaries of the open integration interval
 			weights[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
 			weights[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
-		elif method == 'riemann':
-			pass # weights remain ones
-		elif method == 'trapezoid':
-			weights[-1] = 0.5 # set the upper boundary weight to 1/2
+		elif method == 'midpoint':
+			weights[-1] = 1.5 # set the upper boundary weight to 1.5
+
 		# sum up the product of the integrand and the weights, add the correction
 		result = dz * np.sum(weights[:, np.newaxis] * f, axis=0) + corr
 		# return the result in the appropriate units
