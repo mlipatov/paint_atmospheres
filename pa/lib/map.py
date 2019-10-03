@@ -195,22 +195,35 @@ class Map:
 		noinfo2 = np.isnan(f21[:, 0, 0])
 		noinfo = np.logical_or(noinfo1, noinfo2)
 		if np.any(noinfo):
+			th = np.get_printoptions().get('threshold')
+			np.set_printoptions(threshold=10)
 			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[noinfo]) + \
 				', where the temperatures are ' + str(temp_arr[noinfo]) + ' and log gravity values are ' +\
 				 str(logg_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
 				 'we use the intensity information at the closest gravity where such information is available.')
-			## at each of the neighboring temperatures, 
+			np.set_printoptions(threshold=th)
+			## at each of the neighboring temperatures, and each z value,
 			## keep adding to the gravity index until fit parameters are available
 			# gravity indices for lower and upper temperature neighbors, respectively
 			ig1, ig2 = [np.copy(ig), np.copy(ig)]
 			while np.any(noinfo1):
-				ig1 += 1
-				f11 = f12 = ld.fit_params[iT, ig1]
+				## at z values where the lower temperature neighbor information is missing,
+				# increment the gravity limb darkening index 
+				ig1[noinfo1] += 1
+				# set the fit parameters for both the upper and the lower gravity neighbors
+				# to those at the new gravity indices 
+				f11[noinfo1] = f12[noinfo1] = ld.fit_params[ iT[noinfo1], ig1[noinfo1] ]
+				# update the boolean array saying which lower temperature neighbor info is missing
 				noinfo1 = np.isnan(f11[:, 0, 0])
 			while np.any(noinfo2):
-				ig2 += 1
-				f21 = f22 = ld.fit_params[iT + 1, ig2]
-				noinfo1 = np.isnan(f21[:, 0, 0])				
+				## at z values where the upper temperature neighbor information is missing,
+				# increment the gravity limb darkening index
+				ig2[noinfo2] += 1
+				# set the fit parameters for both the upper and the lower gravity neighbors
+				# to those at the new gravity indices 
+				f21[noinfo2] = f22[noinfo2] = ld.fit_params[ iT[noinfo2] + 1, ig2[noinfo2] ]
+				# update the boolean array saying which upper temperature neighbor info is missing
+				noinfo2 = np.isnan(f21[:, 0, 0])				
 		## bilinear interpolation (see Wikipedia: Bilinear Interpolation: Algorithm)
 		const = (1 / ((g2 - g1) * (T2 - T1)))
 		Dg1 = g2 - logg_arr
