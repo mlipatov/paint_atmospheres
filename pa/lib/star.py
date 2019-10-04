@@ -107,3 +107,19 @@ class Star:
 		result = dz * np.sum(weights[:, np.newaxis] * f, axis=0) + corr
 		# return the result in the appropriate units
 		return result * (self.Req * ut.Rsun)**2
+
+	# approximate the bolometric luminosity of a star in erg/s/ster
+	# 	using the trapezoidal rule
+	# input: light from the star at many wavelengths in erg/s/ster/Hz
+	#	wavelengths in nm
+	@staticmethod
+	def bolometric(light, wl):
+		# convert intensity per Hz of frequency to per nm of wavelength 
+		# this is the integrand in our integral w.r.t. wavelength
+		f = ut.convert_from_Hz(light, wl)
+		# calculate the differences between wavelengths in nm
+		diff = np.diff(wl)
+		## estimate the integral using the trapezoidal rule with variable argument differentials
+		# array of averaged differentials
+		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
+		return np.sum(d * f)

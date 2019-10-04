@@ -24,29 +24,27 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
-# not needed
-# modification of a function from Python documentation on bisect
-# def index(a, x):
-#     'Locate the leftmost value exactly equal to x'
-#     i = bisect_left(a, x)
-#     if i != len(a) and a[i] == x:
-#         return i
-#     return None # this is the line that was modified
-
-# inputs: an array of intensity per Angstrom of wavelength, 
+# inputs: an array of some quantity per Angstrom of wavelength, 
 # 	an array of corresponding wavelengths in nanometers
-# output: an array of intensity per Hertz of frequency
-def convert_from_A(I_arr, wl_arr):
+# output: an array of the same quantity per Hertz of frequency
+def convert_from_A(f_arr, wl_arr):
 	cA = 1.e8 * c # speed of light in angstroms per second
 	wl_A = 1.e1 * wl_arr # wavelengths in angstroms
-	return I_arr * wl_A**2 / cA
+	return f_arr * wl_A**2 / cA
 
-# inputs: an array of intensity per nanometer of wavelength, 
+# inputs: an array of some quantity per nanometer of wavelength, 
 # 	an array of corresponding wavelengths in nanometers
-# output: an array of intensity per Hertz of frequency
-def convert_from_nm(I_arr, wl_arr):
+# output: an array of the same quantity per Hertz of frequency
+def convert_from_nm(f_arr, wl_arr):
 	c_nm = 1.e7 * c # speed of light in nm per second
-	return I_arr * wl_arr**2 / c_nm
+	return f_arr * wl_arr**2 / c_nm
+
+# inputs: an array of some quantity per Hz of frequency, 
+# 	an array of corresponding wavelengths in nanometers
+# output: an array of the same quantity per nm of wavelength
+def convert_from_Hz(f_arr, wl_arr):
+	c_nm = 1.e7 * c # speed of light in nm per second
+	return f_arr * c_nm / wl_arr**2
 
 # input: an array of intensity per square centimeter of photoreceptor, 
 # 	distance to the star in centimeters

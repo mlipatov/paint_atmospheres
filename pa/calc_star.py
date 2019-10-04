@@ -16,17 +16,22 @@ def run():
 	parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)
 	parser.add_argument("mass", help="mass in solar masses", type=float)
 	parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
+	parser.add_argument("--log", help="interpolate linearly in log temperature", action="store_true")
 	args = parser.parse_args()
 
-	## inputs
+	## input files
 	pkl_sfile = args.output # star pickle file
 	pkl_lfile = args.ld_file # limb darkening file
-	n_z = args.n_z
 	## star parameter inputs 
 	omega = args.omega # dimensionless rotation speed
 	luminosity = args.luminosity # luminosity of the star in solar luminosities
 	mass = args.mass # mass of the star in solar masses
 	Req = args.Req # equatorial radius of the star in solar radii
+	# integration and interpolation parameters
+	n_z = args.n_z
+	tm = 'linear'
+	if args.log == True: 
+		tm ='log'
 
 	## unpickle the limb darkening information
 	with open(pkl_lfile, 'rb') as f:
@@ -39,7 +44,7 @@ def run():
 	## For a star with given physical parameters, resolution of map, 
 	## and limb darkening information, pre-compute quantities that are needed for 
 	## integrating the starlight and are independent of the inclination
-	st = star.Star(omega, luminosity, mass, Req, n_z, ld)
+	st = star.Star(omega, luminosity, mass, Req, n_z, ld, temp_method=tm)
 
 	### Pickle the star
 	with open(pkl_sfile, 'wb') as f:
