@@ -154,12 +154,14 @@ class Map:
 		n_wl = len(wl)
 		n_z = len(self.z_arr)
 		# make a copy of the limb darkening temperature array and,
-		# if the temperature scale is a log scale, modify the temperature arrays 
+		# if the temperature scale is a non-linear scale, modify the temperature arrays 
 		# in this map and in the limb darkening information accordingly
 		temp = np.copy(ld.temp_arr) 
 		if temp_method == 'log':
 			temp_arr = np.log10(temp_arr)
 			temp = np.log10(temp)
+		elif temp_method = 'planck':
+			pass
 		# for each value of z, look to see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]

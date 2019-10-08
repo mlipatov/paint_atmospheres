@@ -46,6 +46,12 @@ def convert_from_Hz(f_arr, wl_arr):
 	c_nm = 1.e7 * c # speed of light in nm per second
 	return f_arr * c_nm / wl_arr**2
 
+# inputs: an array of wavelengths in nanometers
+# output: an array of frequencies in Hz
+def nm_to_Hz(wl):
+	c_nm = 1.e7 * c # speed of light in nm per second
+	return c_nm / wl
+
 # input: an array of intensity per square centimeter of photoreceptor, 
 # 	distance to the star in centimeters
 # output: an array of intensity per steradian
