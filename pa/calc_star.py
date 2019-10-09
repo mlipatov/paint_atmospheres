@@ -16,7 +16,7 @@ def run():
 	parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)
 	parser.add_argument("mass", help="mass in solar masses", type=float)
 	parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
-	parser.add_argument("--log", help="interpolate linearly in log temperature", action="store_true")
+	parser.add_argument("-t", help="temperature interpolation: 0=planck(default), 1=linear, 2=log", type=int)
 	args = parser.parse_args()
 
 	## input files
@@ -29,8 +29,10 @@ def run():
 	Req = args.Req # equatorial radius of the star in solar radii
 	# integration and interpolation parameters
 	n_z = args.n_z
-	tm = 'linear'
-	if args.log == True: 
+	tm = 'planck'
+	if args.t == 1: 
+		tm ='linear'
+	elif args.t == 2:
 		tm ='log'
 
 	## unpickle the limb darkening information

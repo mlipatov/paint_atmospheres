@@ -1,4 +1,5 @@
 from pa.lib import fit as ft
+from pa.lib import util as ut
 import numpy as np
 import math
 import sys
@@ -141,38 +142,47 @@ class Map:
 		# return
 		return (F_arr, F0, F1)
 
-	# for each wavelength and intensity fit parameter, bilinearly interpolate the parameter
-	# as a function of temperature and log gravity, at each z; 
-	# data types of gravity, temperature and intensity fit parameters in the limb darkening information
-	# should be no more than 6 decimal digits, to conserve memory;
-	# temperature scale can be changed to log10.
+	# Interpolation of fit coefficients w.r.t. gravity and temperature
+	# Inputs: array of log gravities at all values of z
+	#	array of temperatures at all values of z
+	# 	fit coefficients on a grid of temperatures and log gravities
+	# 	temperature interpolation method: 'linear', 'log, 'planck'
+	# Result: set an attribute array of interpolated fit coefficients with
+	# 	index 0: z
+	# 	index 1: wavelength
+	# 	index 2: parameter index 
+	# Note: data types of gravity, temperature and intensity fit parameters 
+	# in the limb darkening information should be no more than 6 decimal digits, 
+	# to conserve memory
 	def interp(self, logg_arr, temp_arr, ld, temp_method):
-		## initialize local variables
-		wl = ld.wl_arr
-		g = ld.g_arr
-		n_p = ft.Fit.m * ft.n
-		n_wl = len(wl)
+		
+		# The temperature-dependent factor in the Planck function
+		# Inputs: temperature and frequency arrays of the same dimensions
+		# Output: the factor array, with the same dimensions as each input array
+		def planck(T, nu):
+			return 1. / ( np.exp( ut.h * nu / (ut.k * T) ) - 1 )
+		
+		# parameter values of the fit coefficients grid
+		wl = ld.wl_arr # wavelengths
+		g = ld.g_arr # log gravities
+		T = ld.temp_arr # temperatures
+		# lengths of the fit coefficients grid
+		n_p = ft.Fit.m * ft.n # number of fit coefficients at given physical parameters
+		n_wl = len(wl) # number of wavelengths
+		# number of z values
 		n_z = len(self.z_arr)
-		# make a copy of the limb darkening temperature array and,
-		# if the temperature scale is a non-linear scale, modify the temperature arrays 
-		# in this map and in the limb darkening information accordingly
-		temp = np.copy(ld.temp_arr) 
-		if temp_method == 'log':
-			temp_arr = np.log10(temp_arr)
-			temp = np.log10(temp)
-		elif temp_method = 'planck':
-			pass
-		# for each value of z, look to see where in the limb darkening arrays its values of 
+
+		# for each value of z, see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
 		ig = np.searchsorted(g, logg_arr, side='right') - 1
-		iT = np.searchsorted(temp, temp_arr, side='right') - 1
+		iT = np.searchsorted(T, temp_arr, side='right') - 1
 		# for each value of z, 
 		# find the values of gravity and temperature between which we are interpolating
 		g1 = g[ig] 
 		g2 = g[ig + 1] 
-		T1 = temp[iT]
-		T2 = temp[iT + 1]
+		T1 = T[iT]
+		T2 = T[iT + 1]
 		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
 		# entries are numpy.NAN when no information is available
 		# limb darkening array:
@@ -198,7 +208,7 @@ class Map:
 		noinfo = np.logical_or(noinfo1, noinfo2)
 		if np.any(noinfo):
 			th = np.get_printoptions().get('threshold')
-			np.set_printoptions(threshold=10)
+			np.set_printoptions(threshold=10) # ensure summary printout of large arrays
 			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[noinfo]) + \
 				', where the temperatures are ' + str(temp_arr[noinfo]) + ' and log gravity values are ' +\
 				 str(logg_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
@@ -209,7 +219,7 @@ class Map:
 			# gravity indices for lower and upper temperature neighbors, respectively
 			ig1, ig2 = [np.copy(ig), np.copy(ig)]
 			while np.any(noinfo1):
-				## at z values where the lower temperature neighbor information is missing,
+				## at z values where the lower temperature neighbor's information is missing,
 				# increment the gravity limb darkening index 
 				ig1[noinfo1] += 1
 				# set the fit parameters for both the upper and the lower gravity neighbors
@@ -225,7 +235,32 @@ class Map:
 				# to those at the new gravity indices 
 				f21[noinfo2] = f22[noinfo2] = ld.fit_params[ iT[noinfo2] + 1, ig2[noinfo2] ]
 				# update the boolean array saying which upper temperature neighbor info is missing
-				noinfo2 = np.isnan(f21[:, 0, 0])				
+				noinfo2 = np.isnan(f21[:, 0, 0])	
+
+		# if the temperature scale is non-linear, 
+		# modify the temperature and gravity arrays accordingly
+		if temp_method == 'log':
+			T1 = np.log10(T1)
+			T2 = np.log10(T2)
+			temp_arr = np.log10(temp_arr)
+		elif temp_method == 'planck':
+			# convert the wavelengths to frequencies
+			nu = ut.nm_to_Hz(wl)
+			# create grids based on the arrays of temperatures at all values of z and the frequency array
+			# index 0: z
+			# index 1: frequency
+			nn, tt = np.meshgrid(nu, temp_arr)
+			NN1, TT1 = np.meshgrid(nu, T1)
+			NN2, TT2 = np.meshgrid(nu, T2)
+			# replace the 1D temperature with 2D arrays evaluated on the grids
+			temp_arr = planck(tt, nn)
+			T1 = planck(TT1, NN1)
+			T2 = planck(TT2, NN2)
+			# add the wavelength dimension to the gravity arrays
+			logg_arr = logg_arr[:, np.newaxis]
+			g1 = g1[:, np.newaxis]
+			g2 = g2[:, np.newaxis]
+
 		## bilinear interpolation (see Wikipedia: Bilinear Interpolation: Algorithm)
 		const = (1 / ((g2 - g1) * (T2 - T1)))
 		Dg1 = g2 - logg_arr
@@ -241,8 +276,17 @@ class Map:
 		# index 0: z
 		# index 1: wavelength
 		# index 2: parameter index
-		self.params_arr = \
-			f11 * w11[:, np.newaxis, np.newaxis] + \
-			f21 * w21[:, np.newaxis, np.newaxis] + \
-			f12 * w12[:, np.newaxis, np.newaxis] + \
-			f22 * w22[:, np.newaxis, np.newaxis]
+		if temp_method == 'planck': 
+			# add the parameter index dimension to the helper matrices
+			self.params_arr = \
+				f11 * w11[:, :, np.newaxis] + \
+				f21 * w21[:, :, np.newaxis] + \
+				f12 * w12[:, :, np.newaxis] + \
+				f22 * w22[:, :, np.newaxis]
+		else:
+			# add the wavelength and parameter indices to the helper matrices
+			self.params_arr = \
+				f11 * w11[:, np.newaxis, np.newaxis] + \
+				f21 * w21[:, np.newaxis, np.newaxis] + \
+				f12 * w12[:, np.newaxis, np.newaxis] + \
+				f22 * w22[:, np.newaxis, np.newaxis]

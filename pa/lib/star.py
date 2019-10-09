@@ -11,7 +11,7 @@ class Star:
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
 	Also performs the 1D integration in the z dimension,
 	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition."""
-	def __init__(self, omega, luminosity, mass, Req, n_z, ld, temp_method='linear'):
+	def __init__(self, omega, luminosity, mass, Req, n_z, ld, temp_method='planck'):
 		self.wavelengths = ld.wl_arr # wavelengths
 		self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity
