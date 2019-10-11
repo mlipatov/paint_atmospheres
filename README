@@ -19,7 +19,7 @@ Executables:
 	calc_limbdark computes fits of intensity w.r.t surface inclination
 	calc_star performs inclination-independent computations
 	calc_spectra computes spectra for multiple inclinations
-	plot_spectrum plots a spectrum at a single inclination 
+	plot_spectra plots spectra 
 	plot_Imu plots a fit of intensity versus surface inclination
 	convert_spectrum converts a spectrum between units
 	<command> -h provides usage instructions
