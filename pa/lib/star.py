@@ -1,7 +1,11 @@
 from pa.lib import surface as sf
-import pa.lib.map as mp
+import pa.lib.map as mp # use this form of import for map
 from pa.lib import fit as ft
 from pa.lib import util as ut
+
+from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
+
 import numpy as np
 import sys
 import math
@@ -11,9 +15,10 @@ class Star:
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
 	Also performs the 1D integration in the z dimension,
 	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition."""
-	def __init__(self, omega, luminosity, mass, Req, n_z, ld, temp_method='planck'):
-		self.wavelengths = ld.wl_arr # wavelengths
-		self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
+	def __init__(self, omega, luminosity, mass, Req, nz, ld=None, temp_method='planck'):
+		if ld is not None:
+			self.wavelengths = ld.wl_arr # wavelengths
+			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity
 		self.mass = mass
 		self.Req = Req # equatorial radius, in solar radii
@@ -24,7 +29,7 @@ class Star:
 		mult_temp = ut.Tsun * Req**(-0.5) * luminosity**(0.25)
 		# map of gravity, temperature, intensity fit parameters 
 		# and other features across the surface of the star
-		self.map = mp.Map(self.surface, n_z, add_logg, mult_temp, ld, temp_method)
+		self.map = mp.Map(self.surface, nz, add_logg, mult_temp, ld, temp_method)
 
 	# for a given inclination,
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
@@ -38,7 +43,10 @@ class Star:
 		# fetch the surface and the map
 		surf = self.surface
 		mapp = self.map
-		z_arr = mapp.z_arr
+		# get the data from the map, don't use z = +/- 1
+		z_arr = mapp.z_arr[ 1:-1 ] 
+		params_arr = mapp.params_arr[ 1:-1]
+		A_arr = mapp.A_arr[ 1:-1 ]
 		dz = mapp.dz
 		# set the inclination of the surface
 		surf.set_inclination(inclination)
@@ -46,8 +54,8 @@ class Star:
 		z1 = surf.z1
 		
 		# produce a mask that says which values of z are strictly above the appropriate integration bound  
-		mask = (mapp.z_arr > -z1)
-		z = mapp.z_arr[mask] # array of z that are strictly greater than the integration bound
+		mask = (z_arr > -z1)
+		z = z_arr[mask] # array of z that are strictly greater than the integration bound
 		## compute a 2D array of fit function integrals, 
 		## one for each combination of z value, interval and fit function
 		a, b = surf.ab(z) # arrays of coefficients needed for the computation of the integrals 
@@ -57,16 +65,11 @@ class Star:
 		# at each z value and wavelength, obtain the integral of the total fit function over phi;
 		# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 		# along the fit parameter dimension
-		fit_arr = np.sum(mapp.params_arr[mask, :, :] * fitint[:, np.newaxis, :], axis=2)
+		fit_arr = np.sum(params_arr[mask, :, :] * fitint[:, np.newaxis, :], axis=2)
 		# obtain the integrand to integrate in the z dimension:
 		# at each z and each wavelength, obtain the product of the phi integral of the fit function and
 		# the dimensionless area element
-		f = mapp.A_arr[mask, np.newaxis] * fit_arr
-
-		# # print the z values and the integrand at a wavelength 
-		# wl = 751.
-		# ind_wl = np.where(self.wavelengths == wl)[0][0]
-		# for zval, fval in zip(z, f[:, ind_wl]): print(zval, fval)
+		f = A_arr[mask, np.newaxis] * fit_arr
 
 		## initialize the numerical scheme weights for the set of z values 
 		## involved in the integration scheme
@@ -123,3 +126,57 @@ class Star:
 		# array of averaged differentials
 		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
 		return np.sum(d * f)
+
+	# plot the temperature of the visible surface of the star
+	# on a set of axes
+	# Inputs: axes, inclination, size of the axes in inches
+	def plot_temp(self, ax, inclination, size_inches):
+
+		sine = np.sin(inclination)
+		cosn = np.cos(inclination)
+
+		# extract the z values
+		z = self.map.z_arr
+		# get the r values
+		r = self.surface.R( z )
+		# convert the z values to the same scale as the r values
+		z = z / self.surface.f
+		## thicknesses of the ellipses 
+		r_diff = np.diff(r)
+		z_diff = np.diff(z)
+		# line thickness in units of Req
+		# double it, so that successive ellipses draw over half the previous line
+		l = 2 * (r_diff * cosn + z_diff * sine)
+		## don't draw the ellipse at z = +/-1
+		r = r[1:]
+		z = z[1:]
+		# minor axes of the ellipses
+		b = r * cosn
+		# ellipses' locations in the direction of their minor axes
+		c = z * sine
+		# temperatures of the ellipses
+		T = self.map.temp_arr[1:]
+		T_min = np.min(T)
+		T_max = np.max(T)
+		T_range = T_max - T_min
+		# colors (invert the numbers for the color map)
+		colors = (T_max - T) / T_range
+
+		# image size in different units
+		size_req = 2 # size of the image in Req
+		# unit conversions
+		ipr = size_inches / size_req # inches per Req
+		ppi = 72 # points per inch
+		ppr = ipr * ppi # points per Req
+
+		## draw the star
+		cmap = plt.cm.get_cmap('YlOrBr') # color map
+		ax.set_aspect(1)
+		ax.axis('off')
+		ax.set_frame_on(False)
+		ax.set_xlim([-1, 1])
+		ax.set_ylim([-1, 1])
+		for i in range(len(z)):
+			ellipse = Ellipse(xy=(0, c[i]), width=2*r[i], height=2*b[i], edgecolor=cmap(colors[i]),\
+				fc=cmap(colors[i]), fill=True, lw=ppr * l[i])
+			ax.add_patch(ellipse)

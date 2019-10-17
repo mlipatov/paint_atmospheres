@@ -46,8 +46,12 @@ def run():
 	## For a star with given physical parameters, resolution of map, 
 	## and limb darkening information, pre-compute quantities that are needed for 
 	## integrating the starlight and are independent of the inclination
-	st = star.Star(omega, luminosity, mass, Req, n_z, ld, temp_method=tm)
+	st = star.Star(omega, luminosity, mass, Req, n_z, ld=ld, temp_method=tm)
 
 	### Pickle the star
 	with open(pkl_sfile, 'wb') as f:
 		pickle.dump(st, f)
+		
+# in case we are running this file as the main program
+if __name__ == "__main__":
+	run()

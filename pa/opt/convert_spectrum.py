@@ -76,3 +76,7 @@ def run():
 		f.write(str(wl_arr[ind]) + '\t %.5E\n' % I_arr[ind])
 		ind += 1
 	f.close()
+
+# in case we are running this file as the main program
+if __name__ == "__main__":
+	run()

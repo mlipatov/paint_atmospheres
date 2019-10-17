@@ -27,3 +27,7 @@ def run():
 
 	## Plot a dependence of intensity on mu
 	ld.plotFit(wl, g, temp)
+
+# in case we are running this file as the main program
+if __name__ == "__main__":
+	run()

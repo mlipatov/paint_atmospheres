@@ -30,10 +30,12 @@ def run():
 		sys.exit("Please specify either a single inclination in radians (one number) " +\
 			"or a range specified by minimum, maximum and step (three numbers).")
 	elif li == 1:
-		inclinations = i
+		inclinations = np.array([ i ])
+		# decimal precision of inclination for printout
+		prec = 6
 	elif li == 3:
-		inclinations = np.arange(*i)
-		# decimal precision of inclination
+		inclinations = np.arange( *i )
+		# decimal precision of inclination for printout
 		prec = np.int( np.ceil( -np.log10( i[2] ) ) )
 	leni = len(inclinations)
 	# unpickle the star
@@ -71,7 +73,7 @@ def run():
 		f.write('# luminosity: ' + str(st.luminosity) + '\n')
 		f.write('# mass: ' + str(st.mass) + '\n')
 		f.write('# Req: ' + str(st.Req) + '\n')
-		f.write('# z resolution: ' + str(st.map.dz) + '\n')
+		f.write('# number of z values: ' + str(st.map.nz) + '\n')
 		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		# write the spectrum to the file
 		f.write('\n')
@@ -81,3 +83,7 @@ def run():
 			f.write('\t %.5E' % light[j])
 			f.write('\n')
 		f.close()
+		
+# in case we are running this file as the main program
+if __name__ == "__main__":
+	run()

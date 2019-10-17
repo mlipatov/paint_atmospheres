@@ -14,17 +14,19 @@ class Map:
 
 	# initialize with the surface shape of the star, the number of z values to use for integration, 
 	# the constants needed for temperature and gravity unit conversions, and limb darkening information
-	def __init__(self, surf, n_z, add_logg, mult_temp, ld, temp_method):
+	def __init__(self, surf, nz, add_logg, mult_temp, ld, temp_method):
 
-		## initialize surface and limb darkening information
+		## initialize the surface
 		self.surface = surf # surface shape information
 		omega = surf.omega
 
 		## initialize the array of z values for integration
 		## do not use the boundary values
-		self.z_arr = np.linspace(-1, 1, n_z + 2)[ 1:-1 ]
+		self.z_arr = np.linspace(-1, 1, nz + 2) # include z = -1, 1
 		# record the spacing between the z values
 		self.dz = self.z_arr[1] - self.z_arr[0]
+		# store the number of z values
+		self.nz = nz
 
 		## compute area elements for integration
 		## as well as cylindrical coordinate r and the spherical coordinate rho
@@ -33,22 +35,25 @@ class Map:
 		rho_arr = surf.rho( r_arr, self.z_arr )
 		r01 = surf.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
 		rho0, rho1 = surf.rho( r01, np01 ) # rho at z = 0 and +/-1
+		
 		## compute the effective gravitational acceleration in units of G M / Re**2 
 		geff_arr = self.geff(rho_arr, r_arr)
 		# convert to log10(gravity in cm / s**2) and to a less memory-intensive data type
 		logg_arr = add_logg + np.log10(geff_arr)
 		logg_arr = logg_arr.astype(np.float32)
+		
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z; then convert it to Kelvin
-		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # compute all the F values
-
+		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # the F values
+		# temporarily store the temperatures
 		temp_arr = mult_temp * self.Teff( geff_arr, F_arr ) # the temperatures
-		# temp_arr = np.full_like(F_arr, 5750) # temporary
-
 		# convert temperature values to a less memory-intensive data type
-		temp_arr = temp_arr.astype(np.float32)
+		self.temp_arr = temp_arr.astype(np.float32)
+
 		# compute the interpolated values of limb darkening fit parameters
-		self.interp(logg_arr, temp_arr, ld, temp_method)
+		# if given limb darkening information
+		if ld is not None:
+			self.interp(logg_arr, temp_arr, ld, temp_method)
 	
 	# returns the effective gravitational acceleration in units of G M / Re**2 
 	# as in equations 7 and 31 of EL, for each z

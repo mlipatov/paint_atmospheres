@@ -30,3 +30,7 @@ def run():
 	### Pickle the limb darkening information
 	with open(pkl_lfile, 'wb') as f:
 		pickle.dump(ld, f)
+		
+# in case we are running this file as the main program
+if __name__ == "__main__":
+	run()
