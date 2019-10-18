@@ -160,7 +160,8 @@ class Star:
 		T_max = np.max(T)
 		T_range = T_max - T_min
 		# colors (invert the numbers for the color map)
-		colors = (T_max - T) / T_range
+		max_col = 0.75
+		colors = max_col * (T_max - T) / T_range + (1 - max_col)
 
 		# image size in different units
 		size_req = 2 # size of the image in Req
