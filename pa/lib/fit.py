@@ -157,7 +157,7 @@ class Fit:
 		# if we are looking at the star pole-on, mu doesn't change as phi changes,
 		# so we integrate from zero to pi in the current (and only) mu interval
 		result_azero = intgrt(np.pi, a[~anz], b[~anz]) - intgrt(0, a[~anz], b[~anz])
-		# set the results at a != 0
+		# set the results at a = 0
 		result[ ~anz, i[~anz], : ] = result_azero
 		### everything below is done for the locations where a != 0
 		# set all the arrays we will use to be for a != 0 locations only, 

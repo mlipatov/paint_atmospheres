@@ -79,17 +79,20 @@ def run():
 		wl_arr = np.array(wl_arr)
 
 		## plot
-		if inc == 0: # temporary
-			max_I = max(I_arr)
-			min_I = min(I_arr)
-			delta_y = max(I_arr) - min(I_arr)
-			offset_y = delta_y * 0.1
+		# if inc == 0: # uncomment if we want to plot all plots with the same y-range
+		max_I = max(I_arr)
+		min_I = min(I_arr)
+		delta_y = max(I_arr) - min(I_arr)
+		offset_y = delta_y * 0.1
+
 		fig = plt.figure()
-		plt.axes().set_ylim([min_I - offset_y, max_I + offset_y])
-		plt.scatter(wl_arr, I_arr, marker='o', c='b', s=3)
-		plt.title( 'Spectrum at i = %5.2f' % inc )
-		plt.xlabel(r'$\lambda$, nm')
-		plt.ylabel(r'Intensity,  erg / s $\times$ Hz $\times$ ster')
+		ax = plt.axes() 
+		ax.set_ylim([min_I - offset_y, max_I + offset_y])
+		ax.set_ylim((-2.98405e+18, 3.282455e+19)) # temporary
+		ax.scatter(wl_arr, I_arr, marker='o', c='b', s=3)
+		ax.set_title( 'Spectrum at i = %5.2f' % inc )
+		ax.set_xlabel(r'$\lambda$, nm')
+		ax.set_ylabel(r'Intensity,  erg / s $\times$ Hz $\times$ ster')
 
 		## Add an inset showing the temperature of the visible surface
 		if temp: 

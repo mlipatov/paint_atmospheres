@@ -3,8 +3,8 @@ import pa.lib.map as mp # use this form of import for map
 from pa.lib import fit as ft
 from pa.lib import util as ut
 
+import matplotlib as mpl # for the temperature color bar
 from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
 
 import numpy as np
 import sys
@@ -129,8 +129,9 @@ class Star:
 
 	# plot the temperature of the visible surface of the star
 	# on a set of axes
-	# Inputs: axes, inclination, size of the axes in inches
-	def plot_temp(self, ax, inclination, size_inches):
+	# Inputs: axes, inclination, size of the axes in inches, 
+	#	an optional axes where to draw a horizontal color bar
+	def plot_temp(self, ax, inclination, size_inches, cax=None):
 
 		sine = np.sin(inclination)
 		cosn = np.cos(inclination)
@@ -159,9 +160,8 @@ class Star:
 		T_min = np.min(T)
 		T_max = np.max(T)
 		T_range = T_max - T_min
-		# colors (invert the numbers for the color map)
-		max_col = 0.75
-		colors = max_col * (T_max - T) / T_range + (1 - max_col)
+		# colors = max_col * (T_max - T) / T_range + (1 - max_col)
+		colors = (T_max - T) / T_range
 
 		# image size in different units
 		size_req = 2 # size of the image in Req
@@ -171,13 +171,19 @@ class Star:
 		ppr = ipr * ppi # points per Req
 
 		## draw the star
-		cmap = plt.cm.get_cmap('YlOrBr') # color map
+		min_col = 0.25 # minimum color in the color map
+		cmapBig = mpl.cm.get_cmap('YlOrBr', 512)
+		cmap = mpl.colors.ListedColormap(cmapBig(np.linspace(min_col, 1, 256)))
 		ax.set_aspect(1)
 		ax.axis('off')
 		ax.set_frame_on(False)
 		ax.set_xlim([-1, 1])
 		ax.set_ylim([-1, 1])
 		for i in range(len(z)):
-			ellipse = Ellipse(xy=(0, c[i]), width=2*r[i], height=2*b[i], edgecolor=cmap(colors[i]),\
+			ellipse = mpl.patches.Ellipse(xy=(0, c[i]), width=2*r[i], height=2*b[i], edgecolor=cmap(colors[i]),\
 				fc=cmap(colors[i]), fill=True, lw=ppr * l[i])
 			ax.add_patch(ellipse)
+		if cax is not None:
+			norm = mpl.colors.Normalize(vmin=T_min, vmax=T_max)
+			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
+			cb.set_label('Temperature, K')
