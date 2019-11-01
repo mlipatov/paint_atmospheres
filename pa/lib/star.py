@@ -161,7 +161,7 @@ class Star:
 		T_max = np.max(T)
 		T_range = T_max - T_min
 		# colors = max_col * (T_max - T) / T_range + (1 - max_col)
-		colors = (T_max - T) / T_range
+		colors = (T - T_min) / T_range
 
 		# image size in different units
 		size_req = 2 # size of the image in Req
@@ -173,7 +173,7 @@ class Star:
 		## draw the star
 		min_col = 0.25 # minimum color in the color map
 		cmapBig = mpl.cm.get_cmap('YlOrBr', 512)
-		cmap = mpl.colors.ListedColormap(cmapBig(np.linspace(min_col, 1, 256)))
+		cmap = mpl.colors.ListedColormap(cmapBig(np.linspace(1, min_col, 256)))
 		ax.set_aspect(1)
 		ax.axis('off')
 		ax.set_frame_on(False)

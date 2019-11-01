@@ -89,10 +89,13 @@ class Surface:
 	# spherical coordinate rho from a set of theta values
 	def rh(self, theta):
 		w = self.w
-		sine = np.sin(theta)
-		result = 2 * np.sqrt(w / 3) * np.sin( \
-					(1./3) * np.arcsin( \
-						(3 * np.sqrt(3) / 2) * (w - 1) * sine / w**(3./2) ) ) / sine
+		if np.isinf(w):
+			result = 1
+		else:
+			sine = np.sin(theta)
+			result = 2 * np.sqrt(w / 3) * np.sin( \
+						(1./3) * np.arcsin( \
+							(3 * np.sqrt(3) / 2) * (w - 1) * sine / w**(3./2) ) ) / sine
 		return result
 
 	## integration bound on z

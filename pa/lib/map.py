@@ -76,44 +76,50 @@ class Map:
 	# of z values that aren't too close to 0 at its every step; for values that 
 	# are close to 0, returns the temperature correction expected at z = 0
 	def F(self, rho_arr, rho0, rho1):
-		# helper function
-		# inputs: squared rotation speed, 
-		#	an array of rho and an array of x = abs(cos(theta))
-		def add(o2, rho_arr, x_arr):
-			return -x_arr - (1./3) * o2 * rho_arr**3 * x_arr**3
+		# output: smallest value of x for which to compute 
+		#	using full Newton's method step function
+		# inputs: rotational velocity of the star,
+		#	temperature correction at x = 0,
+		#	order-one factor of proportionality between the error 
+		#		in full step function and that in the series expansion
+		def delta(omega, F0, A):
+			# resolution of floating point numbers
+			r = np.finfo(float).resolution
+			# helper variables
+			o2 = omega**2
+			o4 = omega**4
+			# coefficient of the 4th order term of the series expansion 
+			# of Newton's method step function
+			a4 = ( 56 - 16/F0 + 35*np.sqrt(F0)*(-1 + o2) + \
+				(14*F0**1.5*(1 + 4*o2 + 10*o4))/(-1 + o2) +\
+				(F0**2.5*(-9 - 8*o2 + 44*o4*(-3 + o2)))/(-1 + o2)**3 )/140.
+			# output
+			output = np.power(2 * r * (F0**(5./2) - F0**2) / (A * a4), 1./6)
+			return output
 		# helper function
 		# inputs: an array of temperature correction values and 
 		#	an array of x = abs(cos(theta)) values
 		def G(F_arr, x_arr):
 			return np.sqrt(F_arr * (1 - x_arr**2) + x_arr**2)
-		# the function whose root we are looking for, 
-		# derived from EL24, with x = abs(cos(theta)) and F as defined in EL26
-		def f(F_arr, x_arr, G_arr, add_arr): 
-			result1 = x_arr / G_arr
-			result2 = np.log( np.sqrt(F_arr) * (1 + x_arr) / (x_arr + G_arr) )
-			return result1 + result2 + add_arr
-		# the derivative of the function we are looking for,
-		# with respect to the temperature correction F
-		def Df(F_arr, x_arr, G_arr):
-			result = (x_arr / G_arr)**3 / (2 * F_arr)
-			return result
-		# a step of the Newton's method
-		# inputs: an array of F values, corresponding arrays of x values and values of 
-		#	the additive term that doesn't depend on F
-		def step(F_arr, x_arr, add_arr):
-			# helper function at the current values of F
-			G_arr = G(F_arr, x_arr)
-			# the function whose root we are looking for
-			f_arr = f(F_arr, x_arr, G_arr, add_arr)
-			# the derivative of the function whose root we are looking for
-			Df_arr = Df(F_arr, x_arr, G_arr)
-			# step
-			result = F_arr - f_arr / Df_arr
-			return result
-		# x is defined as abs(cos(theta))
-		# optimal smallest value of x for which to compute using Newton's method
-		# assumes float precision = 1e-15
-		delta = 0.0015 
+		# output: full Newton's method step function
+		# inputs: F, x, G, rho and omega
+		def dF_full(F_arr, x_arr, G_arr, rho_arr, omega):
+			mult = -2 * F_arr * G_arr**2
+			add1 = (1 - G_arr) / x_arr**2
+			add2 = (-1./3) * G_arr * rho_arr**3 * omega**2
+			add3 = G_arr * np.log( np.sqrt(F_arr) * (1 + x_arr) / (x_arr + G_arr) ) / x_arr**3
+			output = mult * (add1 + add2 + add3)
+			return output
+		# output: series approximation of Newton's method step function up to third order
+		# inputs: F, x, G, rho and omega
+		def dF_approx(F, x, omega):
+			# helper variables and arrays
+			x2 = x**2
+			o2 = omega**2
+			output = (2*F)/3. + (2*x2)/5. - F**1.5*x2*(1 - o2) - \
+				(F**2.5*(10*(1 - o2)**2 + 3*x2*(-3 + 8*o2)))/(15.*(1 - o2))
+			return output
+
 		# star / surface parameters
 		surf = self.surface
 		omega = surf.omega
@@ -123,27 +129,31 @@ class Map:
 		z_arr = self.z_arr
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
-		# a mask that says which x elements are not so close to zero (x ~ 0)
-		# that we don't want to be using Newton's method
-		mask = np.greater(x_arr, delta)
+		# optimal smallest value of x for which to compute using Newton's method
+		d = delta(omega, F0, 2)
+		# a mask that says which x elements are far enough from zero
+		# that we use the full Newton's method step function;
+		# for the remaining elements, we use order three series expansion of the 
+		# step function instead
+		fnm = np.greater(x_arr, d)
 		# initialize the result array (to the half-way point in the possible range)
 		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
-		# set the result array at the locations where x ~ 0
-		F_arr[ ~mask ] = F0
-		# for Newton method's operation, remove the locations where x ~ 0
-		# from all arrays except the result array
-		x_arr = x_arr[mask]
-		rho_arr = rho_arr[mask] # get the corresponding values of rho
-		# an additive term that doesn't depend on F, for every z
-		add_arr = add(o2, rho_arr, x_arr) 
 		# Newton's algorithm; 
 		# ten steps is about twice the number we need
 		for i in range(10):
-			# compute the new values of F
-			F_arr[ mask ] = step(F_arr[mask], x_arr, add_arr)
+			# a helper function evaluated
+			G_arr = G(F_arr[fnm], x_arr[fnm])
+			# the new values of F at the locations 
+			# where we use the full Newton's method step function
+			F_arr[ fnm ] = F_arr[fnm] + \
+				dF_full(F_arr[fnm], x_arr[fnm], G_arr, rho_arr[fnm], omega)
+			# the new values of F at the locations 
+			# where we use the series expansion of Newton's method step function
+			F_arr[ ~fnm ] = F_arr[~fnm] + \
+				dF_approx(F_arr[~fnm], x_arr[~fnm], omega)
 			# check if we end up below the lower bound on F 
 			# and come back to that lower bound if we did overshoot it
-			F_arr[ mask & (F_arr < F1) ] = F1
+			F_arr[ (F_arr < F1) ] = F1
 		# return
 		return (F_arr, F0, F1)
 
