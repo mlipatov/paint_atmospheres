@@ -7,7 +7,7 @@ import pickle
 
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
-		"calc_limbdark \'data/im01k2.pck\' \'data/limbdark_m01.pkl\' -b 0.1 0.25 -s -c")
+		"calc_limbdark \'data/im01k2.pck\' \'data/limbdark_m01.pkl\' -b 0.1 0.25 -s")
 	parser.add_argument("ldfile", help="an existing file with limb darkening information")
 	parser.add_argument("pkl_lfile", help="name for a .pkl file with limb darkening information to create")
 	parser.add_argument('-b', type=float, nargs='+', help='list of boundaries between intervals', required=True)

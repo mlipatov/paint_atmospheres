@@ -36,7 +36,7 @@ class Star:
 	# in ergs/s/Hz/ster;
 	# uses the integration scheme from Numerical Recipes and an additive
 	# correction to the scheme that is based on the assumption that the integrand vanishes
-	# at the lower integration bound and that the integrand is linear on the interval between
+	# at the lower integration bound and that the integrand is quadratic on the interval between
 	# the two successive z values around the lower integration bound.
 	# also allows a modified midpoint rule.
 	def integrate(self, inclination, method='quadratic'):
@@ -91,7 +91,7 @@ class Star:
 			# coefficients of the quadratic approximating the integrand
 			a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
 			b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-			if d >= dz / 2: # if the difference is larger than delta-z
+			if d >= dz / 2: # if the difference is larger than delta-z / 2
 				# correct by the area to the left of the lower integration bound
 				d1 = dz - d
 				corr = (a / 3) * d1**3 - (b / 2) * d1**2

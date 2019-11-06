@@ -82,9 +82,9 @@ class Map:
 		#	temperature correction at x = 0,
 		#	order-one factor of proportionality between the error 
 		#		in full step function and that in the series expansion
-		def delta(omega, F0, A):
+		def X1(omega, F0, A):
 			# resolution of floating point numbers
-			r = np.finfo(float).resolution
+			r = np.finfo(float).eps
 			# helper variables
 			o2 = omega**2
 			o4 = omega**4
@@ -130,12 +130,15 @@ class Map:
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
-		d = delta(omega, F0, 2)
+		if F0 == 1: # if omega = 0, F_0 = 1
+			x1 = 0 # use the full deltaF function except at precisely x = 0
+		else:
+			x1 = X1(omega, F0, 1)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
 		# for the remaining elements, we use order three series expansion of the 
 		# step function instead
-		fnm = np.greater(x_arr, d)
+		fnm = np.greater(x_arr, x1)
 		# initialize the result array (to the half-way point in the possible range)
 		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
 		# Newton's algorithm; 
