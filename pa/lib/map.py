@@ -85,16 +85,20 @@ class Map:
 		def X1(omega, F0, A):
 			# resolution of floating point numbers
 			r = np.finfo(float).eps
+			# minimum value of omega 
 			# helper variables
 			o2 = omega**2
 			o4 = omega**4
-			# coefficient of the 4th order term of the series expansion 
-			# of Newton's method step function
-			a4 = ( 56 - 16/F0 + 35*np.sqrt(F0)*(-1 + o2) + \
-				(14*F0**1.5*(1 + 4*o2 + 10*o4))/(-1 + o2) +\
-				(F0**2.5*(-9 - 8*o2 + 44*o4*(-3 + o2)))/(-1 + o2)**3 )/140.
-			# output
-			output = np.power(2 * r * (F0**(5./2) - F0**2) / (A * a4), 1./6)
+			if omega == 0 and F0 == 1:
+				output = 1 # error in the series expansion goes to zero
+			else:
+				# coefficient of the 4th order term of the series expansion 
+				# of Newton's method step function
+				a4 = ( 56 - 16/F0 + 35*np.sqrt(F0)*(-1 + o2) + \
+					(14*F0**1.5*(1 + 4*o2 + 10*o4))/(-1 + o2) +\
+					(F0**2.5*(-9 - 8*o2 + 44*o4*(-3 + o2)))/(-1 + o2)**3 )/140.
+				# output
+				output = np.power(2 * r * (F0**(5./2) - F0**2) / (A * a4), 1./6)
 			return output
 		# helper function
 		# inputs: an array of temperature correction values and 
