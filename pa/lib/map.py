@@ -45,7 +45,7 @@ class Map:
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z; then convert it to Kelvin
 		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # the F values
-		# temporarily store the temperatures
+		# temperatures
 		temp_arr = mult_temp * self.Teff( geff_arr, F_arr ) # the temperatures
 		# convert temperature values to a less memory-intensive data type
 		self.temp_arr = temp_arr.astype(np.float32)
@@ -154,9 +154,10 @@ class Map:
 			# where we use the series expansion of Newton's method step function
 			F_arr[ ~fnm ] = F_arr[~fnm] + \
 				dF_approx(F_arr[~fnm], x_arr[~fnm], omega)
-			# check if we end up below the lower bound on F 
-			# and come back to that lower bound if we did overshoot it
+			# check if we end up outside the bounds on F 
+			# and come back into the bounds if we did
 			F_arr[ (F_arr < F1) ] = F1
+			F_arr[ (F_arr > F0) ] = F0
 		# return
 		return (F_arr, F0, F1)
 

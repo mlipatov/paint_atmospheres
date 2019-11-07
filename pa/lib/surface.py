@@ -56,10 +56,11 @@ class Surface:
 
 	## r(z) and its derivative
 	def R(self, z):
-		result = np.sqrt(self.S(self.U(z)))
-		# just in case we tried to take a square root of a negative number
-		# because of limited precision, set the result at z = 1 or -1 to zero
-		result[np.abs(z) == 1] = 0
+		s = self.S(self.U(z))
+		# we may get a negative number at z = 1 or -1,
+		# due to limited precision; set r = 0 there
+		s[ np.abs(z) == 1 ] = 0
+		result = np.sqrt(s)
 		return result
 
 	def Drz(self, z):
