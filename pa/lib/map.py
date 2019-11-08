@@ -77,28 +77,26 @@ class Map:
 	# are close to 0, returns the temperature correction expected at z = 0
 	def F(self, rho_arr, rho0, rho1):
 		# output: smallest value of x for which to compute 
-		#	using full Newton's method step function
+		#	using full Newton's method step function; a.k.a. x_b
 		# inputs: rotational velocity of the star,
 		#	temperature correction at x = 0,
 		#	order-one factor of proportionality between the error 
 		#		in full step function and that in the series expansion
-		def X1(omega, F0, A):
-			# resolution of floating point numbers
-			r = np.finfo(float).eps
-			# minimum value of omega 
-			# helper variables
-			o2 = omega**2
-			o4 = omega**4
-			if omega == 0 and F0 == 1:
-				output = 1 # error in the series expansion goes to zero
-			else:
-				# coefficient of the 4th order term of the series expansion 
-				# of Newton's method step function
-				a4 = ( 56 - 16/F0 + 35*np.sqrt(F0)*(-1 + o2) + \
-					(14*F0**1.5*(1 + 4*o2 + 10*o4))/(-1 + o2) +\
-					(F0**2.5*(-9 - 8*o2 + 44*o4*(-3 + o2)))/(-1 + o2)**3 )/140.
-				# output
-				output = np.power(2 * r * (F0**(5./2) - F0**2) / (A * a4), 1./6)
+		#	resolution of floating point numbers
+		def X1(omega, A, r):
+			# a factor that's a little less than 1
+			B = 0.9
+			# omega below which the approximation yields values greater than 1
+			omega_lim = 0.9 * (2./(85*A))**(1./4) * 3**(1./2) * r**(1./4)
+			if omega < omega_lim:
+				output = 1
+			else: # otherwise, evaluate the estimate of x_b
+				output = r**(1./6) * (2./(85*A))**(1/6) * \
+					( 3**(1./3) * omega**(-2./3) - \
+					  3**(-2./3) * (199./255) * omega**(4./3) - \
+					  3**(-2./3) * (29123./65025) * omega**(10./3) )
+				# in case this estimate exceeds 1 by a little, bring it back to 1
+				if output > 1: output = 1
 			return output
 		# helper function
 		# inputs: an array of temperature correction values and 
@@ -134,10 +132,9 @@ class Map:
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
-		if F0 == 1: # if omega = 0, F_0 = 1
-			x1 = 0 # use the full deltaF function except at precisely x = 0
-		else:
-			x1 = X1(omega, F0, 1)
+		r = np.finfo(float).eps # resolution of floating point numbers
+		A = 1 # a parameter for estimating this value of x
+		x1 = X1(omega, A, r)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
 		# for the remaining elements, we use order three series expansion of the 
