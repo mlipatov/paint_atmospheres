@@ -88,7 +88,7 @@ def run():
 		fig = plt.figure()
 		ax = plt.axes() 
 		ax.set_ylim([min_I - offset_y, max_I + offset_y])
-		ax.set_ylim((-2.98405e+18, 3.282455e+19)) # temporary
+		ax.set_ylim((-2.98405e+18, 3.282455e+19)) # temporarily fix the spectrum axes
 		ax.scatter(wl_arr, I_arr, marker='o', c='b', s=3)
 		ax.set_title( 'Spectrum at i = %5.2f' % inc )
 		ax.set_xlabel(r'$\lambda$, nm')

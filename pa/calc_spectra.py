@@ -13,12 +13,12 @@ import os
 
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
-		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0 1.5707963267948966 0.01; " +\
+		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.000 1.5707963267948966 150; " +\
 		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.08683")
 	parser.add_argument("pkl_sfile", help="the pickled star file")
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
-		'or a range specified by minimum, maximum and step', required=True)
+		'or a equally spaced values specified by minimum, maximum and number', required=True)
 	args = parser.parse_args()
 
 	## inputs
@@ -34,9 +34,10 @@ def run():
 		# decimal precision of inclination for printout
 		prec = 6
 	elif li == 3:
-		inclinations = np.arange( *i )
+		mi, ma, num = i
+		inclinations = np.linspace( mi, ma, num=num )
 		# decimal precision of inclination for printout
-		prec = np.int( np.ceil( -np.log10( i[2] ) ) )
+		prec = np.int( np.ceil( -np.log10( (ma - mi) / num ) ) )
 	leni = len(inclinations)
 	# unpickle the star
 	with open(pkl_sfile, 'rb') as f:

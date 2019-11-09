@@ -7,7 +7,7 @@ import pickle
 
 def run():
 	parser = argparse.ArgumentParser(description="Examples: \n" +\
-		"convert_spectrum \'data/vega1.dat\' \'data/vega.dat\' -d 2.37e19 -s A -w A,    \
+		"convert_spectrum \'data/vega1.dat\' \'data/vega.dat\' -d 2.3694e19 -s A -w A,    \
 		 convert_spectrum \'data/sun1.dat\' \'data/sun.dat\' -d 1.496e13 -p W -a m**2 -s nm")
 	parser.add_argument("ofile", help="output spectrum text file")
 	parser.add_argument("ifile", help="input spectrum text file")
@@ -57,12 +57,12 @@ def run():
 	# convert units of the specific intensity denominator to Hz
 	if specific is not None:
 		if specific == 'A':
-			I_arr = ut.convert_from_A(I_arr, wl_arr)
+			I_arr = ut.A_to_Hz(I_arr, wl_arr)
 		elif specific == 'nm':
-			I_arr = ut.convert_from_nm(I_arr, wl_arr)
+			I_arr = ut.nm_to_Hz(I_arr, wl_arr)
 	# convert to intensity per steradian from intensity per unit photoreceptor area
 	if distance is not None:
-		I_arr = ut.convert_to_ster(I_arr, distance)
+		I_arr = ut.cm2_to_ster(I_arr, distance)
 
 	# write to the output file
 	f = open(ofile,'w+') 

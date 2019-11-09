@@ -111,22 +111,6 @@ class Star:
 		# return the result in the appropriate units
 		return result * (self.Req * ut.Rsun)**2
 
-	# approximate the bolometric luminosity of a star in erg/s/ster
-	# 	using the trapezoidal rule
-	# input: light from the star at many wavelengths in erg/s/ster/Hz
-	#	wavelengths in nm
-	@staticmethod
-	def bolometric(light, wl):
-		# convert intensity per Hz of frequency to per nm of wavelength 
-		# this is the integrand in our integral w.r.t. wavelength
-		f = ut.convert_from_Hz(light, wl)
-		# calculate the differences between wavelengths in nm
-		diff = np.diff(wl)
-		## estimate the integral using the trapezoidal rule with variable argument differentials
-		# array of averaged differentials
-		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-		return np.sum(d * f)
-
 	# plot the temperature of the visible surface of the star
 	# on a set of axes
 	# Inputs: axes, inclination, size of the axes in inches, 
@@ -184,6 +168,6 @@ class Star:
 				fc=cmap(colors[i]), fill=True, lw=ppr * l[i])
 			ax.add_patch(ellipse)
 		if cax is not None:
-			norm = mpl.colors.Normalize(vmin=T_min, vmax=T_max)
+			norm = mpl.colors.Normalize(vmin=T_min/1000, vmax=T_max/1000)
 			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
-			cb.set_label('Temperature, K')
+			cb.set_label(r'Temperature, $10^3$ K')

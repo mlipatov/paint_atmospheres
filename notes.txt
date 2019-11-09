@@ -58,6 +58,7 @@ Average proportional difference of non-zero intensity: ~25% higher in version 1 
 
 Outside source data looks similar both for the Sun and for Vega, the differences are probably due to the imprecise knowledge of Vega's rotational velocity and luminosity 
 
+Distance to Vega from Hipparcos 2007: 2.3694 × 10^19 cm
 
 ## Commands useful for working with Kurucz's files
 
