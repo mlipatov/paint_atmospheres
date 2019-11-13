@@ -265,7 +265,7 @@ class Map:
 			temp_arr = np.log10(temp_arr)
 		elif temp_method == 'planck':
 			# convert the wavelengths to frequencies
-			nu = ut.nm_to_Hz(wl)
+			nu = ut.color_nm_Hz(wl)
 			# create grids based on the arrays of temperatures at all values of z and the frequency array
 			# index 0: z
 			# index 1: frequency

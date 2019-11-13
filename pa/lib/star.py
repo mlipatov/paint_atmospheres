@@ -6,6 +6,8 @@ from pa.lib import util as ut
 import matplotlib as mpl # for the temperature color bar
 from matplotlib import pyplot as plt
 
+import scipy.optimize as optimization
+
 import numpy as np
 import sys
 import math
@@ -13,8 +15,9 @@ import math
 class Star:
 	""" Contains all the information pertaining to a rotating star, including its surface shape,
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
-	Also performs the 1D integration in the z dimension,
-	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition."""
+	Performs the 1D integration in the z dimension,
+	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition.
+	Paints the temperature across the surface of the star."""
 	def __init__(self, omega, luminosity, mass, Req, nz, ld=None, temp_method='planck'):
 		if ld is not None:
 			self.wavelengths = ld.wl_arr # wavelengths
@@ -111,7 +114,7 @@ class Star:
 		# return the result in the appropriate units
 		return result * (self.Req * ut.Rsun)**2
 
-	# plot the temperature of the visible surface of the star
+	# paint the temperature of the visible surface of the star
 	# on a set of axes
 	# Inputs: axes, inclination, size of the axes in inches, 
 	#	an optional axes where to draw a horizontal color bar
@@ -147,8 +150,8 @@ class Star:
 		# colors = max_col * (T_max - T) / T_range + (1 - max_col)
 		colors = (T - T_min) / T_range
 
-		# image size in different units
-		size_req = 2 # size of the image in Req
+		# size of the image in Req
+		size_req = 2 
 		# unit conversions
 		ipr = size_inches / size_req # inches per Req
 		ppi = 72 # points per inch
@@ -171,3 +174,61 @@ class Star:
 			norm = mpl.colors.Normalize(vmin=T_min/1000, vmax=T_max/1000)
 			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
 			cb.set_label(r'Temperature, $10^3$ K')
+
+	# output: intensity in erg/s/Hz/ster from a point on the surface of a star
+	#	covered by a planet
+	# inputs: inclination of the star's rotation axis,
+	#	projected impact parameter of planet's orbit,
+	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis
+	def transit(self, inclination, b, alpha):
+
+		# z values, normalized by the polar radius
+		z_tilde = self.map.z_arr
+		# z values normalized by the equatorial radius
+		u = z_tilde / self.surface.f
+
+		### parametrize the line of transit
+		# the point where the line is closest to the center of the star
+		x0 = -b * np.sin(alpha)
+		y0 = b * np.cos(alpha)
+
+		# helper variables
+		omega = self.surface.omega
+		o2 = omega**2
+		o4 = omega**4
+		s = 1 / np.cos(inclination)
+		t = np.tan(inclination)
+		c2 = np.cos(2 * inclination)
+		c4 = np.cos(4 * inclination)
+
+		# number of time points
+		n = 200
+		# locations of points along the line;
+		# the star cannot be outside one equatorial radius of the line's zero point
+		loc = np.linspace(-1, 1, n)
+		# x and y values of the points on the line
+		x_arr = np.cos(alpha) * loc
+		y_arr = np.sin(alpha) * loc
+		for x, y in zip(x_arr, y_arr):
+			# coefficients of the 6th degree polynomial in u
+			p = np.array([
+				(o4*t**4*(1 + t**2))/4.,
+				-(o4*s*t**3*(2 + 3*t**2)*x)/2.,
+				(t**2*(-4*o2*(1 + t**2) + 2*o4*(-1 + 3*s**2*x**2 + y**2) +\
+					o4*t**2*(-2 + 15*s**2*x**2 + 3*y**2)))/4.,
+				s*t*x*(o2*(2 + 4*t**2) - o4*(-1 + s**2*x**2 + y**2 +\
+					t**2*(-2 + 5*s**2*x**2 + 3*y**2))),
+				1 + t**2 - o2*(-1 + s**2*x**2 + y**2 + t**2*(-1 + 6*s**2*x**2 + 2*y**2)) +\
+					(o4*((-1 + s**2*x**2 + y**2)**2 +\
+					t**2*(1 + 15*s**4*x**4 - 4*y**2 + 3*y**4 + 6*s**2*x**2*(-2 + 3*y**2))))/4.,
+				-(s*t*x*(4 + o2*(4 - 8*s**2*x**2 - 8*y**2) + \
+					o4*(1 + 3*s**4*x**4 - 4*y**2 + 3*y**4 + 2*s**2*x**2*(-2 + 3*y**2))))/2.,
+				((-1 + s**2*x**2 + y**2)*(4 - 4*o2*(s**2*x**2 + y**2) + \
+					o4*(s**4*x**4 + y**2*(-1 + y**2) + s**2*x**2*(-1 + 2*y**2))))/4.
+			])
+			# roots of the polynomial equation
+			r = np.roots(p)
+			# find the root that's between negative one and one
+			condition = ((-1 <= r) & (r <= 1) & np.isreal(r)) 
+			rts = np.extract(condition, r)
+			print(x, y, rts)
