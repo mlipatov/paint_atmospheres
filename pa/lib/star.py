@@ -175,23 +175,20 @@ class Star:
 			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
 			cb.set_label(r'Temperature, $10^3$ K')
 
-	# output: intensity in erg/s/Hz/ster from a point on the surface of a star
+	# output: intensity in erg/s/Hz/ster/cm2 from a series of points on the surface of a star
 	#	covered by a planet
 	# inputs: inclination of the star's rotation axis,
 	#	projected impact parameter of planet's orbit,
-	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis
-	def transit(self, inclination, b, alpha):
+	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
+	#	radius of the planet in star's equatorial radii
+	# 	number of time points across two equatorial radii of the star
+	#	limb darkening information
+	def transit(self, inclination, b, alpha, radius, n, ld):
+		# distance between two points
+		def distance(x1, y1, x2, y2):
+			return np.sqrt( (y2 - y1)**2 + (x2 - x1)**2 )
 
-		# z values, normalized by the polar radius
-		z_tilde = self.map.z_arr
-		# z values normalized by the equatorial radius
-		u = z_tilde / self.surface.f
-
-		### parametrize the line of transit
-		# the point where the line is closest to the center of the star
-		x0 = -b * np.sin(alpha)
-		y0 = b * np.cos(alpha)
-
+		self.surface.set_inclination(inclination)
 		# helper variables
 		omega = self.surface.omega
 		o2 = omega**2
@@ -201,15 +198,24 @@ class Star:
 		c2 = np.cos(2 * inclination)
 		c4 = np.cos(4 * inclination)
 
-		# number of time points
-		n = 200
+		### projection of the line of transit onto the viewplane coordinates
+		# the point where the line is closest to the center of the star
+		x0 = -b * np.sin(alpha)
+		y0 = b * np.cos(alpha)
 		# locations of points along the line;
 		# the star cannot be outside one equatorial radius of the line's zero point
 		loc = np.linspace(-1, 1, n)
 		# x and y values of the points on the line
 		x_arr = np.cos(alpha) * loc
 		y_arr = np.sin(alpha) * loc
-		for x, y in zip(x_arr, y_arr):
+		# u values corresponding to the points on the line
+		u_arr = np.full_like(x_arr, np.nan)
+		# x and y values of the first and last points on the line
+		x_first, y_first, x_last, y_last = [np.nan] * 4
+		# compute the u value at each point on the line
+		for i in range(len(x_arr)):
+			x = x_arr[i]
+			y = y_arr[i]
 			# coefficients of the 6th degree polynomial in u
 			p = np.array([
 				(o4*t**4*(1 + t**2))/4.,
@@ -227,8 +233,52 @@ class Star:
 					o4*(s**4*x**4 + y**2*(-1 + y**2) + s**2*x**2*(-1 + 2*y**2))))/4.
 			])
 			# roots of the polynomial equation
-			r = np.roots(p)
-			# find the root that's between negative one and one
-			condition = ((-1 <= r) & (r <= 1) & np.isreal(r)) 
-			rts = np.extract(condition, r)
-			print(x, y, rts)
+			rts = np.roots(p)
+			# the point on the visible surface is
+			# the largest real root between negative one and one
+			condition = ((-1 <= rts) & (rts <= 1) & np.isreal(rts))
+			u = np.extract(condition, rts)
+			if u.size > 0: # if the line of sight intersects with the star
+				# record this as the potentially last location where it does so
+				x_last = x 
+				y_last = y
+				# if this is the first location where it intersects
+				if np.isnan(x_first) and np.isnan(y_first):
+					# record this as the first location
+					x_first = x
+					y_first = y
+				# record the u value for potential use
+				u_arr[i] = np.max(u)
+		# mask saying which values of x and y arrays are between the first 
+		# and the last intersection and are no less than a radius away from 
+		# these intersections
+		mask = np.logical_and.reduce( ( np.logical_or( x_arr > x_first, y_arr > y_first ), 
+			np.logical_or( x_arr < x_last, y_arr < y_last ),
+			distance(x_arr, y_arr, x_first, y_first) >= radius,
+			distance(x_arr, y_arr, x_last, y_last) >= radius ) )
+		# cull the y and u values according to the mask;
+		# the remaining values should be valid numbers
+		u_arr = u_arr[mask]
+		y_arr = y_arr[mask]
+		# z, r, cos(phi), mu arrays
+		z_arr = self.surface.Z(u_arr)
+		r_arr = self.surface.R(z_arr)
+		cos_phi = np.sqrt( 1 - (y_arr / r_arr)**2 )
+		a_arr, b_arr = self.surface.ab(z_arr)
+		mu_arr = a_arr * cos_phi + b_arr
+		## fit parameters
+		# index 0: z
+		# index 1: wavelength
+		# index 2: parameter index
+		params_arr = self.map.Tp( z_arr, r_arr, ld )[1]
+		sh = np.shape(params_arr)
+		# intensities
+		ft.Fit.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
+		I_arr = np.zeros( (sh[0], sh[1]) )
+		for i in range(sh[0]):
+			for j in range(sh[1]):
+				I_arr[i, j] = ft.Fit.I(mu_arr[i], params_arr[i, j])
+		# add zero intensities before and after the transit
+		I_arr = np.pad(I_arr, ((1, 1),(0,0)), 'constant', constant_values=0)
+		# return the intensities in appropriate units
+		return I_arr * (radius * ut.Rsun)**2

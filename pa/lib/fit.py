@@ -93,7 +93,7 @@ class Fit:
 		if ch:
 			self.check()
 
-	# intensity vs mu in terms of computed parameters
+	# intensity vs mu in terms of this object's parameters
 	# mu has to be in [0, 1]
 	def I(self, mu):
 		# interval of the form [mu1, mu2) where this mu value is found
@@ -101,6 +101,18 @@ class Fit:
 		i = np.searchsorted(self.muB_arr, mu, side='right') - 1 
 		Fi = self.F[i] # all the functions on this interval
 		I = sum(self.p * [func(mu) for func in Fi])
+		return I
+
+	# output: intensity
+	# inputs: mu and fit parameters
+	# note: mu has to be in [0, 1]
+	@classmethod
+	def I(cls, mu, p):
+		# interval of the form [mu1, mu2) where this mu value is found
+		# intervals numbered 0, 1, 2, ...
+		i = np.searchsorted(cls.muB_arr, mu, side='right') - 1 
+		Fi = cls.F[i] # all the functions on this interval
+		I = sum(p * [func(mu) for func in Fi])
 		return I
 
 	# For each function of the fit on each mu interval of the fit, 

@@ -20,43 +20,62 @@ class Map:
 		self.surface = surf # surface shape information
 		omega = surf.omega
 
+		# store gravity and temperature modifiers, 
+		# as well as the temperature interpolation method
+		self.add_logg = add_logg
+		self.mult_temp = mult_temp
+		self.temp_method = temp_method
+
 		## initialize the array of z values for integration
 		## do not use the boundary values
 		self.z_arr = np.linspace(-1, 1, nz + 2) # include z = -1, 1
-		# record the spacing between the z values
+		# store the spacing between the z values
 		self.dz = self.z_arr[1] - self.z_arr[0]
 		# store the number of z values
 		self.nz = nz
 
-		## compute area elements for integration
-		## as well as cylindrical coordinate r and the spherical coordinate rho
+		# compute the cylindrical coordinate r
+		r_arr = self.surface.R( self.z_arr )
+
+		# compute the area elements
 		self.A_arr = surf.A( self.z_arr )
-		r_arr = surf.R( self.z_arr )
-		rho_arr = surf.rho( r_arr, self.z_arr )
-		r01 = surf.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
-		rho0, rho1 = surf.rho( r01, np01 ) # rho at z = 0 and +/-1
+
+		# compute and store the temperatures and fit parameters
+		self.temp_arr, self.params_arr = self.Tp( self.z_arr, r_arr, ld )
+
+
+	# output: temperatures and intensity fit parameters for a set of locations
+	# input: z values, r values and limb darkening information
+	def Tp(self, z, r, ld):		
+		# compute the spherical coordinate rho
+		rho_arr = self.surface.rho( r, z )
+		r01 = self.surface.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
+		rho0, rho1 = self.surface.rho( r01, np01 ) # rho at z = 0 and +/-1
 		
 		## compute the effective gravitational acceleration in units of G M / Re**2 
-		geff_arr = self.geff(rho_arr, r_arr)
+		geff_arr = self.geff(rho_arr, r)
 		# convert to log10(gravity in cm / s**2) and to a less memory-intensive data type
-		logg_arr = add_logg + np.log10(geff_arr)
+		logg_arr = self.add_logg + np.log10(geff_arr)
 		logg_arr = logg_arr.astype(np.float32)
 		
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z; then convert it to Kelvin
-		[F_arr, F0, F1] = self.F(rho_arr, rho0, rho1) # the F values
+		[F_arr, F0, F1] = self.F(z, rho_arr, rho0, rho1) # temperature correction values
 		# temperatures
-		temp_arr = mult_temp * self.Teff( geff_arr, F_arr ) # the temperatures
+		temp_arr = self.mult_temp * ( geff_arr * F_arr )**(1./4)
 		# convert temperature values to a less memory-intensive data type
-		self.temp_arr = temp_arr.astype(np.float32)
+		temp_arr = temp_arr.astype(np.float32)
 
 		# compute the interpolated values of limb darkening fit parameters
 		# if given limb darkening information
 		if ld is not None:
-			self.interp(logg_arr, temp_arr, ld, temp_method)
+			params_arr = self.interp(logg_arr, temp_arr, ld, self.temp_method)
+
+		# return
+		return [temp_arr, params_arr]
 	
-	# returns the effective gravitational acceleration in units of G M / Re**2 
-	# as in equations 7 and 31 of EL, for each z
+	# output: effective gravitational acceleration in units of G M / Re**2 
+	# 	as in equations 7 and 31 of EL, for each z
 	# inputs: arrays of rho and r coordinates
 	def geff(self, rho_arr, r_arr):
 		omega = self.surface.omega
@@ -65,17 +84,11 @@ class Map:
 			2 * omega**2 * r_arr_sq * rho_arr**-3 )
 		return geff_arr
 
-	# compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
-	# as in EL eqn 31, for each z
-	# inputs: arrays of effective gravity and the temperature correction
-	def Teff(self, geff_arr, F_arr):
-		return ( geff_arr * F_arr )**(1./4)
-
-	# computes the temperature correction factors (EL equation 26)
-	# at every value of z; runs the Newton's method algorithm that acts on the entire array 
-	# of z values that aren't too close to 0 at its every step; for values that 
-	# are close to 0, returns the temperature correction expected at z = 0
-	def F(self, rho_arr, rho0, rho1):
+	# output: temperature correction factors (EL equation 26)
+	# 	at every value of z; runs the Newton's method algorithm that acts on the entire array 
+	# 	of z values that aren't too close to 0 at its every step; for values that 
+	# 	are close to 0, returns the temperature correction expected at z = 0
+	def F(self, z_arr, rho_arr, rho0, rho1):
 		# output: smallest value of x for which to compute 
 		#	using full Newton's method step function; a.k.a. x_b
 		# inputs: rotational velocity of the star,
@@ -128,7 +141,6 @@ class Map:
 		o2 = omega**2
 		F0 = (1 - o2 * rho0**3)**(-2./3) # F at x = 0
 		F1 = math.exp((2./3) * o2 * rho1**3) # F at x = 1
-		z_arr = self.z_arr
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
@@ -298,15 +310,16 @@ class Map:
 		# index 2: parameter index
 		if temp_method == 'planck': 
 			# add the parameter index dimension to the helper matrices
-			self.params_arr = \
+			params_arr = \
 				f11 * w11[:, :, np.newaxis] + \
 				f21 * w21[:, :, np.newaxis] + \
 				f12 * w12[:, :, np.newaxis] + \
 				f22 * w22[:, :, np.newaxis]
 		else:
 			# add the wavelength and parameter indices to the helper matrices
-			self.params_arr = \
+			params_arr = \
 				f11 * w11[:, np.newaxis, np.newaxis] + \
 				f21 * w21[:, np.newaxis, np.newaxis] + \
 				f12 * w12[:, np.newaxis, np.newaxis] + \
 				f22 * w22[:, np.newaxis, np.newaxis]
+		return params_arr
