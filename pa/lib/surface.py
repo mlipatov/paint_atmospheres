@@ -59,9 +59,14 @@ class Surface:
 		s = self.S(self.U(z))
 		# we may get a negative number at z = 1 or -1,
 		# due to limited precision; set r = 0 there
-		s[ np.abs(z) == 1 ] = 0
-		result = np.sqrt(s)
-		return result
+		if np.isscalar(z):
+			if np.abs(z) == 1:
+				s = 0
+		else:
+			s[ np.abs(z) == 1 ] = 0
+		# square root
+		output = np.sqrt(s)
+		return output
 
 	def Drz(self, z):
 		numerator = self.Ds(self.U(z))
@@ -82,6 +87,16 @@ class Surface:
 		a = self.sini / sqt
 		b = - self.cosi * drz / sqt
 		return [a, b]
+
+	# output: phi corresponding to mu = 0 at a given z
+	# inputs: z
+	def cos_phi_b(self, z):
+		if self.sini == 0:
+			# mu = 0 at all phi when z = 0 and no phi when z != 0,
+			# so that phi_b is not defined
+			return np.nan
+		else:
+			return self.f * self.Drz(z) * self.cosi / self.sini
 
 	# spherical coordinate rho, given sets of r and z values
 	def rho(self, r, z):

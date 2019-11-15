@@ -70,6 +70,8 @@ class Map:
 		# if given limb darkening information
 		if ld is not None:
 			params_arr = self.interp(logg_arr, temp_arr, ld, self.temp_method)
+		else:
+			params_arr = None
 
 		# return
 		return [temp_arr, params_arr]

@@ -178,16 +178,40 @@ class Star:
 	# output: intensity in erg/s/Hz/ster/cm2 from a series of points on the surface of a star
 	#	covered by a planet
 	# inputs: inclination of the star's rotation axis,
-	#	projected impact parameter of planet's orbit,
+	#	projected impact parameter of planet's orbit, normalized by Req
 	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
-	#	radius of the planet in star's equatorial radii
-	# 	number of time points across two equatorial radii of the star
+	#	radius of the planet in Req
+	# 	number of time points across two equatorial radii of the star and four planetary radii
 	#	limb darkening information
+	# requres: -pi / 2 < alpha < pi / 2
 	def transit(self, inclination, b, alpha, radius, n, ld):
-		# distance between two points
-		def distance(x1, y1, x2, y2):
-			return np.sqrt( (y2 - y1)**2 + (x2 - x1)**2 )
+		# distance between two points in two dimensions
+		def distance(up1, y1, up2, y2):
+			return np.sqrt( (y2 - y1)**2 + (up2 - up1)**2 )
+		# output: |y| at the intersection of the transit line 
+		#	with the projected visible surface; 
+		#	here and onwards, y is the y coordinate normalized by Req
+		# inputs: two u coordinates of the intersection 
+		#	and whether this is the first (as opposed to last) intersection
+		def Y(u):
+			# average of the z values between the two intersection points
+			z = self.surface.Z( np.average(u) )
+			# if this z value is outside the boundaries where mu can be zero,
+			# bring it back within the boundaries
+			if z < -self.surface.z1:
+				z = -self.surface.z1
+			elif z > self.surface.z1:
+				z = self.surface.z1
+			# corresponding r value
+			r = self.surface.R( z )
+			# cos(phi) corresponding to the point where mu = 0 for this z value
+			cos_phi = self.surface.cos_phi_b( z )
+			# abs(y) corresponding to this point
+			output = np.sqrt(1 - cos_phi**2)
+			# return
+			return output
 
+		# set the star's inclination
 		self.surface.set_inclination(inclination)
 		# helper variables
 		omega = self.surface.omega
@@ -198,39 +222,59 @@ class Star:
 		c2 = np.cos(2 * inclination)
 		c4 = np.cos(4 * inclination)
 
-		### projection of the line of transit onto the viewplane coordinates
-		# the point where the line is closest to the center of the star
-		x0 = -b * np.sin(alpha)
-		y0 = b * np.cos(alpha)
-		# locations of points along the line;
-		# the star cannot be outside one equatorial radius of the line's zero point
-		loc = np.linspace(-1, 1, n)
-		# x and y values of the points on the line
-		x_arr = np.cos(alpha) * loc
-		y_arr = np.sin(alpha) * loc
+		### projection of the line of transit onto the viewplane coordinates 
+		### (the star cannot be outside one equatorial radius of the line's zero point)
+		# locations of points along the transit line,
+		# with zero at the point closest to the projected center of the star
+		loc = np.linspace(-1 - 2*radius, 1 + 2*radius, n)
+		# y and u-prime values of the points on the line
+		y_arr = -b * np.sin(alpha) + np.cos(alpha) * loc
+		up_arr = b * np.cos(alpha) + np.sin(alpha) * loc
+		# slope and u-prime intersect of the line
+		m = np.tan(alpha)
+		up0 = b / np.cos(alpha)
+		# r corresponding to the upper-most z
+		r1 = self.surface.R( self.surface.z1 )
+		# u-prime corresponding to the upper-most z
+		up1 = self.surface.U(self.surface.z1) * np.sin(inclination) + r1 * np.cos(inclination)
+		# the sign of the y coordinate at the first and last points 
+		# where the transit line intersects the projection of the surface
+		ys_first = -1 # when alpha = 0
+		ys_last = 1 # when alpha = 0
+		if alpha > 0:
+			ys_first = np.sign(-up1 - up0)
+			ys_last = np.sign(up1 - up0)
+		if alpha < 0:
+			ys_first = np.sign( -1 * (up1 - up0) )
+			ys_last = np.sign( -1 * (-up1 - up0) )
+
 		# u values corresponding to the points on the line
-		u_arr = np.full_like(x_arr, np.nan)
-		# x and y values of the first and last points on the line
-		x_first, y_first, x_last, y_last = [np.nan] * 4
+		u_arr = np.full_like(up_arr, np.nan)
+		# whether the first location where the line of sight
+		# through the planet's center intersects with the star's surface
+		# hasn't been seen
+		first = True
+		# the u values corresponding to the last intersection
+		u_last = np.array([np.nan, np.nan])
 		# compute the u value at each point on the line
-		for i in range(len(x_arr)):
-			x = x_arr[i]
+		for i in range(len(up_arr)):
+			up = up_arr[i]
 			y = y_arr[i]
 			# coefficients of the 6th degree polynomial in u
 			p = np.array([
 				(o4*t**4*(1 + t**2))/4.,
-				-(o4*s*t**3*(2 + 3*t**2)*x)/2.,
-				(t**2*(-4*o2*(1 + t**2) + 2*o4*(-1 + 3*s**2*x**2 + y**2) +\
-					o4*t**2*(-2 + 15*s**2*x**2 + 3*y**2)))/4.,
-				s*t*x*(o2*(2 + 4*t**2) - o4*(-1 + s**2*x**2 + y**2 +\
-					t**2*(-2 + 5*s**2*x**2 + 3*y**2))),
-				1 + t**2 - o2*(-1 + s**2*x**2 + y**2 + t**2*(-1 + 6*s**2*x**2 + 2*y**2)) +\
-					(o4*((-1 + s**2*x**2 + y**2)**2 +\
-					t**2*(1 + 15*s**4*x**4 - 4*y**2 + 3*y**4 + 6*s**2*x**2*(-2 + 3*y**2))))/4.,
-				-(s*t*x*(4 + o2*(4 - 8*s**2*x**2 - 8*y**2) + \
-					o4*(1 + 3*s**4*x**4 - 4*y**2 + 3*y**4 + 2*s**2*x**2*(-2 + 3*y**2))))/2.,
-				((-1 + s**2*x**2 + y**2)*(4 - 4*o2*(s**2*x**2 + y**2) + \
-					o4*(s**4*x**4 + y**2*(-1 + y**2) + s**2*x**2*(-1 + 2*y**2))))/4.
+				-(o4*s*t**3*(2 + 3*t**2)*up)/2.,
+				(t**2*(-4*o2*(1 + t**2) + 2*o4*(-1 + 3*s**2*up**2 + y**2) +\
+					o4*t**2*(-2 + 15*s**2*up**2 + 3*y**2)))/4.,
+				s*t*up*(o2*(2 + 4*t**2) - o4*(-1 + s**2*up**2 + y**2 +\
+					t**2*(-2 + 5*s**2*up**2 + 3*y**2))),
+				1 + t**2 - o2*(-1 + s**2*up**2 + y**2 + t**2*(-1 + 6*s**2*up**2 + 2*y**2)) +\
+					(o4*((-1 + s**2*up**2 + y**2)**2 +\
+					t**2*(1 + 15*s**4*up**4 - 4*y**2 + 3*y**4 + 6*s**2*up**2*(-2 + 3*y**2))))/4.,
+				-(s*t*up*(4 + o2*(4 - 8*s**2*up**2 - 8*y**2) + \
+					o4*(1 + 3*s**4*up**4 - 4*y**2 + 3*y**4 + 2*s**2*up**2*(-2 + 3*y**2))))/2.,
+				((-1 + s**2*up**2 + y**2)*(4 - 4*o2*(s**2*up**2 + y**2) + \
+					o4*(s**4*up**4 + y**2*(-1 + y**2) + s**2*up**2*(-1 + 2*y**2))))/4.
 			])
 			# roots of the polynomial equation
 			rts = np.roots(p)
@@ -238,47 +282,69 @@ class Star:
 			# the largest real root between negative one and one
 			condition = ((-1 <= rts) & (rts <= 1) & np.isreal(rts))
 			u = np.extract(condition, rts)
-			if u.size > 0: # if the line of sight intersects with the star
-				# record this as the potentially last location where it does so
-				x_last = x 
-				y_last = y
-				# if this is the first location where it intersects
-				if np.isnan(x_first) and np.isnan(y_first):
-					# record this as the first location
-					x_first = x
-					y_first = y
-				# record the u value for potential use
+			# if the line of sight intersects with the star's surface
+			if u.size > 0:
+				# record the larger u value for potential use in spectrum calculations
 				u_arr[i] = np.max(u)
-		# mask saying which values of x and y arrays are between the first 
-		# and the last intersection and are no less than a radius away from 
-		# these intersections
-		mask = np.logical_and.reduce( ( np.logical_or( x_arr > x_first, y_arr > y_first ), 
-			np.logical_or( x_arr < x_last, y_arr < y_last ),
-			distance(x_arr, y_arr, x_first, y_first) >= radius,
-			distance(x_arr, y_arr, x_last, y_last) >= radius ) )
-		# cull the y and u values according to the mask;
-		# the remaining values should be valid numbers
-		u_arr = u_arr[mask]
-		y_arr = y_arr[mask]
-		# z, r, cos(phi), mu arrays
-		z_arr = self.surface.Z(u_arr)
-		r_arr = self.surface.R(z_arr)
-		cos_phi = np.sqrt( 1 - (y_arr / r_arr)**2 )
+				# update the u values of the last intersection
+				u_last = np.copy(u)
+				# if this is the first intersection
+				if first:
+					# approximate this point
+					y_first = ys_first * Y(u)
+					# note that the first point of intersection has passed
+					first = False
+		# if at least one line of sight through the planet's center 
+		# intersects with the surface
+		if not np.isnan(u_last[0]):
+			# approximate the second point 
+			# where the transit line intersects with the projected surface
+			y_last = ys_last * Y(u_last)
+			## u-prime values of the transit intersections
+			up_first = y_first * m + up0
+			up_last  = y_last  * m + up0
+			# mask saying which values of u-prime and y arrays are between the first 
+			# and the second intersection and are no less than a radius away from 
+			# these intersections
+			within = np.logical_and.reduce( ( y_arr > y_first, y_arr < y_last, 
+				distance(y_arr, up_arr, y_first, up_first) >= radius,
+				distance(y_arr, up_arr, y_last, up_last) >= radius ) )
+			# mask saying which values of u-prime and y arrays are outside the first 
+			# and the second intersection and are no less than a radius away from 
+			# these intersections
+			outside = np.logical_or( 
+				np.logical_and( y_arr < y_first, 
+					distance(y_arr, up_arr, y_first, up_first) >= radius ),
+				np.logical_and( y_arr > y_last, 
+					distance(y_arr, up_arr, y_last, up_last) >= radius ) )
+
+		# z, r, cos(phi), mu arrays for the points where
+		# intensity will be calculated
+		z_arr = self.surface.Z( u_arr[ within ] )
+		r_arr = self.surface.R( z_arr )
+		cos_phi = np.sqrt( 1 - (y_arr[ within ] / r_arr)**2 )
 		a_arr, b_arr = self.surface.ab(z_arr)
 		mu_arr = a_arr * cos_phi + b_arr
 		## fit parameters
-		# index 0: z
-		# index 1: wavelength
-		# index 2: parameter index
+		# 0: point index
+		# 1: wavelength index
+		# 2: parameter index
 		params_arr = self.map.Tp( z_arr, r_arr, ld )[1]
 		sh = np.shape(params_arr)
-		# intensities
 		ft.Fit.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
-		I_arr = np.zeros( (sh[0], sh[1]) )
+		## intensities
+		# 0: point index
+		# 1: wavelength index
+		I_within = np.empty( (sh[0], sh[1]) )
 		for i in range(sh[0]):
 			for j in range(sh[1]):
-				I_arr[i, j] = ft.Fit.I(mu_arr[i], params_arr[i, j])
-		# add zero intensities before and after the transit
-		I_arr = np.pad(I_arr, ((1, 1),(0,0)), 'constant', constant_values=0)
+				I_within[i, j] = ft.Fit.I(mu_arr[i], params_arr[i, j])
+		I_arr = np.full( (len(up_arr), sh[1]), np.nan )
+		I_arr[within, :] = I_within
+		## add zero intensities before and after the transit
+		I_arr[outside, :] = 0
+
+		# print(I_arr[:, 436])
+
 		# return the intensities in appropriate units
 		return I_arr * (radius * ut.Rsun)**2
