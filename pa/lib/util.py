@@ -27,13 +27,13 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
-# output: star's light through a filter
+# output: star's light through a filter in units of filter's flux zero point
 # inputs: light from the star in erg/s/cm2/A at many wavelengths
 #	wavelengths for the light in A
 #	filter 
 # 	wavelengths for the filter in A
 #	filter's intensity zero point in erg/s/cm2/A
-def mag(light, wll, filt, wlf, I0):
+def flux(light, wll, filt, wlf, I0):
 	# compute a cubic spline based on the filter
 	f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
 	# filter evaluated at the light's wavelengths
@@ -50,8 +50,17 @@ def mag(light, wll, filt, wlf, I0):
 	# approximate the flux zero point
 	integrand = fil * I0
 	flux_zero = np.sum(d * integrand)
-	# return the magnitude
-	return -2.5 * np.log10(flux / flux_zero)
+	if flux == 0 or np.isnan(flux):
+		output = flux
+	else:
+		output = flux / flux_zero
+	# return the flux
+	return output
+
+# output: magnitude of star's light through a filter
+# inputs: same as those of flux() in this module
+def mag(light, wll, filt, wlf, I0):
+	return -2.5 * np.log10( flux(light, wll, filt, wlf, I0) )
 
 # approximate the bolometric luminosity of a star in erg/s/ster
 # 	using the trapezoidal rule
