@@ -102,6 +102,7 @@ class Fit:
 		return I
 
 	# output: a 2D array of intensity values (location x wavelength)
+	# units: ergs/cm2(surf)/s/hz/ster
 	# inputs: a 1D array of mu values (corresponding to locations)
 	# 	a 3D array of fit parameters (location x wavelength x parameter index)
 	# note: mu has to be in [0, 1]

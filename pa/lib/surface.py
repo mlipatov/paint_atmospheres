@@ -156,58 +156,74 @@ class Surface:
 			return self.Z(u)
 
 	## functions related to the projection of the stellar surface
-	## onto the view plane, whose coordinates are y and u-prime both normalized by Req
-
-	# distance between two points on the view plane
-	@staticmethod
-	def distance(y1, up1, y2, up2):
-		return np.sqrt( (y2 - y1)**2 + (up2 - up1)**2 )
+	## onto the view plane, whose coordinates are y and u-prime, both normalized by Req
 
 	# output: for each sightline, u coordinate of the first intersection with the surface
 	#		NAN indicates a sightline that doesn't intersect with the surface
 	# inputs: u-prime and y coordinates of points where sightlines intersect the viewplane
 	def transit_locations(self, up_arr, y_arr):
-		# helper variables for the computation of u
-		omega = self.omega
-		o2 = omega**2
-		o4 = omega**4
-		s = 1 / self.cosi
-		t = np.tan(self.inclination)
-		c2 = np.cos(2 * self.inclination)
-		c4 = np.cos(4 * self.inclination)
-		hvars = [o2, o4, s, t, c2, c4]
-
 		# u values corresponding to the points on the line
 		u_arr = np.full_like(up_arr, np.nan)
-		# compute the u value at each point on the line
-		for i in range(len(up_arr)):
-			up = up_arr[i]
-			y = y_arr[i]
-			# coefficients of the 6th degree polynomial in u
-			p = np.array([
-				(o4*t**4*(1 + t**2))/4.,
-				-(o4*s*t**3*(2 + 3*t**2)*up)/2.,
-				(t**2*(-4*o2*(1 + t**2) + 2*o4*(-1 + 3*s**2*up**2 + y**2) +\
-					o4*t**2*(-2 + 15*s**2*up**2 + 3*y**2)))/4.,
-				s*t*up*(o2*(2 + 4*t**2) - o4*(-1 + s**2*up**2 + y**2 +\
-					t**2*(-2 + 5*s**2*up**2 + 3*y**2))),
-				1 + t**2 - o2*(-1 + s**2*up**2 + y**2 + t**2*(-1 + 6*s**2*up**2 + 2*y**2)) +\
-					(o4*((-1 + s**2*up**2 + y**2)**2 +\
-					t**2*(1 + 15*s**4*up**4 - 4*y**2 + 3*y**4 + 6*s**2*up**2*(-2 + 3*y**2))))/4.,
-				-(s*t*up*(4 + o2*(4 - 8*s**2*up**2 - 8*y**2) + \
-					o4*(1 + 3*s**4*up**4 - 4*y**2 + 3*y**4 + 2*s**2*up**2*(-2 + 3*y**2))))/2.,
-				((-1 + s**2*up**2 + y**2)*(4 - 4*o2*(s**2*up**2 + y**2) + \
-					o4*(s**4*up**4 + y**2*(-1 + y**2) + s**2*up**2*(-1 + 2*y**2))))/4.
-			])
-			# roots of the polynomial equation
-			rts = np.roots(p)
-			# the point on the visible surface is
-			# the largest real root between negative one and one
-			condition = ((-1 <= rts) & (rts <= 1) & np.isreal(rts))
-			u = np.real(np.extract(condition, rts))
-			# if the line of sight intersects with the star's surface
-			if u.size > 0:
-				# record the larger u value for use in spectrum calculations
-				u_arr[i] = np.max(u)
+		# if inclination is pi / 2
+		if self.inclination == np.pi / 2:
+			# u and u-prime are the same, so convert u-prime to z
+			z_arr = self.Z( up_arr )
+			# mask out the values of z that are beyond the star's boundaries
+			mask1 = np.abs( z_arr ) <= self.z1 
+			# convert the remaining values to r
+			r_arr = self.R( z_arr[ mask1 ] )
+			# mask out the values of y that are greater than r
+			mask2 = np.abs( y_arr[ mask1 ] ) <= r_arr
+			# since the second indexing of an array refers to a copy produced by the first indexing,
+			# we have to do the following on the l.h.s. in order to index only once 
+			u_arr[np.nonzero(mask1)[0][mask2]] = up_arr[ mask1 ][ mask2 ]
+		else:
+			# helper variables for the computation of u
+			omega = self.omega
+			o2 = omega**2
+			o4 = omega**4
+			s = 1 / self.cosi
+			t = np.tan(self.inclination)
+			c2 = np.cos(2 * self.inclination)
+			c4 = np.cos(4 * self.inclination)		
+			# compute the u value at each point on the line
+			for i in range(len(up_arr)):
+				up = up_arr[i]
+				y = y_arr[i]
+				# coefficients of the 6th degree polynomial in u
+				p = np.array([
+					(o4*t**4*(1 + t**2))/4.,
+					-(o4*s*t**3*(2 + 3*t**2)*up)/2.,
+					(t**2*(-2*o4 - 2*o4*t**2 - 4*o2*(1 + t**2)))/4. + \
+						(t**2*(6*o4*s**2 + 15*o4*s**2*t**2)*up**2)/4. + \
+						(t**2*(2*o4 + 3*o4*t**2)*y**2)/4.,
+					s*t*(-(o4*s**2) -5*o4*s**2*t**2)*up**3 +\
+						up*(s*t*(o4 + 2*o4*t**2 + o2*(2 + 4*t**2)) + s*t*(-o4 - 3*o4*t**2)*y**2),
+					1 + o2 + o4/4. + t**2 + o2*t**2 + (o4*t**2)/4. + \
+						((o4*s**4)/4. + (15*o4*s**4*t**2)/4.)*up**4 + \
+						(-o2 - o4/2. - 2*o2*t**2 - o4*t**2)*y**2 + (o4/4. + (3*o4*t**2)/4.)*y**4 +\
+						up**2*(-(o2*s**2) - (o4*s**2)/2. - 6*o2*s**2*t**2 - 3*o4*s**2*t**2 +\
+						((o4*s**2)/2. + (9*o4*s**2*t**2)/2.)*y**2),
+					(-3*o4*s**5*t*up**5)/2. + up**3*(-(s*(-8*o2*s**2 - 4*o4*s**2)*t)/2. - 3*o4*s**3*t*y**2) +\
+						up*(-((4 + 4*o2 + o4)*s*t)/2. - ((-8*o2 - 4*o4)*s*t*y**2)/2. - (3*o4*s*t*y**4)/2.),
+					-1 + (o4*s**6*up**6)/4. + ((4 + 4*o2 + o4)*y**2)/4. + ((-4*o2 - 2*o4)*y**4)/4. +\
+						(o4*y**6)/4. + up**4*((-4*o2*s**4 - 2*o4*s**4)/4. + (3*o4*s**4*y**2)/4.) +\
+						up**2*((4*s**2 + 4*o2*s**2 + o4*s**2)/4. + ((-8*o2*s**2 - 4*o4*s**2)*y**2)/4. +\
+						(3*o4*s**2*y**4)/4.)
+				])
+				# roots of the polynomial equation
+				rts = np.roots(p)
+				# the point on the visible surface is
+				# one of the real roots
+				condition = ((-1 / self.f <= rts) & (rts <= 1 / self.f) & np.isreal(rts))
+				u = np.real(np.extract(condition, rts))
 
+				print(max(p)/min(p), u.size)
+				# print(u, self.R(self.Z(u)), y, up)
+				# print(u)
+
+				# if the line of sight intersects with the star's surface
+				if u.size == 2:
+					# record the larger u value for use in spectrum calculations
+					u_arr[i] = np.max(u)
 		return u_arr

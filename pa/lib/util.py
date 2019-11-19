@@ -28,7 +28,7 @@ def timef(atime):
 	return res
 
 # output: light through a filter in units of the filter's flux zero point
-# inputs: 2D array of intensities in erg/s/cm2/A (location x wavelength) or
+# inputs: 2D array of intensities in erg/s/cm2(phot)/A (location x wavelength) or
 #		1D array (wavelength)
 #	wavelengths for the light in A
 #	filter 

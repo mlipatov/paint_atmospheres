@@ -240,10 +240,10 @@ class Star:
 		params_arr = self.map.Tp( z_arr, r_arr, ld )[1]
 		sh = np.shape(params_arr)
 		ft.Fit.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
-		## intensities
+		## intensities in ergs/s/Hz/ster
 		# 0: point index
 		# 1: wavelength index
-		I_arr = ft.Fit.I(mu_arr, params_arr)
+		I_arr = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
 		# convert intensity from per Hz to per angstrom
 		I_arr = ut.Hz_to_A(I_arr, ld.wl_arr)
 		# convert intensity from per steradian to per cm2 of photodetector
