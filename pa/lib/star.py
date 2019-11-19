@@ -175,7 +175,7 @@ class Star:
 			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
 			cb.set_label(r'Temperature, $10^3$ K')
 
-	# output: intensity in erg/s/Hz/ster from a series of points on the surface of a star
+	# output: flux in zero flux units from a series of points on the surface of a star
 	#	covered by a planet
 	# inputs: inclination of the star's rotation axis,
 	#	projected impact parameter of planet's orbit, normalized by Req
@@ -183,35 +183,54 @@ class Star:
 	#	radius of the planet in Req
 	# 	number of time points across two equatorial radii of the star and four planetary radii
 	#	limb darkening information
+	#	filter array
+	#	filter wavelengths
+	#	filter intensity zero point
+	#	number of points in the shadow of a planet where to calculate intensities
 	# requres: -pi / 2 < alpha < pi / 2
-	def transit(self, inclination, b, alpha, radius, n, ld):
-
-		# set the star's inclination
-		self.surface.set_inclination(inclination)
-
-		### projection of the line of transit onto the viewplane coordinates 
-		### (the star cannot be outside one equatorial radius of the line's zero point)
-		# locations of points along the transit line,
-		# with zero at the point closest to the projected center of the star
-		loc = np.linspace(-1 - 2*radius, 1 + 2*radius, n)
-		# y and u-prime values of the points on the line
+	def transit(self, inclination, distance, b, alpha, radius, n, ld, filt, wlf, I0, ns=7):
+		## notes: we work in the viewplane coordinates 
+		##	the star cannot be outside one equatorial radius of the line's zero point
+		# convert wavelength to angstroms
+		wl_A = ut.color_nm_A(ld.wl_arr)
+		# helper variables
 		sina = np.sin(alpha)
 		cosa = np.cos(alpha)
-		y_arr = -b * sina + cosa * loc
-		up_arr = b * cosa + sina * loc
-
+		# set the star's inclination
+		self.surface.set_inclination(inclination)
+		# locations of planet center along the transit line,
+		# with zero at the point closest to the projected center of the star
+		loc = np.linspace(-1 - 2*radius, 1 + 2*radius, n)
+		# locations of the planet center
+		yc  = -b * sina + cosa * loc
+		upc =  b * cosa + sina * loc
+		# locations of points within the shadow
+		if ns == 7: # if there are seven points, pack 7 circles within the shadow
+			sqrt3 = np.sqrt(3)
+			y_pts = radius * np.array([ 0, 2, -2, 1, -1, 1, -1 ])
+			up_pts = radius * np.array([ 0, 0, 0, sqrt3, sqrt3, -sqrt3, -sqrt3 ])
+			# flat arrays of y and u-prime values of the representative locations on the planet shadow
+			# these include the center of the shadow and several other points within it
+			y_arr = np.tile(y_pts, n) + np.repeat(yc, ns)
+			up_arr = np.tile(up_pts, n) + np.repeat(upc, ns)
+			# proportion of the planet's shadow due to each point
+			pt = 1./9
+			# proportion of the planet's shadow outside the domain of any point
+			op = 2./9
 		# u coordinates of the surface corresponding to sightlines through the points
-		# and masks noting which points are within and outside the projected stellar surface
-		within, outside, u_arr = self.surface.transit_locations(b, alpha, radius, up_arr, y_arr)
+		u_arr = self.surface.transit_locations(up_arr, y_arr)
+		# flux at sightlines
+		flux_arr = np.zeros_like(u_arr)
+		# a mask saying at which points the sightlines intersect the surface
+		mask = ~np.isnan(u_arr) 
 
-		# z, r, cos(phi), mu arrays for the points where
-		# intensity will be calculated
-		z_arr = self.surface.Z( u_arr[ within ] )
+		# z, r, cos(phi), mu arrays for the points where intensity is calculated
+		z_arr = self.surface.Z( u_arr[ mask ] )
 		r_arr = self.surface.R( z_arr )
 		if inclination == 0:
 			cos_phi = np.full_like(z_arr, sina)
 		else:
-			cos_phi = np.sqrt( 1 - (y_arr[ within ] / r_arr)**2 )
+			cos_phi = np.sqrt( 1 - (y_arr[ mask ] / r_arr)**2 )
 		a_arr, b_arr = self.surface.ab(z_arr)
 		mu_arr = a_arr * cos_phi + b_arr
 		## intensity fit parameters
@@ -224,14 +243,20 @@ class Star:
 		## intensities
 		# 0: point index
 		# 1: wavelength index
-		I_within = np.empty( (sh[0], sh[1]) )
-		for i in range(sh[0]):
-			for j in range(sh[1]):
-				I_within[i, j] = ft.Fit.I(mu_arr[i], params_arr[i, j])
-		I_arr = np.full( (len(up_arr), sh[1]), np.nan )
-		I_arr[within, :] = I_within
-		## add zero intensities before and after the transit
-		I_arr[outside, :] = 0
-
-		# return the intensities in appropriate units
-		return I_arr * (radius * ut.Rsun)**2
+		I_arr = ft.Fit.I(mu_arr, params_arr)
+		# convert intensity from per Hz to per angstrom
+		I_arr = ut.Hz_to_A(I_arr, ld.wl_arr)
+		# convert intensity from per steradian to per cm2 of photodetector
+		I_arr = ut.ster_to_cm2(I_arr, distance)
+		# fluxes
+		# 0: point index
+		flux_arr[ mask ] = ut.flux(I_arr, wl_A, filt, wlf, I0)
+		# reshape the flux array according to belonging to different planet shadows
+		# and sum the fluxes from different sightlines for a given shadow
+		flux = np.sum( np.reshape(flux_arr, (n, ns)), axis=1 )
+		# multiply by the proportion of the shadow that each point contributes to the flux and add
+		# the average of the points, multiplied by the proportion of the shadow outside the domain of
+		# all points
+		flux = flux * (pt + op / ns)
+		# return the fluxes
+		return flux

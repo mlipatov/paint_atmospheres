@@ -163,22 +163,26 @@ class Surface:
 	def distance(y1, up1, y2, up2):
 		return np.sqrt( (y2 - y1)**2 + (up2 - up1)**2 )
 
-	# output: a mask saying which points are within the transit and are no less than 
-	#		a radius away from the projected stellar surface, 
-	#	the same for points outside the transit,
-	#	u coordinates of the surface corresponding to sightlines through the points;
+	# output: for each sightline, u coordinate of the first intersection with the surface
 	#		NAN indicates a sightline that doesn't intersect with the surface
-	# inputs: projected impact parameter of planet's orbit, normalized by Req
-	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
-	#	planet's radius in Req
-	#	u-prime and y coordinates of points on a straight line through the viewplane,
-	#		with first and last sets outside the star
-	def transit_locations(self, b, alpha, radius, up_arr, y_arr):
-		# output: u coordinates of two points where the line of sight intersects with the surface
-		# inputs: y and u-prime coordinates of a line of sight
-		#	helper variables
-		def U(y, up, hvars):
-			o2, o4, s, t, c2, c4 = hvars
+	# inputs: u-prime and y coordinates of points where sightlines intersect the viewplane
+	def transit_locations(self, up_arr, y_arr):
+		# helper variables for the computation of u
+		omega = self.omega
+		o2 = omega**2
+		o4 = omega**4
+		s = 1 / self.cosi
+		t = np.tan(self.inclination)
+		c2 = np.cos(2 * self.inclination)
+		c4 = np.cos(4 * self.inclination)
+		hvars = [o2, o4, s, t, c2, c4]
+
+		# u values corresponding to the points on the line
+		u_arr = np.full_like(up_arr, np.nan)
+		# compute the u value at each point on the line
+		for i in range(len(up_arr)):
+			up = up_arr[i]
+			y = y_arr[i]
 			# coefficients of the 6th degree polynomial in u
 			p = np.array([
 				(o4*t**4*(1 + t**2))/4.,
@@ -201,119 +205,9 @@ class Surface:
 			# the largest real root between negative one and one
 			condition = ((-1 <= rts) & (rts <= 1) & np.isreal(rts))
 			u = np.real(np.extract(condition, rts))
-			return u
-
-		# output: |y| corresponding to a sightline tangent to the surface
-		# input: y and u-prime coordinates of a sightline where there is no intersection
-		#	y and u-prime coordinates of a nearby sighline with an intersection
-		def Y(y_n, up_n, y, up):
-			# number of points on a grid where to look for the intersection
-			# closest to the tangent sightline
-			n = 10
-			# y and u-prime coordinates of the points
-			y_arr = np.linspace(y_n, y, n)
-			up_arr = np.linspace(up_n, up, n)
-			# go through the points until there is an intersection
-			for y, up in zip(y_arr, up_arr):
-				u = U(y, up, hvars)
-				# if the line of sight intersects with the star's surface
-				if u.size > 0:
-					break
-			# average of the z values between the two intersection points
-			z = self.Z( np.average(u) )
-			# if this z value is outside the boundaries where mu can be zero,
-			# bring it back within the boundaries
-			if z < -self.z1:
-				z = -self.z1
-			elif z > self.z1:
-				z = self.z1
-			# cos(phi) corresponding to the point where mu = 0 for this z value
-			cos_phi = self.cos_phi_b( z )
-			# abs(y) corresponding to this point
-			output = np.sqrt(1 - cos_phi**2)
-			# return
-			return output
-
-		# slope and u-prime intersect of the line
-		m = np.tan(alpha)
-		up0 = b / np.cos(alpha)
-		# r corresponding to the upper-most z
-		r1 = self.R( self.z1 )
-		# u-prime corresponding to the upper-most z
-		up1 = self.U(self.z1) * self.sini + r1 * self.cosi
-
-		# the sign of the y coordinate at the first and last points 
-		# where the transit line intersects the projection of the surface
-		ys_first = -1 # when alpha = 0
-		ys_last = 1 # when alpha = 0
-		if alpha > 0:
-			ys_first = np.sign(-up1 - up0)
-			ys_last = np.sign(up1 - up0)
-		if alpha < 0:
-			ys_first = np.sign( -1 * (up1 - up0) )
-			ys_last = np.sign( -1 * (-up1 - up0) )
-
-		# helper variables for the computation of u
-		omega = self.omega
-		o2 = omega**2
-		o4 = omega**4
-		s = 1 / self.cosi
-		t = np.tan(self.inclination)
-		c2 = np.cos(2 * self.inclination)
-		c4 = np.cos(4 * self.inclination)
-		hvars = [o2, o4, s, t, c2, c4]
-
-		# u values corresponding to the points on the line
-		u_arr = np.full_like(up_arr, np.nan)
-		# whether the first location where the line of sight
-		# through the planet's center intersects with the star's surface
-		# hasn't been seen
-		first = True
-		# compute the u value at each point on the line
-		for i in range(len(up_arr)):
-			up = up_arr[i]
-			y = y_arr[i]
-			u = U(y, up, hvars)
 			# if the line of sight intersects with the star's surface
 			if u.size > 0:
-				# record the larger u value for potential use in spectrum calculations
+				# record the larger u value for use in spectrum calculations
 				u_arr[i] = np.max(u)
-				# if this is the first intersection
-				if first:
-					# approximate the point on the transit line where
-					# a sightline is tangent to the surface
-					if self.inclination == 0:
-						y_first = ( -m*up0 - np.sqrt(1 + m**2 - b**2) ) / (1 + m**2)
-					else:
-						y_first = ys_first * Y(y_arr[i - 1], up_arr[i - 1], y, up, ys_first)
-					# note that the first point of intersection has passed
-					first = False
-				# update the index of the last seen intersection
-				i_last = i
-		# if at least one line of sight through the planet's center 
-		# intersects with the surface
-		if not first:
-			# approximate the second point 
-			# where the transit line intersects with the projected surface
-			if self.inclination == 0:
-				y_last = ( -m*up0 + np.sqrt(1 + m**2 - b**2) ) / (1 + m**2)
-			else:
-				y_last = ys_last * Y(y_arr[i_last + 1], up_arr[i_last + 1], y_arr[i_last], up_arr[i_last], ys_last)
-			## u-prime values of the transit intersections
-			up_first = y_first * m + up0
-			up_last  = y_last  * m + up0
-			# mask saying which values of u-prime and y arrays are between the first 
-			# and the second intersection and are no less than a radius away from 
-			# these intersections
-			within = np.logical_and.reduce( ( y_arr > y_first, y_arr < y_last, 
-				self.distance(y_arr, up_arr, y_first, up_first) >= radius,
-				self.distance(y_arr, up_arr, y_last, up_last) >= radius ) )
-			# mask saying which values of u-prime and y arrays are outside the first 
-			# and the second intersection and are no less than a radius away from 
-			# these intersections
-			outside = np.logical_or( 
-				np.logical_and( y_arr < y_first, 
-					self.distance(y_arr, up_arr, y_first, up_first) >= radius ),
-				np.logical_and( y_arr > y_last, 
-					self.distance(y_arr, up_arr, y_last, up_last) >= radius ) )
-		return [within, outside, u_arr]
+
+		return u_arr

@@ -27,34 +27,35 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
-# output: star's light through a filter in units of filter's flux zero point
-# inputs: light from the star in erg/s/cm2/A at many wavelengths
+# output: light through a filter in units of the filter's flux zero point
+# inputs: 2D array of intensities in erg/s/cm2/A (location x wavelength) or
+#		1D array (wavelength)
 #	wavelengths for the light in A
 #	filter 
 # 	wavelengths for the filter in A
 #	filter's intensity zero point in erg/s/cm2/A
-def flux(light, wll, filt, wlf, I0):
-	# compute a cubic spline based on the filter
+def flux(I_arr, wll, filt, wlf, I0):
+	# a cubic spline based on the filter
 	f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
 	# filter evaluated at the light's wavelengths
 	fil = f(wll) 
-	# and multiply by light
-	integrand = np.multiply(fil, light)
+	# multiply by light
+	integrand = np.multiply(I_arr, fil[np.newaxis, :])
 	# calculate the differences between light's wavelengths in A
 	diff = np.diff(wll)
 	## estimate the integral using the trapezoidal rule with variable argument differentials
 	# array of averaged differentials
 	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
 	# approximation of the integral
-	flux = np.sum(d * integrand)
+	flux = np.sum( d[np.newaxis, :] * integrand, axis=1 )
 	# approximate the flux zero point
 	integrand = fil * I0
 	flux_zero = np.sum(d * integrand)
-	if flux == 0 or np.isnan(flux):
-		output = flux
-	else:
-		output = flux / flux_zero
-	# return the flux
+	# output
+	output = np.empty_like(flux)
+	mask = np.logical_or( flux == 0, np.isnan(flux) )
+	output[ mask ] = flux[ mask ]
+	output[ ~mask ] = flux[ ~mask ] / flux_zero
 	return output
 
 # output: magnitude of star's light through a filter

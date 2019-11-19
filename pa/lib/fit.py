@@ -29,8 +29,6 @@ class Fit:
 
 	# the boundaries for the intervals of the fit: [0, x0], [x0, x1], ... [x(n), 1]
 	muB_arr = np.array([])
-	# the tuples of boundaries - deprecated
-	# muB_tup = []
 	# the number of intervals
 	m = 0	
 	# mu array split into a list of arrays according to the boundaries
@@ -103,17 +101,31 @@ class Fit:
 		I = sum(self.p * [func(mu) for func in Fi])
 		return I
 
-	# output: intensity
-	# inputs: mu and fit parameters
+	# output: a 2D array of intensity values (location x wavelength)
+	# inputs: a 1D array of mu values (corresponding to locations)
+	# 	a 3D array of fit parameters (location x wavelength x parameter index)
 	# note: mu has to be in [0, 1]
 	@classmethod
 	def I(cls, mu, p):
-		# interval of the form [mu1, mu2) where this mu value is found
-		# intervals numbered 0, 1, 2, ...
+		# 2D array of functions evaluated at different locations
+		# 0: location
+		# 1: function
+		f_mu = np.transpose( np.array([ np.ones_like(mu), mu, mu**2, mu**3, mu**4]) )
+		# 1D array of interval indices where each mu value is found,
+		# each interval of the form [mu1, mu2) 
+		# 0: location
 		i = np.searchsorted(cls.muB_arr, mu, side='right') - 1 
-		Fi = cls.F[i] # all the functions on this interval
-		I = sum(p * [func(mu) for func in Fi])
-		return I
+		# reshape the parameter array to distinguish between functions on different intervals
+		sh = p.shape
+		# 0: location
+		# 1: wavelength
+		# 2: interval
+		# 3: function
+		params = p.reshape( (sh[0], sh[1], cls.m, n) )
+		# at each location, in the corresponding interval, for each wavelength, 
+		# sum up the product of fit parameters and functions of mu
+		output = np.sum(f_mu[ :, np.newaxis, : ] * params[ np.arange(sh[0]), :, i, : ], axis=2)
+		return output
 
 	# For each function of the fit on each mu interval of the fit, 
 	# 	computes twice the integral of the function on the intersection of the interval 
