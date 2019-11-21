@@ -144,5 +144,5 @@ class Filter:
 
 	# output: magnitude of star's light through a filter
 	# inputs: same as those of flux() in this module
-	def mag(self, light, wll):
-		return -2.5 * np.log10( self.flux(light, wll) )
+	def mag(self, light, wll, distance):
+		return -2.5 * np.log10( self.flux(light, wll, distance) )

@@ -64,14 +64,8 @@ def run():
 		f.close()
 		I_arr = np.array(I_arr)
 		wl_arr = np.array(wl_arr)
-		# convert intensity from per Hz to per angstrom
-		I_arr = ut.Hz_to_A(I_arr, wl_arr)
-		# convert intensity from per steradian to per cm2 of photodetector
-		I_arr = ut.ster_to_cm2(I_arr, distance)
-		# convert wavelength to angstroms
-		wl_arr = ut.color_nm_A(wl_arr)
 		# compute the magnitude
-		mags.append(filt.mag(I_arr, wl_arr))
+		mags.append(filt.mag(I_arr, wl_arr, distance))
 
 
 	# write to the output file

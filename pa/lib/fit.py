@@ -91,15 +91,16 @@ class Fit:
 		if ch:
 			self.check()
 
-	# intensity vs mu in terms of this object's parameters
-	# mu has to be in [0, 1]
-	def I(self, mu):
+	# output: a single intensity value
+	# inputs: a single mu value
+	def int(self, mu):
 		# interval of the form [mu1, mu2) where this mu value is found
-		# intervals numbered 0, 1, 2, ...
 		i = np.searchsorted(self.muB_arr, mu, side='right') - 1 
-		Fi = self.F[i] # all the functions on this interval
-		I = sum(self.p * [func(mu) for func in Fi])
-		return I
+		f_mu = []
+		for func in self.F[i]: # all the functions on this interval
+			f_mu.append( func(mu) )
+		output = sum(self.p * f_mu)
+		return output
 
 	# output: a 2D array of intensity values (location x wavelength)
 	# units: ergs/cm2(surf)/s/hz/ster
@@ -248,15 +249,17 @@ class Fit:
 	# maximum deviation of the fitted function from the given values of intensity divided by I(mu = 1),
 	# the wavelength, the gravity, the temperature and the mu where this occurs; cannot be negative
 	max_dev = [0, -1, -1, -1, -1]
+	# # array of relative deviations
+	# dev_arr = []
 
 	# check that the fit is good
 	# adjusts class variable to contain information about the worst fits so far:
 	# the value at mu = 0, the maximum difference between adjacent values of mu, 
 	# the maximum difference between the fit function and the given intensity values
 	def check(self):
-		vI = np.vectorize(self.I) # vectorized version of the intensity function
+		vI = np.vectorize(self.int) # vectorized version of the intensity function
 		I1 = self.I_arr[-1] # given intensity value at mu = 1
-		I0 = self.I(0) # the fitted function evaluated at zero value
+		I0 = self.int(0) # the fitted function evaluated at zero value
 		# value at zero
 		if I0 == 0:
 			if self.I0_min[0] >= 0:
@@ -288,6 +291,7 @@ class Fit:
 				md_rel = 0
 			else:
 				md_rel = md / I1
+			# type(self).dev_arr.append(md_rel) # this almost doubles the check time
 			if md_rel > self.max_dev[0]:
 				type(self).max_dev = [md_rel, self.wl, self.g, self.temp, mu_arr[ind]]
 		return
@@ -320,7 +324,7 @@ class Fit:
 		fig = plt.figure()
 		plt.axes().set_ylim([np.min(I_arr) - offset_y, np.max(I_arr) + offset_y])
 		plt.scatter(mu_arr, I_arr, marker='o', c='b', s=6)
-		plt.plot(mu_check_arr, vI(mu_check_arr), 'g--', label=lab % tuple(params))
+		plt.plot(mu_check_arr, vI(mu_check_arr, self.p), 'g--', label=lab % tuple(params))
 		plt.title('Intensity versus surface inclination')
 		plt.xlabel(r'$\mu$')
 		plt.ylabel(r'Intensity, $ergs \, / \, cm^2 \times s \times Hz \times ster$')
