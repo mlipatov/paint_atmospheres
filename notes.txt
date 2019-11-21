@@ -12,7 +12,9 @@ metallicity = [-0.5]
 [0.0070647571757599505, 111.5, 		2.0, 	8500.0, 		0.9]	deviation = abs(Imu - I(mu))
 
 # Planetary transit: 200 dpi, linewidth = 1
-7, 19, 100 points produce lines that are not distinguishable from each other 
+# vega at i = pi/3, b = 0, alpha = pi/3
+7, 19, 100 points produce lines that are not distinguishable from each other
+1 point is visibly distinguishable from these near the edges of the star
 
 # Runtimes:
 

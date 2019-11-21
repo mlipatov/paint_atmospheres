@@ -110,19 +110,23 @@ class Filter:
 		self.f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
 
 	# output: light through a filter in units of the filter's flux zero point
-	# inputs: 2D array of intensities in erg/s/cm2(phot)/A (location x wavelength) or
+	# inputs: 2D array of intensities in erg/s/ster/Hz (location x wavelength) or
 	#		1D array (wavelength)
-	#	wavelengths for the light in A
-	#	filter 
-	# 	wavelengths for the filter in A
-	#	filter's intensity zero point in erg/s/cm2/A
-	def flux(self, I_arr, wll):
+	#	wavelengths for the light in nm 
+	#	distance to the object
+	def flux(self, I_arr, wll, distance):
+		# convert intensity from per Hz to per angstrom
+		I_arr = Hz_to_A(I_arr, wll)
+		# convert intensity from per steradian to per cm2 of photodetector
+		I_arr = ster_to_cm2(I_arr, distance)
+		# convert wavelength to angstroms
+		wll_A = color_nm_A(wll)
 		# filter evaluated at the light's wavelengths
-		fil = self.f(wll) 
+		fil = self.f(wll_A) 
 		# multiply by light
 		integrand = np.multiply(I_arr, fil[np.newaxis, :])
 		# calculate the differences between light's wavelengths in A
-		diff = np.diff(wll)
+		diff = np.diff(wll_A)
 		## estimate the integral using the trapezoidal rule with variable argument differentials
 		# array of averaged differentials
 		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )

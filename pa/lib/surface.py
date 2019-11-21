@@ -158,12 +158,12 @@ class Surface:
 	## functions related to the projection of the stellar surface
 	## onto the view plane, whose coordinates are y and u-prime, both normalized by Req
 
-	# output: for each sightline, u coordinate of the first intersection with the surface
+	# output: u coordinates of the first intersection with the surface for a number of sightlines;
 	#		NAN indicates a sightline that doesn't intersect with the surface
 	# inputs: u-prime and y coordinates of points where sightlines intersect the viewplane
 	# notes: for inclination closer than 0.01 to pi / 2 at standard machine precision, 
 	# 		treats inclination as pi / 2
-	def transit_locations(self, up_arr, y_arr):
+	def sU(self, up_arr, y_arr):
 		# u values corresponding to the points on the line
 		u_arr = np.full_like(up_arr, np.nan)
 		# if inclination is pi / 2, treat separately because cos(i) = 0

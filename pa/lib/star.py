@@ -178,54 +178,47 @@ class Star:
 	# output: flux in zero flux units from a series of points on the surface of a star
 	#	covered by a planet
 	# inputs: inclination of the star's rotation axis,
-	#	projected impact parameter of planet's orbit, normalized by Req
-	#	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
-	#	radius of the planet in Req
-	# 	number of time points across two equatorial radii of the star and four planetary radii
+	#	planetary transit information
 	#	limb darkening information
-	#	filter array
-	#	filter wavelengths
-	#	filter intensity zero point
-	#	number of points in the shadow of a planet where to calculate intensities (7, 19 or >19)
+	#	filter filter information
+	#	number of points in the shadow of a planet where to calculate intensities (1, 7, 19 or >19)
 	# requres: -pi / 2 < alpha < pi / 2
 	# notes: the computation of intensity for each point is much more time-consuming than
 	#	the computation of the point itself
-	def transit(self, inclination, distance, b, alpha, radius, n, ld, filt, ns=7):
+	def transit(self, inclination, distance, tr, ld, filt, ns=7):
+		# radius of the planet
+		radius = tr.radius
 		## notes: we work in the viewplane coordinates 
 		##	the star cannot be outside one equatorial radius of the line's zero point
-		# wavelength in angstroms
-		wl_A = ut.color_nm_A(ld.wl_arr)
-		# helper variables
-		sina = np.sin(alpha)
-		cosa = np.cos(alpha)
 		# set the star's inclination
 		self.surface.set_inclination(inclination)
-		# locations of planet center along the transit line,
-		# with zero at the point closest to the projected center of the star
-		loc = np.linspace(-1 - 2*radius, 1 + 2*radius, n)
 		# locations of the planet center
-		yc  = -b * sina + cosa * loc
-		upc =  b * cosa + sina * loc
+		yc, upc = tr.locations()
 		# locations of points within the shadow
-		if ns == 7 or ns == 19: # pack smaller circles within the shadow
+		if ns <= 19: # pack smaller circles within the shadow
 			# set the ratio of the shadow's radius to that of a smaller circle
-			if ns == 7: 	a = 3
+			if ns == 1:		a = 1
+			elif ns == 7: 	a = 3
 			elif ns == 19: 	a = 1 + np.sqrt(2) + np.sqrt(6)
-			# helper variable
-			sqrt3 = np.sqrt(3)
 			# coordinates of the points in the shadow, relative to the shadow's center
-			y_pts = (radius / a) * np.array([ 0, 2, -2, 1, -1, 1, -1 ])
-			up_pts = (radius / a) * np.array([ 0, 0, 0, sqrt3, sqrt3, -sqrt3, -sqrt3 ])
-			# if 19 circles, calculate 12 more points
-			if ns == 19:
-				y_pts2 = (radius / a) * np.array([ 1, -1, 1, -1, \
-					1 + sqrt3, -(1 + sqrt3), 1 + sqrt3, -(1 + sqrt3), \
-					2 + sqrt3, -(2 + sqrt3), 2 + sqrt3, -(2 + sqrt3) ])
-				up_pts2 = (radius / a) * np.array([ 2 + sqrt3, 2 + sqrt3, -(2 + sqrt3), -(2 + sqrt3), \
-					1 + sqrt3, 1 + sqrt3, -(1 + sqrt3), -(1 + sqrt3), \
-					1, 1, -1, -1 ])
+			y_pts = (radius / a) * np.array([ 0 ])
+			up_pts = (radius / a) * np.array([ 0 ])
+			if ns == 7 or ns == 19: # if 7 or 19 circles, calculate at least 6 more points
+				sqrt3 = np.sqrt(3) # helper variable
+				y_pts2 = (radius / a) * np.array([ 2, -2, 1, -1, 1, -1 ])
+				up_pts2 = (radius / a) * np.array([ 0, 0, sqrt3, sqrt3, -sqrt3, -sqrt3 ])
 				y_pts = np.concatenate( (y_pts, y_pts2) )
 				up_pts = np.concatenate( (up_pts, up_pts2) )
+				# if 19 circles, calculate 12 more points
+				if ns == 19:
+					y_pts2 = (radius / a) * np.array([ 1, -1, 1, -1, \
+						1 + sqrt3, -(1 + sqrt3), 1 + sqrt3, -(1 + sqrt3), \
+						2 + sqrt3, -(2 + sqrt3), 2 + sqrt3, -(2 + sqrt3) ])
+					up_pts2 = (radius / a) * np.array([ 2 + sqrt3, 2 + sqrt3, -(2 + sqrt3), -(2 + sqrt3), \
+						1 + sqrt3, 1 + sqrt3, -(1 + sqrt3), -(1 + sqrt3), \
+						1, 1, -1, -1 ])
+					y_pts = np.concatenate( (y_pts, y_pts2) )
+					up_pts = np.concatenate( (up_pts, up_pts2) )
 		elif ns > 19:
 			# generate a number of points within a unit square centered on the origin that will result in
 			# approximately the requested number of points within a circle inscribed in it
@@ -239,11 +232,11 @@ class Star:
 
 		# flat arrays of y and u-prime values of the representative locations on the planet shadow
 		# these include the center of the shadow and several other points within it
-		y_arr = np.tile(y_pts, n) + np.repeat(yc, ns)
-		up_arr = np.tile(up_pts, n) + np.repeat(upc, ns)
+		y_arr = np.tile(y_pts, tr.n) + np.repeat(yc, ns)
+		up_arr = np.tile(up_pts, tr.n) + np.repeat(upc, ns)
 
 		# u coordinates of the surface corresponding to sightlines through the points
-		u_arr = self.surface.transit_locations(up_arr, y_arr)
+		u_arr = self.surface.sU(up_arr, y_arr)
 		# flux at sightlines
 		flux_arr = np.zeros_like(u_arr)
 		# a mask saying at which points the sightlines intersect the surface
@@ -266,17 +259,39 @@ class Star:
 		# 0: point index
 		# 1: wavelength index
 		I_arr = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
-		# convert intensity from per Hz to per angstrom
-		I_arr = ut.Hz_to_A(I_arr, ld.wl_arr)
-		# convert intensity from per steradian to per cm2 of photodetector
-		I_arr = ut.ster_to_cm2(I_arr, distance)
 		# fluxes
 		# 0: point index
-		flux_arr[ mask ] = filt.flux(I_arr, wl_A)
+		flux_arr[ mask ] = filt.flux(I_arr, ld.wl_arr, distance)
 		# reshape the flux array according to belonging to different planet shadows
 		# and sum the fluxes from different sightlines for a given shadow
-		flux = np.sum( np.reshape(flux_arr, (n, ns)), axis=1 )
+		flux = np.sum( np.reshape(flux_arr, (tr.n, ns)), axis=1 )
 		# divide the flux by the number of points in a planet's shadow
 		flux = flux / ns 
 		# return the fluxes
 		return flux
+
+class Transit:
+	""" Contains information pertaining to a planetary transit:
+	projected impact parameter of planet's orbit, normalized by Req
+	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
+	radius of the planet in Req
+	number of time points across two equatorial radii of the star and four planetary radii """
+	def __init__(self, b, alpha, radius, n):
+		self.b = b
+		self.alpha = alpha
+		self.radius = radius
+		self.n = n
+		# helper variables
+		self.sina = np.sin(alpha)
+		self.cosa = np.cos(alpha)
+
+	# outputs: y coordinates of points along the transit line
+	#	up coordinates of these points
+	# inputs: self
+	def locations(self):
+		# locations of planet center along the transit line
+		loc = np.linspace(-1 - 2*self.radius, 1 + 2*self.radius, self.n)
+		# locations of the planet center
+		y  = -self.b * self.sina + self.cosa * loc
+		up =  self.b * self.cosa + self.sina * loc
+		return [y, up]
