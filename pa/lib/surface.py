@@ -161,11 +161,13 @@ class Surface:
 	# output: for each sightline, u coordinate of the first intersection with the surface
 	#		NAN indicates a sightline that doesn't intersect with the surface
 	# inputs: u-prime and y coordinates of points where sightlines intersect the viewplane
+	# notes: for inclination closer than 0.01 to pi / 2 at standard machine precision, 
+	# 		treats inclination as pi / 2
 	def transit_locations(self, up_arr, y_arr):
 		# u values corresponding to the points on the line
 		u_arr = np.full_like(up_arr, np.nan)
-		# if inclination is pi / 2
-		if self.inclination == np.pi / 2:
+		# if inclination is pi / 2, treat separately because cos(i) = 0
+		if (self.cosi**6 <= np.finfo(float).eps) :
 			# u and u-prime are the same, so convert u-prime to z
 			z_arr = self.Z( up_arr )
 			# mask out the values of z that are beyond the star's boundaries
@@ -213,15 +215,15 @@ class Surface:
 				])
 				# roots of the polynomial equation
 				rts = np.roots(p)
-				# the point on the visible surface is
-				# one of the real roots
-				condition = ((-1 / self.f <= rts) & (rts <= 1 / self.f) & np.isreal(rts))
-				u = np.real(np.extract(condition, rts))
-
-				print(max(p)/min(p), u.size)
-				# print(u, self.R(self.Z(u)), y, up)
-				# print(u)
-
+				# real roots
+				u = rts[np.isreal(rts)]
+				# r that solves both the surface equation and the projected ellipse equation
+				# is one of the two values that solves the latter
+				r = np.sqrt(y**2 + (up - u*self.sini)**2/self.cosi**2)
+				# filter the combinations of u and r that are within their domains
+				ok = (np.abs(u) < 1 / self.f)*(np.abs(r) < 1) != 0
+				u = u[ok]
+				r = r[ok]
 				# if the line of sight intersects with the star's surface
 				if u.size == 2:
 					# record the larger u value for use in spectrum calculations

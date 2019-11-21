@@ -27,42 +27,6 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
-# output: light through a filter in units of the filter's flux zero point
-# inputs: 2D array of intensities in erg/s/cm2(phot)/A (location x wavelength) or
-#		1D array (wavelength)
-#	wavelengths for the light in A
-#	filter 
-# 	wavelengths for the filter in A
-#	filter's intensity zero point in erg/s/cm2/A
-def flux(I_arr, wll, filt, wlf, I0):
-	# a cubic spline based on the filter
-	f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
-	# filter evaluated at the light's wavelengths
-	fil = f(wll) 
-	# multiply by light
-	integrand = np.multiply(I_arr, fil[np.newaxis, :])
-	# calculate the differences between light's wavelengths in A
-	diff = np.diff(wll)
-	## estimate the integral using the trapezoidal rule with variable argument differentials
-	# array of averaged differentials
-	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-	# approximation of the integral
-	flux = np.sum( d[np.newaxis, :] * integrand, axis=1 )
-	# approximate the flux zero point
-	integrand = fil * I0
-	flux_zero = np.sum(d * integrand)
-	# output
-	output = np.empty_like(flux)
-	mask = np.logical_or( flux == 0, np.isnan(flux) )
-	output[ mask ] = flux[ mask ]
-	output[ ~mask ] = flux[ ~mask ] / flux_zero
-	return output
-
-# output: magnitude of star's light through a filter
-# inputs: same as those of flux() in this module
-def mag(light, wll, filt, wlf, I0):
-	return -2.5 * np.log10( flux(light, wll, filt, wlf, I0) )
-
 # approximate the bolometric luminosity of a star in erg/s/ster
 # 	using the trapezoidal rule
 # input: light from the star at many wavelengths in erg/s/ster/Hz
@@ -134,3 +98,47 @@ def cm2_to_ster(I_arr, distance):
 # output: an array of intensity per square centimeter of photoreceptor
 def ster_to_cm2(I_arr, distance):
 	return I_arr / distance**2
+
+## Filter
+class Filter:
+	""" Information pertaining to a filter """
+	# inputs: filter multipliers, filter wavelengths, intensity zero point in erg/s/cm2/A
+	def __init__(self, filt, wlf, I0):
+		self.filt = filt
+		self.I0 = I0
+		# a cubic spline based on the filter
+		self.f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
+
+	# output: light through a filter in units of the filter's flux zero point
+	# inputs: 2D array of intensities in erg/s/cm2(phot)/A (location x wavelength) or
+	#		1D array (wavelength)
+	#	wavelengths for the light in A
+	#	filter 
+	# 	wavelengths for the filter in A
+	#	filter's intensity zero point in erg/s/cm2/A
+	def flux(self, I_arr, wll):
+		# filter evaluated at the light's wavelengths
+		fil = self.f(wll) 
+		# multiply by light
+		integrand = np.multiply(I_arr, fil[np.newaxis, :])
+		# calculate the differences between light's wavelengths in A
+		diff = np.diff(wll)
+		## estimate the integral using the trapezoidal rule with variable argument differentials
+		# array of averaged differentials
+		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
+		# approximation of the integral
+		flux = np.sum( d[np.newaxis, :] * integrand, axis=1 )
+		# approximate the flux zero point
+		integrand = fil * self.I0
+		flux_zero = np.sum(d * integrand)
+		# output
+		output = np.empty_like(flux)
+		mask = np.logical_or( flux == 0, np.isnan(flux) )
+		output[ mask ] = flux[ mask ]
+		output[ ~mask ] = flux[ ~mask ] / flux_zero
+		return output
+
+	# output: magnitude of star's light through a filter
+	# inputs: same as those of flux() in this module
+	def mag(self, light, wll):
+		return -2.5 * np.log10( self.flux(light, wll) )

@@ -11,6 +11,8 @@ metallicity = [-0.5]
 [-0.0029765257851622905,102.5, 		3.5, 	20000.0, 		0.0] 	deviation = deltaI over delta-mu = 0.001 
 [0.0070647571757599505, 111.5, 		2.0, 	8500.0, 		0.9]	deviation = abs(Imu - I(mu))
 
+# Planetary transit: 200 dpi, linewidth = 1
+7, 19, 100 points produce lines that are not distinguishable from each other 
 
 # Runtimes:
 
@@ -91,7 +93,5 @@ git checkout higher_order_integration # switch to another branch in the newly cl
 ## Useful python command line commands
 
 # look at function definitions in python
-import sys, inspect
+import sys, inspect
 sys.stdout.write(inspect.getsource(surf.R))
-
-## temperature interpolation testing

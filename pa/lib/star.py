@@ -115,7 +115,7 @@ class Star:
 		return result * (self.Req * ut.Rsun)**2
 
 	# paint the temperature of the visible surface of the star
-	# on a set of axes
+	# 	on a set of axes
 	# Inputs: axes, inclination, size of the axes in inches, 
 	#	an optional axes where to draw a horizontal color bar
 	def plot_temp(self, ax, inclination, size_inches, cax=None):
@@ -186,12 +186,14 @@ class Star:
 	#	filter array
 	#	filter wavelengths
 	#	filter intensity zero point
-	#	number of points in the shadow of a planet where to calculate intensities
+	#	number of points in the shadow of a planet where to calculate intensities (7, 19 or >19)
 	# requres: -pi / 2 < alpha < pi / 2
-	def transit(self, inclination, distance, b, alpha, radius, n, ld, filt, wlf, I0, ns=7):
+	# notes: the computation of intensity for each point is much more time-consuming than
+	#	the computation of the point itself
+	def transit(self, inclination, distance, b, alpha, radius, n, ld, filt, ns=7):
 		## notes: we work in the viewplane coordinates 
 		##	the star cannot be outside one equatorial radius of the line's zero point
-		# convert wavelength to angstroms
+		# wavelength in angstroms
 		wl_A = ut.color_nm_A(ld.wl_arr)
 		# helper variables
 		sina = np.sin(alpha)
@@ -205,18 +207,41 @@ class Star:
 		yc  = -b * sina + cosa * loc
 		upc =  b * cosa + sina * loc
 		# locations of points within the shadow
-		if ns == 7: # if there are seven points, pack 7 circles within the shadow
+		if ns == 7 or ns == 19: # pack smaller circles within the shadow
+			# set the ratio of the shadow's radius to that of a smaller circle
+			if ns == 7: 	a = 3
+			elif ns == 19: 	a = 1 + np.sqrt(2) + np.sqrt(6)
+			# helper variable
 			sqrt3 = np.sqrt(3)
-			y_pts = radius * np.array([ 0, 2, -2, 1, -1, 1, -1 ])
-			up_pts = radius * np.array([ 0, 0, 0, sqrt3, sqrt3, -sqrt3, -sqrt3 ])
-			# flat arrays of y and u-prime values of the representative locations on the planet shadow
-			# these include the center of the shadow and several other points within it
-			y_arr = np.tile(y_pts, n) + np.repeat(yc, ns)
-			up_arr = np.tile(up_pts, n) + np.repeat(upc, ns)
-			# proportion of the planet's shadow due to each point
-			pt = 1./9
-			# proportion of the planet's shadow outside the domain of any point
-			op = 2./9
+			# coordinates of the points in the shadow, relative to the shadow's center
+			y_pts = (radius / a) * np.array([ 0, 2, -2, 1, -1, 1, -1 ])
+			up_pts = (radius / a) * np.array([ 0, 0, 0, sqrt3, sqrt3, -sqrt3, -sqrt3 ])
+			# if 19 circles, calculate 12 more points
+			if ns == 19:
+				y_pts2 = (radius / a) * np.array([ 1, -1, 1, -1, \
+					1 + sqrt3, -(1 + sqrt3), 1 + sqrt3, -(1 + sqrt3), \
+					2 + sqrt3, -(2 + sqrt3), 2 + sqrt3, -(2 + sqrt3) ])
+				up_pts2 = (radius / a) * np.array([ 2 + sqrt3, 2 + sqrt3, -(2 + sqrt3), -(2 + sqrt3), \
+					1 + sqrt3, 1 + sqrt3, -(1 + sqrt3), -(1 + sqrt3), \
+					1, 1, -1, -1 ])
+				y_pts = np.concatenate( (y_pts, y_pts2) )
+				up_pts = np.concatenate( (up_pts, up_pts2) )
+		elif ns > 19:
+			# generate a number of points within a unit square centered on the origin that will result in
+			# approximately the requested number of points within a circle inscribed in it
+			N = np.int(np.ceil( ns * 4 / np.pi ))
+			y_pts = np.random.uniform(low=-0.5, high=0.5, size=N )
+			up_pts = np.random.uniform(low=-0.5, high=0.5, size=N )
+			mask = np.sqrt(y_pts**2 + up_pts**2) < 1
+			y_pts = radius * y_pts[ mask ]
+			up_pts = radius * up_pts[ mask ]
+			ns = len(y_pts)
+
+		# flat arrays of y and u-prime values of the representative locations on the planet shadow
+		# these include the center of the shadow and several other points within it
+		y_arr = np.tile(y_pts, n) + np.repeat(yc, ns)
+		up_arr = np.tile(up_pts, n) + np.repeat(upc, ns)
+
 		# u coordinates of the surface corresponding to sightlines through the points
 		u_arr = self.surface.transit_locations(up_arr, y_arr)
 		# flux at sightlines
@@ -227,10 +252,7 @@ class Star:
 		# z, r, cos(phi), mu arrays for the points where intensity is calculated
 		z_arr = self.surface.Z( u_arr[ mask ] )
 		r_arr = self.surface.R( z_arr )
-		if inclination == 0:
-			cos_phi = np.full_like(z_arr, sina)
-		else:
-			cos_phi = np.sqrt( 1 - (y_arr[ mask ] / r_arr)**2 )
+		cos_phi = np.sqrt( 1 - (y_arr[ mask ] / r_arr)**2 )
 		a_arr, b_arr = self.surface.ab(z_arr)
 		mu_arr = a_arr * cos_phi + b_arr
 		## intensity fit parameters
@@ -250,13 +272,11 @@ class Star:
 		I_arr = ut.ster_to_cm2(I_arr, distance)
 		# fluxes
 		# 0: point index
-		flux_arr[ mask ] = ut.flux(I_arr, wl_A, filt, wlf, I0)
+		flux_arr[ mask ] = filt.flux(I_arr, wl_A)
 		# reshape the flux array according to belonging to different planet shadows
 		# and sum the fluxes from different sightlines for a given shadow
 		flux = np.sum( np.reshape(flux_arr, (n, ns)), axis=1 )
-		# multiply by the proportion of the shadow that each point contributes to the flux and add
-		# the average of the points, multiplied by the proportion of the shadow outside the domain of
-		# all points
-		flux = flux * (pt + op / ns)
+		# divide the flux by the number of points in a planet's shadow
+		flux = flux / ns 
 		# return the fluxes
 		return flux

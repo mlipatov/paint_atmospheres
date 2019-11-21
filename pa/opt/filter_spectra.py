@@ -33,6 +33,7 @@ def run():
 			wlf.append(float(data[0]))
 			filt.append(float(data[1]))
 	f.close()
+	filt = ut.Filter(filt, wlf, I0)
 
 	# add slashes to directory names if necessary
 	if not idir.endswith('/'):
@@ -70,7 +71,7 @@ def run():
 		# convert wavelength to angstroms
 		wl_arr = ut.color_nm_A(wl_arr)
 		# compute the magnitude
-		mags.append(ut.mag(I_arr, wl_arr, filt, wlf, I0))
+		mags.append(filt.mag(I_arr, wl_arr))
 
 
 	# write to the output file
