@@ -167,12 +167,12 @@ class Surface:
 		# u values corresponding to the points on the line
 		u_arr = np.full_like(up_arr, np.nan)
 		# if inclination is pi / 2, treat separately because cos(i) = 0
-		if (self.cosi**6 <= np.finfo(float).eps) :
+		if (self.cosi**6 < 16 * np.finfo(float).eps / 4.) :
 			# u and u-prime are the same, so convert u-prime to z
 			z_arr = self.Z( up_arr )
 			# mask out the values of z that are beyond the star's boundaries
 			mask1 = np.abs( z_arr ) <= self.z1 
-			# convert the remaining values to r
+			# find r for the remaining values
 			r_arr = self.R( z_arr[ mask1 ] )
 			# mask out the values of y that are greater than r
 			mask2 = np.abs( y_arr[ mask1 ] ) <= r_arr
