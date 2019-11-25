@@ -242,12 +242,18 @@ class Star:
 		# a mask saying at which points the sightlines intersect the surface
 		mask = ~np.isnan(u_arr) 
 
-		# z, r, cos(phi), mu arrays for the points where intensity is calculated
+		# z, r arrays for the points where intensity is calculated
 		z_arr = self.surface.Z( u_arr[ mask ] )
 		r_arr = self.surface.R( z_arr )
+		# mask saying where x < 0 at the intersection of sightline and surface
+		xneg = up_arr[ mask ] > u_arr[ mask ] * self.surface.sini
+		# abs(cos(phi)) array for the points where intensity is calculated
 		cos_phi = np.sqrt( 1 - (y_arr[ mask ] / r_arr)**2 )
+		# multiply by -1 where x < 0
+		cos_phi[ xneg ] = -1 * cos_phi[ xneg ]
+		# a, b, mu arrays for the points where intensity is calculated
 		a_arr, b_arr = self.surface.ab(z_arr)
-		mu_arr = a_arr * cos_phi + b_arr
+		mu_arr = a_arr * cos_phi + b_arr	
 		## intensity fit parameters
 		# 0: point index
 		# 1: wavelength index
@@ -259,6 +265,7 @@ class Star:
 		# 0: point index
 		# 1: wavelength index
 		I_arr = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
+
 		# fluxes
 		# 0: point index
 		flux_arr[ mask ] = filt.flux(I_arr, ld.wl_arr, distance)
@@ -271,7 +278,7 @@ class Star:
 		return flux
 
 class Transit:
-	""" Contains information pertaining to a planetary transit:
+	""" Information pertaining to a planetary transit:
 	projected impact parameter of planet's orbit, normalized by Req
 	projected inclination of the planet's orbit w.r.t. the star's rotation axis (between 0 and pi/2)
 	radius of the planet in Req

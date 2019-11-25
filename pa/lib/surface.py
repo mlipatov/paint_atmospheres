@@ -81,7 +81,7 @@ class Surface:
 	def A(self, z):
 		return (1./self.f) * np.sqrt(self.S(self.U(z)) + self.Ds(self.U(z))**2 / 4)
 
-	# coefficients in the expression mu = a * cos(phi) + b, returned as a tuple
+	# coefficients in the expression mu = a * cos(phi) + b
 	def ab(self, z):
 		drz = self.f * self.Drz(z)
 		sqt = np.sqrt(1 + drz**2)
