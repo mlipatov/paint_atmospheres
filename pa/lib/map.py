@@ -14,17 +14,18 @@ class Map:
 
 	# initialize with the surface shape of the star, the number of z values to use for integration, 
 	# the constants needed for temperature and gravity unit conversions, and limb darkening information
-	def __init__(self, surf, nz, add_logg, mult_temp, ld, temp_method):
+	def __init__(self, surf, nz, add_logg, mult_temp, ld, temp_method, g_method):
 
 		## initialize the surface
 		self.surface = surf # surface shape information
 		omega = surf.omega
 
 		# store gravity and temperature modifiers, 
-		# as well as the temperature interpolation method
+		# as well as the interpolation methods
 		self.add_logg = add_logg
 		self.mult_temp = mult_temp
 		self.temp_method = temp_method
+		self.g_method = g_method
 
 		## initialize the array of z values for integration
 		## do not use the boundary values
@@ -69,7 +70,7 @@ class Map:
 		# compute the interpolated values of limb darkening fit parameters
 		# if given limb darkening information
 		if ld is not None:
-			params_arr = self.interp(logg_arr, temp_arr, ld, self.temp_method)
+			params_arr = self.interp(logg_arr, temp_arr, ld, self.temp_method, self.g_method)
 		else:
 			params_arr = None
 
@@ -188,7 +189,7 @@ class Map:
 	# Note: data types of gravity, temperature and intensity fit parameters 
 	# in the limb darkening information should be no more than 6 decimal digits, 
 	# to conserve memory
-	def interp(self, logg_arr, temp_arr, ld, temp_method):
+	def interp(self, g_arr, temp_arr, ld, temp_method, g_method):
 		
 		# The temperature-dependent factor in the Planck function
 		# Inputs: temperature and frequency arrays of the same dimensions
@@ -209,7 +210,7 @@ class Map:
 		# for each value of z, see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
-		ig = np.searchsorted(g, logg_arr, side='right') - 1
+		ig = np.searchsorted(g, g_arr, side='right') - 1
 		iT = np.searchsorted(T, temp_arr, side='right') - 1
 		# for each value of z, 
 		# find the values of gravity and temperature between which we are interpolating
@@ -245,7 +246,7 @@ class Map:
 			np.set_printoptions(threshold=10) # ensure summary printout of large arrays
 			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[noinfo]) + \
 				', where the temperatures are ' + str(temp_arr[noinfo]) + ' and log gravity values are ' +\
-				 str(logg_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
+				 str(g_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
 				 'we use the intensity information at the closest gravity where such information is available.')
 			np.set_printoptions(threshold=th)
 			## at each of the neighboring temperatures, and each z value,
@@ -271,6 +272,13 @@ class Map:
 				# update the boolean array saying which upper temperature neighbor info is missing
 				noinfo2 = np.isnan(f21[:, 0, 0])	
 
+		# if the gravity scale is linear,
+		# modify the gravity array accordingly
+		if g_method == 'lin':
+			g1 = np.power(10, g1, dtype=np.float32)
+			g2 = np.power(10, g2, dtype=np.float32)
+			g_arr = np.power(10, g_arr, dtype=np.float32)
+
 		# if the temperature scale is non-linear, 
 		# modify the temperature and gravity arrays accordingly
 		if temp_method == 'log':
@@ -291,14 +299,14 @@ class Map:
 			T1 = planck(TT1, NN1)
 			T2 = planck(TT2, NN2)
 			# add the wavelength dimension to the gravity arrays
-			logg_arr = logg_arr[:, np.newaxis]
+			g_arr = g_arr[:, np.newaxis]
 			g1 = g1[:, np.newaxis]
 			g2 = g2[:, np.newaxis]
 
 		## bilinear interpolation (see Wikipedia: Bilinear Interpolation: Algorithm)
 		const = (1 / ((g2 - g1) * (T2 - T1)))
-		Dg1 = g2 - logg_arr
-		Dg2 = logg_arr - g1
+		Dg1 = g2 - g_arr
+		Dg2 = g_arr - g1
 		Dt1 = T2 - temp_arr
 		Dt2 = temp_arr - T1
 		# helper matrix

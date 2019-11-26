@@ -18,7 +18,7 @@ class Star:
 	Performs the 1D integration in the z dimension,
 	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition.
 	Paints the temperature across the surface of the star."""
-	def __init__(self, omega, luminosity, mass, Req, nz, ld=None, temp_method='planck'):
+	def __init__(self, omega, luminosity, mass, Req, nz, ld=None, temp_method='planck', g_method='log'):
 		if ld is not None:
 			self.wavelengths = ld.wl_arr # wavelengths
 			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
@@ -32,7 +32,7 @@ class Star:
 		mult_temp = ut.Tsun * Req**(-0.5) * luminosity**(0.25)
 		# map of gravity, temperature, intensity fit parameters 
 		# and other features across the surface of the star
-		self.map = mp.Map(self.surface, nz, add_logg, mult_temp, ld, temp_method)
+		self.map = mp.Map(self.surface, nz, add_logg, mult_temp, ld, temp_method, g_method)
 
 	# for a given inclination,
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
