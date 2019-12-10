@@ -14,7 +14,7 @@ import os
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
 		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.000 1.5707963267948966 150; " +\
-		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.08683")
+		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.08841")
 	parser.add_argument("pkl_sfile", help="the pickled star file")
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
