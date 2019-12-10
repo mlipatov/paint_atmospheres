@@ -6,10 +6,10 @@ Authors:
 
 Model: 
 	Roche model of mass distribution, 
-	non-differential rotation,
+	solid body rotation,
 	energy flux collinear with effective gravity.
 
-Installation (UNIX):
+Installation (Unix):
 	git clone https://github.com/mlipatov/paint_atmospheres
 	cd paint_atmospheres
 	pip install .

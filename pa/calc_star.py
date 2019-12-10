@@ -8,7 +8,7 @@ import pickle
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
 		"calc_star \'data/limbdark_m01.pkl\' \'data/vega.pkl\' 200 " +\
-		"0.8760 40.124 2.135 2.818")
+		"0.6151 40.346 2.165 2.815")
 	parser.add_argument("ld_file", help="the limb darkening .pkl file to access")
 	parser.add_argument("output", help="an output file containing the pickled star")
 	parser.add_argument("n_z", help="number of values for the normalized z coordinate", type=int)

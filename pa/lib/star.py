@@ -180,9 +180,9 @@ class Star:
 	# inputs: inclination of the star's rotation axis,
 	#	planetary transit information
 	#	limb darkening information
-	#	filter filter information
+	#	filter information
 	#	number of points in the shadow of a planet where to calculate intensities (1, 7, 19 or >19)
-	# requres: -pi / 2 < alpha < pi / 2
+	# requres: -pi / 2 <= alpha <= pi / 2
 	# notes: the computation of intensity for each point is much more time-consuming than
 	#	the computation of the point itself
 	def transit(self, inclination, distance, tr, ld, filt, ns=7):
