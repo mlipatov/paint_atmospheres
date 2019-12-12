@@ -5,6 +5,7 @@ from pa.lib import util as ut
 
 import matplotlib as mpl # for the temperature color bar
 from matplotlib import pyplot as plt
+import matplotlib.ticker as ticker
 
 import scipy.optimize as optimization
 
@@ -172,7 +173,8 @@ class Star:
 			ax.add_patch(ellipse)
 		if cax is not None:
 			norm = mpl.colors.Normalize(vmin=T_min/1000, vmax=T_max/1000)
-			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal')
+			ticks = ticker.LinearLocator(2)
+			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal', ticks=ticks)
 			cb.set_label(r'Temperature, $10^3$ K')
 
 	# output: flux in zero flux units from a series of points on the surface of a star
