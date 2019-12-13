@@ -1,5 +1,6 @@
 data/*
 !data/.keep
 convergence.py
+*.pyc
 *__pycache__
 *.DS_Store
