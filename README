@@ -1,4 +1,4 @@
-Synthetic spectra of rotating stars.
+Name: PARS (Paint the Atmospheres of Rotating Stars).
 
 Authors: 
 	Timothy D. Brandt
@@ -8,6 +8,11 @@ Model:
 	Roche model of mass distribution, 
 	solid body rotation,
 	energy flux collinear with effective gravity.
+
+Features:
+	A closed-form expression for the azimuthal integral,
+	a high-order approximation of the longitudinal integral,
+	a precise calculation of surface effective temperature.
 
 Installation (Unix):
 	git clone https://github.com/mlipatov/paint_atmospheres

@@ -54,8 +54,11 @@ calc_star -> 14 Mb file.
 
 # Convergence analysis. 
 
-An etalon spectrum is produced with 40K z values.
-
+An etalon spectrum is produced with 20K z values. 
+Using the quadratic approximation with 200 z values.
+Vega with i = pi/4 and lambda = 999 nm yields below 10^-5 error.
+Vega with i = pi/2 and lambda = 501 nm yields below 10^-3 error.
+Fast sun (Req = 1, omega = 0.99) with i = pi/4 and lambda = 701 nm yields below 10^-6 error.
 
 # Version and outside source comparison
 
