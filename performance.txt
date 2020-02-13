@@ -1,0 +1,44 @@
+# Runtimes:
+
+Calculation and pickling of limb darkening fits without checks: 42 seconds. With checks: 1 hour.
+
+Calculation of pre-processed star data. n_z = 200.
+
+Vega: 
+user	0m0.535s
+sys	0m0.147s
+680ms
+
+Sun:
+user	0m0.538s
+sys	0m0.156s
+690ms
+
+Calculation and printout of spectra. Inclinations: 0 1.5707963267948966 0.01 (159)
+
+Vega:
+user	0m3.584s
+sys	0m1.033s
+29ms per inclination
+
+Sun:
+user	0m3.714s
+sys	0m1.121s
+30ms per inclination
+
+# Memory usage
+
+calc_limbdark -> 50 Mb file.
+calc_star -> 14 Mb file.
+
+# Convergence analysis
+
+An etalon spectrum is produced with 20K z values. 
+Using the quadratic approximation with 200 z values.
+Vega with i = pi/4 and lambda = 999 nm yields below 10^-5 error.
+Vega with i = pi/2 and lambda = 501 nm yields below 10^-3 error.
+Fast sun (Req = 1, omega = 0.99) with i = pi/4 and lambda = 701 nm yields below 10^-6 error.
+
+# Version comparison
+
+Average proportional difference of non-zero intensity: ~25% higher in version 1 than version 2, probably moslty due to our incorrect interpretation of area denominators in Kurucz's information.

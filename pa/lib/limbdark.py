@@ -121,8 +121,8 @@ class LimbDark:
                         fp[ind_wl] = fit.p
                     self.fit_params[ind_temp][ind_g] = fp
             if check:
-                print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
-                # print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev, np.median(ft.Fit.dev_arr))
+                # print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
+                print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev, np.median(ft.Fit.dev_arr))
         end = time.time()
         print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()

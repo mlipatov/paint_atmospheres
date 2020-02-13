@@ -244,10 +244,11 @@ class Map:
 		if np.any(noinfo):
 			th = np.get_printoptions().get('threshold')
 			np.set_printoptions(threshold=10) # ensure summary printout of large arrays
-			print ('We do not have the data to interpolate to find intensity at z = ' + str(self.z_arr[noinfo]) + \
+			print ('We do not have the data to interpolate to find intensity at z = ' + \
+				str(self.z_arr[noinfo]) + \
 				', where the temperatures are ' + str(temp_arr[noinfo]) + ' and log gravity values are ' +\
-				 str(g_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
-				 'we use the intensity information at the closest gravity where such information is available.')
+				str(g_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
+				'we use the intensity information at the closest gravity where such information is available.')
 			np.set_printoptions(threshold=th)
 			## at each of the neighboring temperatures, and each z value,
 			## keep adding to the gravity index until fit parameters are available

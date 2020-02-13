@@ -291,7 +291,7 @@ class Fit:
 				md_rel = 0
 			else:
 				md_rel = md / I1
-			# type(self).dev_arr.append(md_rel) # this almost doubles the check time
+			type(self).dev_arr.append(md_rel) # this almost doubles the check time (for median calculation)
 			if md_rel > self.max_dev[0]:
 				type(self).max_dev = [md_rel, self.wl, self.g, self.temp, mu_arr[ind]]
 		return

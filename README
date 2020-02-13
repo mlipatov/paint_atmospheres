@@ -10,7 +10,7 @@ Model:
 	energy flux collinear with effective gravity.
 
 Features:
-	A closed-form expression for the azimuthal integral,
+	a closed-form expression for the azimuthal integral,
 	a high-order approximation of the longitudinal integral,
 	a precise calculation of surface effective temperature.
 
