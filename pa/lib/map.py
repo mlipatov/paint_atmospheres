@@ -210,6 +210,10 @@ class Map:
 		# for each value of z, see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
+
+		# ig or iT could be -1; ig + 1 or iT + 1 could be len(g) / len(T);
+		# both of these correspond to unavailable neighbor information and should be treated
+		# accordingly
 		ig = np.searchsorted(g, g_arr, side='right') - 1
 		iT = np.searchsorted(T, temp_arr, side='right') - 1
 		# for each value of z, 

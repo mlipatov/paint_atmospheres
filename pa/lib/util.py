@@ -109,7 +109,8 @@ class Filter:
 		# a cubic spline based on the filter
 		self.f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
 
-	# output: light through a filter in units of the filter's flux zero point
+	# output: 1D array (by location) of light through a filter 
+	#	in units of the filter's flux zero point
 	# inputs: 2D array of intensities in erg/s/ster/Hz (location x wavelength) or
 	#		1D array (wavelength)
 	#	wavelengths for the light in nm 

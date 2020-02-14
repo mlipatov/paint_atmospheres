@@ -49,7 +49,7 @@ class Star:
 		mapp = self.map
 		# get the data from the map, don't use z = +/- 1
 		z_arr = mapp.z_arr[ 1:-1 ] 
-		params_arr = mapp.params_arr[ 1:-1]
+		params_arr = mapp.params_arr[ 1:-1 ]
 		A_arr = mapp.A_arr[ 1:-1 ]
 		dz = mapp.dz
 		# set the inclination of the surface
