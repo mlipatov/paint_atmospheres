@@ -249,8 +249,8 @@ class Fit:
 	# maximum deviation of the fitted function from the given values of intensity divided by I(mu = 1),
 	# the wavelength, the gravity, the temperature and the mu where this occurs; cannot be negative
 	max_dev = [0, -1, -1, -1, -1]
-	# # array of relative deviations
-	# dev_arr = []
+	# array of relative deviations
+	dev_arr = []
 
 	# check that the fit is good
 	# adjusts class variable to contain information about the worst fits so far:

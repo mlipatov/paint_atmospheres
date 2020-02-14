@@ -41,8 +41,13 @@ class Map:
 		# compute the area elements
 		self.A_arr = surf.A( self.z_arr )
 
-		# compute and store the temperatures and fit parameters
-		self.temp_arr, self.params_arr = self.Tp( self.z_arr, r_arr, ld )
+		# compute and store the temperatures, fit parameters 
+		# and the information about points within the rectangle that circumscribes the
+		# 	limb darkening information grid, yet the lower gravity neighbor is missing,
+		#	thus points where we extrapolate instead of interpolating;
+		#	this information is a 2D array; each element is an array containing 
+		#	[z-coordinate, log gravity, temperature] 
+		self.temp_arr, self.params_arr, self.extr_info = self.Tp( self.z_arr, r_arr, ld )
 
 
 	# output: temperatures and intensity fit parameters for a set of locations
@@ -70,12 +75,13 @@ class Map:
 		# compute the interpolated values of limb darkening fit parameters
 		# if given limb darkening information
 		if ld is not None:
-			params_arr = self.interp(logg_arr, temp_arr, ld, self.temp_method, self.g_method)
+			params_arr, extr_info = self.interp(logg_arr, temp_arr, ld, self.temp_method, self.g_method)
 		else:
 			params_arr = None
+			extr_info = None
 
 		# return
-		return [temp_arr, params_arr]
+		return [temp_arr, params_arr, extr_info]
 	
 	# output: effective gravitational acceleration in units of G M / Re**2 
 	# 	as in equations 7 and 31 of EL, for each z
@@ -210,12 +216,23 @@ class Map:
 		# for each value of z, see where in the limb darkening arrays its values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1]
-
-		# ig or iT could be -1; ig + 1 or iT + 1 could be len(g) / len(T);
-		# both of these correspond to unavailable neighbor information and should be treated
-		# accordingly
 		ig = np.searchsorted(g, g_arr, side='right') - 1
 		iT = np.searchsorted(T, temp_arr, side='right') - 1
+		# raise an error if either gravity or temperature go outside the rectangle that circumscribes
+		# the grid of limb darkening information values
+		if np.any(ig == -1) or np.any(ig == len(g)) or np.any(iT == -1) or np.any(iT == len(T)):
+			message = 'Surface parameters are outside the rectangle ' + \
+				'that circumscribes the limb darkening information grid.'
+			if np.any(ig == -1):
+				message += ' Gravity at some points is below ' + str(g.min()) + '.'
+			if np.any(ig == len(g)):
+				message += ' Gravity at some points is above ' + str(g.max()) + '.'
+			if np.any(iT == -1):
+				message += ' Temperature at some points is below ' + str(T.min()) + '.'
+			if np.any(iT == len(T)):
+				message += ' Temperature at some points is above ' + str(T.max()) + '.'
+			raise ValueError(message)
+
 		# for each value of z, 
 		# find the values of gravity and temperature between which we are interpolating
 		g1 = g[ig] 
@@ -245,15 +262,14 @@ class Map:
 		noinfo1 = np.isnan(f11[:, 0, 0])
 		noinfo2 = np.isnan(f21[:, 0, 0])
 		noinfo = np.logical_or(noinfo1, noinfo2)
-		if np.any(noinfo):
-			th = np.get_printoptions().get('threshold')
-			np.set_printoptions(threshold=10) # ensure summary printout of large arrays
-			print ('We do not have the data to interpolate to find intensity at z = ' + \
-				str(self.z_arr[noinfo]) + \
-				', where the temperatures are ' + str(temp_arr[noinfo]) + ' and log gravity values are ' +\
-				str(g_arr[noinfo]) + '. At each of these points, we extrapolate: for each temperature, ' +\
-				'we use the intensity information at the closest gravity where such information is available.')
-			np.set_printoptions(threshold=th)
+		extr_info = None
+		if np.any(noinfo): 
+			# information about points within the rectangle that circumscribes the
+			# 	limb darkening information grid, yet the lower gravity neighbor is missing,
+			#	thus points where we extrapolate instead of interpolating;
+			#	this information is a 2D array; each element is an array containing 
+			#	[z-coordinate, log gravity, temperature] 
+			extr_info = np.stack( (self.z_arr[noinfo], g_arr[noinfo], temp_arr[noinfo]), axis=-1)
 			## at each of the neighboring temperatures, and each z value,
 			## keep adding to the gravity index until fit parameters are available
 			# gravity indices for lower and upper temperature neighbors, respectively
@@ -337,4 +353,4 @@ class Map:
 				f21 * w21[:, np.newaxis, np.newaxis] + \
 				f12 * w12[:, np.newaxis, np.newaxis] + \
 				f22 * w22[:, np.newaxis, np.newaxis]
-		return params_arr
+		return [params_arr, extr_info]

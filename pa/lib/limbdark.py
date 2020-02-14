@@ -58,7 +58,13 @@ def getdata(filename):
             ind_g = np.where(g_arr == g)[0][0]
         if (not '#' in line) and line.strip():
             data = line.split()
-            I1 = float(data[1]) # intensity at mu = 1
+            # in some of Kurucz's files, the intensity at mu = 1 is not separated from the next intensity value,
+            # which is '100000', by a space; in these situations, separate the two
+            if data[1][-6:] == '100000':
+                I1 = float(data[1][:-6]) # intensity at mu = 1
+                data = np.insert(data, 2, '100000')
+            else:
+                I1 = float(data[1]) # intensity at mu = 1
             I_rest = I1 * np.array([float(x) for x in data[2:]])/100000.0 # intensities at other values of mu
             # flip the intensity array because the mu values are flipped
             I_arr[ind_wl, -1, ind_g, ind_temp] = I1
