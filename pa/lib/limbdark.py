@@ -68,7 +68,6 @@ def getdata(filename):
                 data.append(line[:6])
                 line = line[6:]
             data = np.array(data)
-            print(data)
             # intensity at mu = 1
             I1 = float(data[1]) 
             # intensities at other values of mu
