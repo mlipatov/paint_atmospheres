@@ -220,7 +220,7 @@ class Map:
 		iT = np.searchsorted(T, temp_arr, side='right') - 1
 		# raise an error if either gravity or temperature go outside the rectangle that circumscribes
 		# the grid of limb darkening information values
-		if np.any(ig == -1) or np.any(ig == len(g)) or np.any(iT == -1) or np.any(iT == len(T)):
+		if np.any(ig == -1) or np.any(ig + 1 == len(g)) or np.any(iT == -1) or np.any(iT + 1== len(T)):
 			message = 'Surface parameters are outside the rectangle ' + \
 				'that circumscribes the limb darkening information grid.'
 			if np.any(ig == -1):

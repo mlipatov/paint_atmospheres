@@ -57,15 +57,22 @@ def getdata(filename):
             g = float(data[3])
             ind_g = np.where(g_arr == g)[0][0]
         if (not '#' in line) and line.strip():
-            data = line.split()
-            # in some of Kurucz's files, the intensity at mu = 1 is not separated from the next intensity value,
-            # which is '100000', by a space; in these situations, separate the two
-            if data[1][-6:] == '100000':
-                I1 = float(data[1][:-6]) # intensity at mu = 1
-                data = np.insert(data, 2, '100000')
-            else:
-                I1 = float(data[1]) # intensity at mu = 1
-            I_rest = I1 * np.array([float(x) for x in data[2:]])/100000.0 # intensities at other values of mu
+            # split the data line according to the number of characters alotted to each field
+            # wavelength:   9
+            # I(mu = 1):    10
+            # I(mu < 1):    6
+            data = []
+            data.extend([ line[0:9], line[9:19] ])
+            line = line[19:]
+            while len(line) > 5:
+                data.append(line[:6])
+                line = line[6:]
+            data = np.array(data)
+            print(data)
+            # intensity at mu = 1
+            I1 = float(data[1]) 
+            # intensities at other values of mu
+            I_rest = I1 * np.array([float(x) for x in data[2:]])/100000.0 
             # flip the intensity array because the mu values are flipped
             I_arr[ind_wl, -1, ind_g, ind_temp] = I1
             I_arr[ind_wl, 0:-1, ind_g, ind_temp] = np.flip(I_rest)
