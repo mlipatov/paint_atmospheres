@@ -61,6 +61,7 @@ def getdata(filename):
             # wavelength:   9
             # I(mu = 1):    10
             # I(mu < 1):    6
+            line = line.rstrip() # remove trailing spaces
             data = []
             data.extend([ line[0:9], line[9:19] ])
             line = line[19:]
