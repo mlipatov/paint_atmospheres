@@ -294,7 +294,7 @@ class Map:
 		# but the lower gravity neighbor limb darkening information at the lower temperature is missing
 		l = np.logical_and(np.logical_and(g_arr >= g[0], g_arr < g[-1]), np.isnan(f11[:, 0, 0]))
 		extra = np.logical_or(extra, l) # update the extrapolation mask
-		ig11[l] += 1; ig12[l] += 1 # increment the lower temperature indices
+		ig11[l] += 1 # increment the lower gravity / lower temperature indices
 		# update the fit parameters
 		f11 = ld.fit_params[ iT11, ig11 ]
 		f12 = ld.fit_params[ iT12, ig12 ]
@@ -310,7 +310,7 @@ class Map:
 		# but the lower gravity neighbor limb darkening information at the upper temperature is missing
 		l = np.logical_and(np.logical_and(g_arr >= g[0], g_arr < g[-1]), np.isnan(f21[:, 0, 0]))
 		extra = np.logical_or(extra, l) # update the extrapolation mask
-		ig21[l] += 1; ig22[l] += 1 # increment the lower temperature indices
+		ig21[l] += 1 # increment the lower gravity / upper temperature indices
 		# update the fit parameters
 		f21 = ld.fit_params[ iT21, ig21 ]
 		f22 = ld.fit_params[ iT22, ig22 ]
