@@ -6,6 +6,11 @@ import sys
 
 np01 = np.array([0, 1]) # a numpy array containing 0 and 1
 
+class InterpolationError(Exception):
+	""" Error raised during interpolation of intensity coefficients over gravity and temperature """
+	def __init__(self, message):
+		self.message = message
+
 class Map:
 	""" At initialization with a surface, a step in z values and limb darkening information, 
 	computes a number of equally spaced discrete z values on (-1, 1), as well as
@@ -42,9 +47,7 @@ class Map:
 		self.A_arr = surf.A( self.z_arr )
 
 		# compute and store the temperatures, fit parameters 
-		# and the information about points within the rectangle that circumscribes the
-		# 	limb darkening information grid, yet the lower gravity neighbor is missing,
-		#	thus points where we extrapolate instead of interpolating;
+		# and the information about points where we extrapolate instead of interpolating;
 		#	this information is a 2D array; each element is an array containing 
 		#	[z-coordinate, log gravity, temperature] 
 		self.temp_arr, self.params_arr, self.extr_info = self.Tp( self.z_arr, r_arr, ld )
@@ -183,15 +186,18 @@ class Map:
 		# return
 		return (F_arr, F0, F1)
 
-	# Interpolation of fit coefficients w.r.t. gravity and temperature
+	# Interpolation and extrapolation of fit coefficients w.r.t. gravity and temperature
 	# Inputs: array of log gravities at all values of z
 	#	array of temperatures at all values of z
 	# 	fit coefficients on a grid of temperatures and log gravities
 	# 	temperature interpolation method: 'linear', 'log, 'planck'
-	# Result: set an attribute array of interpolated fit coefficients with
-	# 	index 0: z
-	# 	index 1: wavelength
-	# 	index 2: parameter index 
+	# Outputs: 
+	#	3D array of interpolated fit coefficients
+	# 		0: z
+	# 		1: wavelength
+	# 		2: parameter index 
+	#	extrapolation info, which is either None or an array of size-3 arrays
+	#		[z, gravity, temperature]
 	# Note: data types of gravity, temperature and intensity fit parameters 
 	# in the limb darkening information should be no more than 6 decimal digits, 
 	# to conserve memory
@@ -207,11 +213,6 @@ class Map:
 		wl = ld.wl_arr # wavelengths
 		g = ld.g_arr # log gravities
 		T = ld.temp_arr # temperatures
-		# lengths of the fit coefficients grid
-		n_p = ft.Fit.m * ft.n # number of fit coefficients at given physical parameters
-		n_wl = len(wl) # number of wavelengths
-		# number of z values
-		n_z = len(self.z_arr)
 
 		# if temperature is outside the bounds of the limb darkening grid at any location, 
 		# raise an error
@@ -221,46 +222,57 @@ class Map:
 			message = 'Surface temperature is outside the bounds of the limb darkening information grid:'
 			if below: message += ' at some points, it is below ' + str(T[0]) + '.'
 			if above: message += ' at some points, it is above ' + str(T[-1]) + '.'		
-			raise ValueError(message)
+			raise InterpolationError(message)
 		# if gravity is outside the bounds of the limb darkening grid by more than 0.5 dex at any location, 
 		# raise an error
 		below = np.any(g_arr < g[0] - 0.5)
 		above = np.any(g_arr > g[-1] + 0.5) 
 		if below or above:
-			message = 'Surface gravity is outside the bounds of the limb darkening information grid.'
-			if below: message += ' Gravity at some points is below ' + str(g[0]) + '.'
-			if above: message += ' Gravity at some points is above ' + str(g[-1]) + '.'
-			raise ValueError(message)
+			message = 'Surface gravity is outside the extrapolation bounds of the limb darkening information grid.'
+			if below: message += ' Gravity at some points is below ' + str(g[0] - 0.5) + '.'
+			if above: message += ' Gravity at some points is above ' + str(g[-1] + 0.5) + '.'
+			raise InterpolationError(message)
 
-		# initialize a boolean array of locations where extrapolation is required
-		extra = np.full_like(self.z_arr, False)
 		# for each z, see where in the limb darkening (LD) arrays the values of 
 		# log g and temperature are; if the resulting index of an array is ind, 
 		# the computed value is greater than or equal to array[ind] and less than array[ind + 1];
-		# this is valid only for values where extrapolation is not required
+		# here, this is valid only for z values where extrapolation is not required
 		ig = np.searchsorted(g, g_arr, side='right') - 1
 		iT = np.searchsorted(T, temp_arr, side='right') - 1
 		# initialize the indices where the parameter values will be extracted;
-		# these need to be modified where extrapolation is required
+		# the initial values are only valid where extrapolation isn't required
 		iT11, ig11 = [np.copy(iT), np.copy(ig)] # lower temperature, lower gravity neighbor
 		iT12, ig12 = [np.copy(iT), np.copy(ig) + 1] # lower temperature, upper gravity neighbor
 		iT21, ig21 = [np.copy(iT) + 1, np.copy(ig)] # upper temperature, lower gravity
 		iT22, ig22 = [np.copy(iT) + 1, np.copy(ig) + 1] # upper temperature, upper gravity
+		# initialize the values of gravity and temperature between which we are interpolating;
+		g1 = np.full_like(ig, np.nan, dtype=float)
+		g2 = np.full_like(ig, np.nan, dtype=float)
+		T1 = np.full_like(iT, np.nan, dtype=float)
+		T2 = np.full_like(iT, np.nan, dtype=float)
 
-		# mask of locations where the lower gravity neighbor 
-		# is below the lower bound of the limb darkening grid
-		m = g_arr < g.min()
-		extra = np.logical_or(extra, m) # update the extrapolation mask
-		ig11[m] = ig12[m] = ig21[m] = ig22[m] = 0 # set all gravity look up indices to zero
+		# initialize a boolean array of locations where extrapolation is required
+		extra = np.full_like(self.z_arr, False, dtype=bool)
+		T1 = T[ iT ] # set the lower temperature values
 
-
-		ig_copy[below] += 1 # increment these 
-		# set the fit parameters for both the upper and the lower gravity neighbors
-		# to those at the new gravity indices 
-		f11[noinfo1] = f12[noinfo1] = ld.fit_params[ iT[noinfo1], ig1[noinfo1] ]
-		# update the boolean array saying which lower temperature neighbor info is missing
-		noinfo1 = np.isnan(f11[:, 0, 0])
-
+		# locations where gravity is below the lower bound of the LD grid
+		l = g_arr < g[0]
+		extra = np.logical_or(extra, l) # update the extrapolation array
+		ig11[l] = ig12[l] = ig21[l] = ig22[l] = 0 # set all gravity look up indices to zero
+		g1[l] 	= g[0] - 0.5 	# set the lower gravity value to be 0.5 dex below lower bound of LD grid
+		g1[~l] 	= g[ ig[~l] ]	# set all other lower gravity values
+		# locations where gravity is above the upper bound of the LD grid
+		l = g_arr > g[-1]
+		extra = np.logical_or(extra, l) # update the extrapolation mask
+		l = np.logical_or(l, g_arr == g[-1]) # add the locations where gravity is at the upper bound
+		ig11[l] = ig12[l] = ig21[l] = ig22[l] = len(g) - 1  # set all gravity look up indices
+		g2[l]	= g[-1] + 0.5 # set the upper gravity value to be above the upper bound
+		g2[~l]	= g[ ig[~l] + 1 ]  # set all other upper gravity values
+		# locations where temperature is exactly at the upper bound of the limb darkening grid
+		l = temp_arr == T[-1]
+		iT11[l] = iT12[l] = iT21[l] = iT22[l] = len(T) - 1  # set all temperature look-up indices
+		T2[l]	= T[-1] + 1000 # set the upper temperature value to be above the upper bound of the LD grid
+		T2[~l]	= T[ iT[~l] + 1 ] # set other upper temperature values
 
 		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
 		# entries are numpy.NAN when no information is available
@@ -273,63 +285,48 @@ class Map:
 		# 	index 0: z
 		# 	index 1: wavelength
 		# 	index 2: parameter index
-		f11 = ld.fit_params[iT    , ig    ]
-		f21 = ld.fit_params[iT + 1, ig    ]
-		f12 = ld.fit_params[iT    , ig + 1]
-		f22 = ld.fit_params[iT + 1, ig + 1]
+		f11 = ld.fit_params[iT11, ig11]
+		f21 = ld.fit_params[iT21, ig21]
+		f12 = ld.fit_params[iT12, ig12]
+		f22 = ld.fit_params[iT22, ig22]
 
-		#or the LD information is missing
+		# locations where gravity is within the grid, 
+		# but the lower gravity neighbor limb darkening information at the lower temperature is missing
+		l = np.logical_and(np.logical_and(g_arr >= g[0], g_arr < g[-1]), np.isnan(f11[:, 0, 0]))
+		extra = np.logical_or(extra, l) # update the extrapolation mask
+		ig11[l] += 1; ig12[l] += 1 # increment the lower temperature indices
+		# update the fit parameters
+		f11 = ld.fit_params[ iT11, ig11 ]
+		f12 = ld.fit_params[ iT12, ig12 ]
+		# update the locations
+		l = np.logical_and(l, np.isnan(f11[:, 0, 0]))
+		if np.any(l): # if there are still parameters missing at lower temperature
+			message = 'At some points, surface gravity at the lower-temperature limb darkening (LD) '+\
+				'grid neighbor differs by more than 0.5 dex from the closest value with available '+\
+				'LD information.'
+			raise InterpolationError(message)
 
-		# for each value of z, 
-		# find the values of gravity and temperature between which we are interpolating
-		g1 = g[ig] 
-		g2 = g[ig + 1] 
-		T1 = T[iT]
-		T2 = T[iT + 1]
+		# locations where gravity is within the grid, 
+		# but the lower gravity neighbor limb darkening information at the upper temperature is missing
+		l = np.logical_and(np.logical_and(g_arr >= g[0], g_arr < g[-1]), np.isnan(f21[:, 0, 0]))
+		extra = np.logical_or(extra, l) # update the extrapolation mask
+		ig21[l] += 1; ig22[l] += 1 # increment the lower temperature indices
+		# update the fit parameters
+		f21 = ld.fit_params[ iT21, ig21 ]
+		f22 = ld.fit_params[ iT22, ig22 ]
+		# update the locations
+		l = np.logical_and(l, np.isnan(f21[:, 0, 0]))
+		if np.any(l): # if there are still parameters missing
+			message = 'At some points, surface gravity at the upper-temperature limb darkening (LD) '+\
+				'grid neighbor differs by more than 0.5 dex from the closest value with available '+\
+				'LD information.'
+			raise InterpolationError(message)
 
-		## The following assumes that limb darkening (LD) information for some of the 
-		## lowest gravity values at each temperature is missing, as in Castelli and Kurucz 2004
-		# boolean arrays, one for each of the neighboring temperatures,
-		# saying whether the LD information is missing for the lower gravity value at that temperature
-		# use the first wavelength and the first parameter to perform this check
-		noinfo1 = np.isnan(f11[:, 0, 0])
-		noinfo2 = np.isnan(f21[:, 0, 0])
-		noinfo = np.logical_or(noinfo1, noinfo2)
-		extr_info = None
-		if np.any(noinfo): 
-			# information about points within the rectangle that circumscribes the
-			# 	limb darkening information grid, yet the lower gravity neighbor is missing,
-			#	thus points where we extrapolate instead of interpolating;
-			#	this information is a 2D array; each element is an array containing 
-			#	[z-coordinate, log gravity, temperature] 
-			extr_info = np.stack( (self.z_arr[noinfo], g_arr[noinfo], temp_arr[noinfo]), axis=-1)
-			## Allow extrapolation from no more than 0.5 dex away in gravity 
-			# gravity indices for lower and upper temperature neighbors, respectively
-			ig1, ig2 = [np.copy(ig), np.copy(ig)]
-			if np.any(noinfo1):
-				## at z values where the lower temperature neighbor's information is missing,
-				# increment the gravity limb darkening index 
-				ig1[noinfo1] += 1
-				# set the fit parameters for both the upper and the lower gravity neighbors
-				# to those at the new gravity indices 
-				f11[noinfo1] = f12[noinfo1] = ld.fit_params[ iT[noinfo1], ig1[noinfo1] ]
-				# update the boolean array saying which lower temperature neighbor info is missing
-				noinfo1 = np.isnan(f11[:, 0, 0])
-			if np.any(noinfo2):
-				## at z values where the upper temperature neighbor information is missing,
-				# increment the gravity limb darkening index
-				ig2[noinfo2] += 1
-				# set the fit parameters for both the upper and the lower gravity neighbors
-				# to those at the new gravity indices 
-				f21[noinfo2] = f22[noinfo2] = ld.fit_params[ iT[noinfo2] + 1, ig2[noinfo2] ]
-				# update the boolean array saying which upper temperature neighbor info is missing
-				noinfo2 = np.isnan(f21[:, 0, 0])
-			noinfo = np.logical_or(noinfo1, noinfo2)
-			# if fit parameters are still not available at any such combination, raise an error
-			if np.any(noinfo):
-				message = 'At some points, surface gravity differs by more than 0.5 dex from '+\
-					'the closest value with available limb darkening information.'
-				raise ValueError(message)
+		# set the extrapolation info
+		if np.any(extra):
+			extr_info = np.stack( (self.z_arr[extra], g_arr[extra], temp_arr[extra]), axis=-1)
+		else: 
+			extr_info = None
 
 		# if the gravity scale is linear,
 		# modify the gravity array accordingly
@@ -363,7 +360,7 @@ class Map:
 			g2 = g2[:, np.newaxis]
 
 		## bilinear interpolation (see Wikipedia: Bilinear Interpolation: Algorithm)
-		const = (1 / ((g2 - g1) * (T2 - T1)))
+		const = (1. / ((g2 - g1) * (T2 - T1)))
 		Dg1 = g2 - g_arr
 		Dg2 = g_arr - g1
 		Dt1 = T2 - temp_arr
