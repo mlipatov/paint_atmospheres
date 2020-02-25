@@ -245,7 +245,7 @@ class Map:
 		iT12, ig12 = [np.copy(iT), np.copy(ig) + 1] # lower temperature, upper gravity neighbor
 		iT21, ig21 = [np.copy(iT) + 1, np.copy(ig)] # upper temperature, lower gravity
 		iT22, ig22 = [np.copy(iT) + 1, np.copy(ig) + 1] # upper temperature, upper gravity
-		# initialize the values of gravity and temperature between which we are interpolating;
+		# initialize the values of gravity and temperature between which we are interpolating
 		g1 = np.full_like(ig, np.nan, dtype=float)
 		g2 = np.full_like(ig, np.nan, dtype=float)
 		T1 = np.full_like(iT, np.nan, dtype=float)
@@ -256,31 +256,32 @@ class Map:
 		T1 = T[ iT ] # set the lower temperature values
 
 		# locations where gravity is below the lower bound of the LD grid
-		l = g_arr < g[0]
-		extra = np.logical_or(extra, l) # update the extrapolation array
-		ig11[l] = ig12[l] = ig21[l] = ig22[l] = 0 # set all gravity look up indices to zero
+		l = (g_arr < g[0])
+		extra = np.logical_or(extra, l) # extrapolation is needed here
+		ig11[l] = ig12[l] = ig21[l] = ig22[l] = 0 # set gravity indices to the first possible index here
 		g1[l] 	= g[0] - 0.5 	# set the lower gravity value to be 0.5 dex below lower bound of LD grid
 		g1[~l] 	= g[ ig[~l] ]	# set all other lower gravity values
 		# locations where gravity is above the upper bound of the LD grid
-		l = g_arr > g[-1]
-		extra = np.logical_or(extra, l) # update the extrapolation mask
+		l = (g_arr > g[-1])
+		extra = np.logical_or(extra, l) # extrapolation is needed here
 		l = np.logical_or(l, g_arr == g[-1]) # add the locations where gravity is at the upper bound
-		ig11[l] = ig12[l] = ig21[l] = ig22[l] = len(g) - 1  # set all gravity look up indices
+		ig11[l] = ig12[l] = ig21[l] = ig22[l] = len(g) - 1 # set gravity indices to the last index
 		g2[l]	= g[-1] + 0.5 # set the upper gravity value to be above the upper bound
 		g2[~l]	= g[ ig[~l] + 1 ]  # set all other upper gravity values
 		# locations where temperature is exactly at the upper bound of the limb darkening grid
-		l = temp_arr == T[-1]
-		iT11[l] = iT12[l] = iT21[l] = iT22[l] = len(T) - 1  # set all temperature look-up indices
+		l = (temp_arr == T[-1])
+		iT11[l] = iT12[l] = iT21[l] = iT22[l] = len(T) - 1 # set temperature indices to the last possible index
 		T2[l]	= T[-1] + 1000 # set the upper temperature value to be above the upper bound of the LD grid
 		T2[~l]	= T[ iT[~l] + 1 ] # set other upper temperature values
 
 		# fit parameters for the four nearest neighbors at each wavelength, for each value of z;
-		# entries are numpy.NAN when no information is available
+		# entries are numpy.NAN when no information is available; the initial values need to be mofified
+		# at z where extrapolation is necessary
 		# limb darkening array:
-		#	index 1: temperature
-		#	index 2: gravity
-		#	index 3: wavelength
-		#	index 4: parameter index
+		#	0: temperature
+		#	1: gravity
+		#	2: wavelength
+		#	3: parameter index
 		# result:
 		# 	index 0: z
 		# 	index 1: wavelength
@@ -293,7 +294,7 @@ class Map:
 		# locations where gravity is within the grid, 
 		# but the lower gravity neighbor limb darkening information at the lower temperature is missing
 		l = np.logical_and(np.logical_and(g_arr >= g[0], g_arr < g[-1]), np.isnan(f11[:, 0, 0]))
-		extra = np.logical_or(extra, l) # update the extrapolation mask
+		extra = np.logical_or(extra, l) # extrapolation is needed here
 		ig11[l] += 1 # increment the lower gravity / lower temperature indices
 		# update the fit parameters
 		f11 = ld.fit_params[ iT11, ig11 ]
