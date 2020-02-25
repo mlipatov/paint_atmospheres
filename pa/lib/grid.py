@@ -10,10 +10,10 @@ class Grid:
 	""" Absolute magnitudes for a grid of stars """
 	# Computes absolute magnitudes in several filters, on a grid of
 	#	metallicity
-	#	gamma = a gravitational parameter
-	#	tau = a thermal parameter
-	#	omega = a dimensionless rotational parameter
-	#	inclination
+	#	gamma = a gravitational parameter (twice as fine as the gravity grid in LD, 21 values)
+	#	tau = a thermal parameter (as fine as the temperature grid in LD, 75 values)
+	#	omega = a dimensionless rotational parameter (11 values)
+	#	inclination (10 values)
 	# Inputs: files with filter information, 
 	#	zero-point intensities for filters,
 	#	limb darkening (LD) information files,

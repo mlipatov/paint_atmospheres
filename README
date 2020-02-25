@@ -27,12 +27,13 @@ Executables:
 	plot_spectra plots spectra 
 	plot_Imu plots a fit of intensity versus surface inclination
 	convert_spectrum converts a spectrum between units
+	filter_spectra computes filter magnitudes of spectra
 	<command> -h provides usage instructions
 
 References: 
-	Espinosa Lara F & Rieutord M (2011), A&A, 533, A43 [EL]
-	Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 [Kurucz]
+	Espinosa Lara F & Rieutord M (2011), A&A, 533, A43
+	Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 
 	http://mathworld.wolfram.com/CubicFormula.html
 	Wikipedia:Bilinear interpolation:Algorithm
 	Wikipedia:Newton's method
-	Press WH et al, Numerical Recipes, 3rd ed. (2007) [Recipes]
+	Press WH et al, Numerical Recipes, 3rd ed. (2007) 
