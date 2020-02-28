@@ -78,7 +78,7 @@ class Map:
 		# compute the interpolated values of limb darkening fit parameters
 		# if given limb darkening information
 		if ld is not None:
-			params_arr, extr_info = self.interp(logg_arr, temp_arr, ld, self.temp_method, self.g_method)
+			params_arr, extr_info = self.interp(z, logg_arr, temp_arr, ld, self.temp_method, self.g_method)
 		else:
 			params_arr = None
 			extr_info = None
@@ -187,7 +187,8 @@ class Map:
 		return (F_arr, F0, F1)
 
 	# Interpolation and extrapolation of fit coefficients w.r.t. gravity and temperature
-	# Inputs: array of log gravities at all values of z
+	# Inputs: array of z
+	#	array of log gravities at all values of z
 	#	array of temperatures at all values of z
 	# 	fit coefficients on a grid of temperatures and log gravities
 	# 	temperature interpolation method: 'linear', 'log, 'planck'
@@ -201,7 +202,7 @@ class Map:
 	# Note: data types of gravity, temperature and intensity fit parameters 
 	# in the limb darkening information should be no more than 6 decimal digits, 
 	# to conserve memory
-	def interp(self, g_arr, temp_arr, ld, temp_method, g_method):
+	def interp(self, z_arr, g_arr, temp_arr, ld, temp_method, g_method):
 		
 		# The temperature-dependent factor in the Planck function
 		# Inputs: temperature and frequency arrays of the same dimensions
@@ -252,7 +253,7 @@ class Map:
 		T2 = np.full_like(iT, np.nan, dtype=float)
 
 		# initialize a boolean array of locations where extrapolation is required
-		extra = np.full_like(self.z_arr, False, dtype=bool)
+		extra = np.full_like(z_arr, False, dtype=bool)
 		T1 = T[ iT ] # set the lower temperature values
 
 		# locations where gravity is below the lower bound of the LD grid
