@@ -155,13 +155,17 @@ class Fit:
 			sin5 = np.sin(5*phi)
 			# integral of the polynomial
 			integr = [
-				np.full_like(a, phi),
 				b*phi + a*sine,
 				(a**2/2. + b**2)*phi + (2*a*b + (a**2*cosn)/2.)*sine,
 				((3*a**2*b)/2. + b**3)*phi + ((5*a**3)/6. + 3*a*b**2 + \
 					(3*a**2*b*cosn)/2. + (a**3*cos2)/6.)*sine,
 				((3*a**4)/8. + 3*a**2*b**2 + b**4)*phi + (3*a**3*b + 4*a*b**3)*sine + \
-					(a**4/4. + (3*a**2*b**2)/2.)*sin2 + (a**3*b*sin3)/3. + (a**4*sin4)/32.
+					(a**4/4. + (3*a**2*b**2)/2.)*sin2 + (a**3*b*sin3)/3. + (a**4*sin4)/32.,
+				((15*a**4*b)/8. + 5*a**2*b**3 + b**5)*phi + \
+					((5*a**5)/8. + (15*a**3*b**2)/2. + 5*a*b**4)*sine + \
+					((5*a**4*b)/4. + (5*a**2*b**3)/2.)*sin2 + \
+					(5*a**5*sin3)/48. + (5*a**3*b**2*sin3)/6. + \
+					(5*a**4*b*sin4)/32. + (a**5*sin5)/80.
 			]
 			return np.transpose( np.array(integr) )
 		# upper bound on integration w.r.t. mu; mu will decrease
