@@ -14,6 +14,7 @@ c = 2.99792458e10 # speed of light in cm/s
 h = 6.62606885e-27 # planck's constant in erg*s
 k = 1.3806504e-16 # Boltzmann constant in erg/K
 Tsun = (Lsun / (4*math.pi*sigma*Rsun**2))**(0.25) # temperature of the sun in Kelvins
+Zsun = 0.017 # from Grevesse, N., & Sauval, A. J., 1998, Space Sci. Rev., 85, 161 (used by Castelli and Kurucz 2004)
 
 # printf() function from O'Reilly's Python Cookbook
 def printf(format, *args):
