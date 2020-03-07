@@ -75,7 +75,7 @@ class Grid:
 		tau = np.sort(np.copy(ld.temp_arr)) # related to luminosity
 		# insert additional values into the gravity array
 		g_arr = np.copy(ld.g_arr)
-		g_arr2 = (g_arr + 0.25)[:-1]
+		g_arr2 = (g_arr + 0.25)
 		gamma = np.sort(np.concatenate( (g_arr, g_arr2) )).astype(np.float32)
 		# corresponding luminosities and masses of stars (in solar luminosities and masses)
 		# whose equatorial radius is equal to that of the sun
@@ -117,11 +117,13 @@ class Grid:
 								for filt in filters:
 									mags.append( filt.mag(light, ld.wl_arr, distance)[0] )
 								Mag[z, m, l, o, i, :] = np.array(mags)
+								# print(z, m, l, o, i)
+								# print(Z[z], M[m], L[l], omega[o], inc[i])
+								# print(gamma[m], tau[l])
+								# print(mags)
+								# sys.exit()
 						except mp.InterpolationError as err:
 							pass
-							# print( Z[z], gamma[m], tau[l], omega[o] )
-							# print(err)
-							# print()
 				print()
 				print('    gamma = ' + str(gamma[m]))
 				print('    ' + str(interp) + '/' + str(tot) + ' stars computed with interpolation only.')
