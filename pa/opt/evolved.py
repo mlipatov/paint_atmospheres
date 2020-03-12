@@ -1,6 +1,9 @@
 # a class for storing an array of evolved models, including parameters and observables
 class Evolved:
-	def __init__(self, Z, M, L, Req, omega, inclination, Mag, filt_files):
+	def __init__(self, t, Mini, omega0, Z, M, L, Req, omega, inclination, Mag, filt_files):
+		self.t = t # ages of models
+		self.Mini = Mini # initial masses
+		self.omega0 = omega0 # initial omegas
 		self.Z = Z # metallicities of models
 		self.M = M # model gravity parameters
 		self.L = L # model temperature parameters
