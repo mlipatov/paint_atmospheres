@@ -78,7 +78,7 @@ def run():
 		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		# write the spectrum to the file
 		f.write('\n')
-		f.write('# wavelength(nm)\tintensity(ergs/s/Hz/ster)\n') 
+		f.write('# wavelength(nm)\tflux(ergs/s/Hz/ster)\n') 
 		for j, w in np.ndenumerate(wl):
 			f.write( str(w) )
 			f.write('\t %.5E' % light[j])

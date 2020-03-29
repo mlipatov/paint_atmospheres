@@ -63,11 +63,14 @@ def run():
 	# convert to intensity per steradian from intensity per unit photoreceptor area
 	if distance is not None:
 		I_arr = ut.cm2_to_ster(I_arr, distance)
+		units_str = 'ster^-1'
+	else:
+		units_str = 'cm^-2'
 
 	# write to the output file
 	f = open(ofile,'w+') 
 	# write the header
-	f.write('# wavelength(nm)\tintensity(ergs/s/Hz/ster)\n') 
+	f.write('# wavelength(nm)\tflux(ergs s^-1 Hz^-1 ' + units_str + ')\n') 
 	f.close() # close the file
 	f = open(ofile, 'a') # open the file for appending
 	# write the spectrum to the file
