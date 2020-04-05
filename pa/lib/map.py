@@ -6,6 +6,11 @@ import sys
 
 np01 = np.array([0, 1]) # a numpy array containing 0 and 1
 
+class ConvergenceError(Exception):
+	""" Error raised during interpolation of intensity coefficients over gravity and temperature """
+	def __init__(self, message):
+		self.message = message
+
 class InterpolationError(Exception):
 	""" Error raised during interpolation of intensity coefficients over gravity and temperature """
 	def __init__(self, message):
@@ -168,6 +173,7 @@ class Map:
 		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
 		# Newton's algorithm; 
 		# ten steps is about twice the number we need
+		conv = False # converged or not
 		for i in range(10):
 			# a helper function evaluated
 			G_arr = G(F_arr[fnm], x_arr[fnm])
@@ -183,6 +189,25 @@ class Map:
 			# and come back into the bounds if we did
 			F_arr[ (F_arr < F1) ] = F1
 			F_arr[ (F_arr > F0) ] = F0
+
+			# check for convergence of Newton's method
+			if i > 0: 
+				diff = np.abs(F_arr - F_prev)
+			if i > 1:
+				m = diff_prev != 0
+				rel_diff = np.zeros_like(diff_prev)
+				rel_diff[m] = np.abs((diff[m] - diff_prev[m])/diff_prev[m])
+				# declare convergence if the difference between iterations
+				# no longer decreases by an amount comparable to itself
+				if not conv and np.nanmax(rel_diff) > 10:
+					conv = True
+				if not conv and i > 8:
+					message = "Newton's method did not converge in 9 iterations."
+					raise ConvergenceError(message)
+			if i > 0:
+				diff_prev = np.copy(diff)
+			F_prev = np.copy(F_arr)
+
 		# return
 		return (F_arr, F0, F1)
 
