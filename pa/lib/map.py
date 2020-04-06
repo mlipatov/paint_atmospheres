@@ -174,7 +174,7 @@ class Map:
 		# Newton's algorithm; 
 		# ten steps is about twice the number we need
 		conv = False # converged or not
-		for i in range(10):
+		for i in range(20):
 			# a helper function evaluated
 			G_arr = G(F_arr[fnm], x_arr[fnm])
 			# the new values of F at the locations 
@@ -190,23 +190,15 @@ class Map:
 			F_arr[ (F_arr < F1) ] = F1
 			F_arr[ (F_arr > F0) ] = F0
 
-			# check for convergence of Newton's method
-			if i > 0: 
-				diff = np.abs(F_arr - F_prev)
-			if i > 1:
-				m = diff_prev != 0
-				rel_diff = np.zeros_like(diff_prev)
-				rel_diff[m] = np.abs((diff[m] - diff_prev[m])/diff_prev[m])
-				# declare convergence if the difference between iterations
-				# no longer decreases by an amount comparable to itself
-				if not conv and np.nanmax(rel_diff) > 10:
-					conv = True
-				if not conv and i > 8:
-					message = "Newton's method did not converge in 9 iterations."
-					raise ConvergenceError(message)
-			if i > 0:
-				diff_prev = np.copy(diff)
-			F_prev = np.copy(F_arr)
+			# # check for convergence of Newton's method
+			# if i > 0: 
+			# 	diff = np.abs(F_arr - F_prev)
+			# if i > 1:
+			# 	m = diff_prev != 0
+			# 	diff_ratio = np.abs(diff[m].max() / diff_prev[m].max())
+			# if i > 0:
+			# 	diff_prev = np.copy(diff)
+			# F_prev = np.copy(F_arr)
 
 		# return
 		return (F_arr, F0, F1)
