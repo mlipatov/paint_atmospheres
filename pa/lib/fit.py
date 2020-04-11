@@ -118,12 +118,13 @@ class Fit:
 		# 0: location
 		i = np.searchsorted(cls.muB_arr, mu, side='right') - 1 
 		# reshape the parameter array to distinguish between functions on different intervals
-		sh = p.shape
-		# 0: location
-		# 1: wavelength
-		# 2: interval
-		# 3: function
-		params = p.reshape( (sh[0], sh[1], cls.m, n) )
+		# sh = p.shape
+		# # 0: location
+		# # 1: wavelength
+		# # 2: interval
+		# # 3: function
+		# params = p.reshape( (sh[0], sh[1], cls.m, n) )
+		params = p.reshape( (cls.m, n) )
 		# at each location, in the corresponding interval, for each wavelength, 
 		# sum up the product of fit parameters and functions of mu
 		output = np.sum(f_mu[ :, np.newaxis, : ] * params[ np.arange(sh[0]), :, i, : ], axis=2)
@@ -318,13 +319,13 @@ class Fit:
 		# construct the offsets of data from the edges of the plot
 		delta_y = np.max(I_arr) - np.min(I_arr)
 		offset_y = delta_y * 0.1
-		# vectorized version of the intesity vs mu function
-		vI = np.vectorize(self.I)
+		# # vectorized version of the intesity vs mu function
+		# vI = np.vectorize(self.I)
 
 		fig = plt.figure()
 		plt.axes().set_ylim([np.min(I_arr) - offset_y, np.max(I_arr) + offset_y])
 		plt.scatter(mu_arr, I_arr, marker='o', c='b', s=6)
-		plt.plot(mu_check_arr, vI(mu_check_arr, self.p), 'g--', label=lab % tuple(params))
+		plt.plot(mu_check_arr, self.I(mu_check_arr, self.p), 'g--', label=lab % tuple(params))
 		plt.title('Intensity versus surface inclination')
 		plt.xlabel(r'$\mu$')
 		plt.ylabel(r'Intensity, $ergs \, / \, cm^2 \times s \times Hz \times ster$')

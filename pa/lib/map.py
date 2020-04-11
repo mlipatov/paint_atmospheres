@@ -22,9 +22,12 @@ class Map:
 	wavelength-dependent parameters of the intensity fits and area elements at these z values. 
 	Gravity and temperature calculations are based on Espinosa Lara 2011 (EL)."""
 
-	# initialize with the surface shape of the star, the number of z values to use for integration, 
-	# the constants needed for temperature and gravity unit conversions, and limb darkening information
-	def __init__(self, surf, nz, add_logg, mult_temp, ld, temp_method, g_method):
+	# initialize with the surface shape of the star, the number of z values to use for integration
+	# on the upper half of the star, 
+	# the constants needed for temperature and gravity unit conversions, limb darkening information,
+	# temperature interpolation method, gravity interpolation method and the number of steps in the
+	# Newton's method involved in temperature calculation
+	def __init__(self, surf, nz, add_logg, mult_temp, ld, temp_method, g_method, nm):
 
 		## initialize the surface
 		self.surface = surf # surface shape information
@@ -38,74 +41,78 @@ class Map:
 		self.g_method = g_method
 
 		## initialize the array of z values for integration
-		## do not use the boundary values
-		self.z_arr = np.linspace(-1, 1, nz + 2) # include z = -1, 1
+		## ultimately will not use the values at 1, 0 or -1
+		# non-negative z values for the upper half of the star;
+		# non-positive values for the lower half are the reversed negatives of this
+		self.z_up = np.linspace(0, 1, nz + 2) # for now include z = 0, 1
 		# store the spacing between the z values
-		self.dz = self.z_arr[1] - self.z_arr[0]
-		# store the number of z values
+		self.dz = self.z_up[1] - self.z_up[0]
+		# store the number of z values used for the intergration on the upper half of the star
 		self.nz = nz
 
-		# compute the cylindrical coordinate r
-		r_arr = self.surface.R( self.z_arr )
+		# cylindrical coordinate r for the upper portion of the star;
+		# values for the lower half are a reverse of this
+		r_up = self.surface.R( self.z_up )
 
-		# compute the area elements
-		self.A_arr = surf.A( self.z_arr )
+		# area elements for the upper portion of the star;
+		# values for the lower half are a reverse of this
+		self.A_up = surf.A( self.z_up )	
 
-		# compute and store the temperatures, fit parameters 
+		# for the upper half of the star, compute and store the temperatures, fit parameters 
 		# and the information about points where we extrapolate instead of interpolating;
 		#	this information is a 2D array; each element is an array containing 
-		#	[z-coordinate, log gravity, temperature] 
-		self.temp_arr, self.params_arr, self.extr_info = self.Tp( self.z_arr, r_arr, ld )
+		#	[z-coordinate, log gravity, temperature];
+		# for the lower half of the star, the corresponding arrays are a reverse of these
+		self.temp_up, self.params_up, self.extr_info = self.Tp( self.z_up, r_up, ld, nm )
 
 
 	# output: temperatures and intensity fit parameters for a set of locations
 	# input: z values, r values and limb darkening information
-	def Tp(self, z, r, ld):		
+	def Tp(self, z, r, ld, nm):		
 		# compute the spherical coordinate rho
-		rho_arr = self.surface.rho( r, z )
+		rho = self.surface.rho( r, z )
 		r01 = self.surface.R( np01 ) # a numpy array containing r at z = 0 and r at z = +/-1
 		rho0, rho1 = self.surface.rho( r01, np01 ) # rho at z = 0 and +/-1
 		
 		## compute the effective gravitational acceleration in units of G M / Re**2 
-		geff_arr = self.geff(rho_arr, r)
+		geff = self.geff(rho, r)
 		# convert to log10(gravity in cm / s**2) and to a less memory-intensive data type
-		logg_arr = self.add_logg + np.log10(geff_arr)
-		logg_arr = logg_arr.astype(np.float32)
+		logg = self.add_logg + np.log10(geff)
+		logg = logg.astype(np.float32)
 		
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z; then convert it to Kelvin
-		[F_arr, F0, F1] = self.F(z, rho_arr, rho0, rho1) # temperature correction values
+		[F, F0, F1] = self.F(z, rho, rho0, rho1, nm) # temperature correction values
 		# temperatures
-		temp_arr = self.mult_temp * ( geff_arr * F_arr )**(1./4)
+		temp = self.mult_temp * ( geff * F )**(1./4)
 		# convert temperature values to a less memory-intensive data type
-		temp_arr = temp_arr.astype(np.float32)
+		temp = temp.astype(np.float32)
 
 		# compute the interpolated values of limb darkening fit parameters
 		# if given limb darkening information
 		if ld is not None:
-			params_arr, extr_info = self.interp(z, logg_arr, temp_arr, ld, self.temp_method, self.g_method)
+			params, extr_info = self.interp(z, logg, temp, ld, self.temp_method, self.g_method)
 		else:
-			params_arr = None
+			params = None
 			extr_info = None
 
 		# return
-		return [temp_arr, params_arr, extr_info]
+		return [temp, params, extr_info]
 	
 	# output: effective gravitational acceleration in units of G M / Re**2 
 	# 	as in equations 7 and 31 of EL, for each z
 	# inputs: arrays of rho and r coordinates
-	def geff(self, rho_arr, r_arr):
+	def geff(self, rho, r):
 		omega = self.surface.omega
-		r_arr_sq = np.power(r_arr, 2) # r squared
-		geff_arr = np.sqrt( rho_arr**-4 + omega**4 * r_arr_sq - \
-			2 * omega**2 * r_arr_sq * rho_arr**-3 )
-		return geff_arr
+		r_sq = np.power(r, 2) # r squared
+		geff = np.sqrt( rho**-4 + omega**4 * r_sq - 2 * omega**2 * r_sq * rho**-3 )
+		return geff
 
 	# output: temperature correction factors (EL equation 26)
 	# 	at every value of z; runs the Newton's method algorithm that acts on the entire array 
 	# 	of z values that aren't too close to 0 at its every step; for values that 
 	# 	are close to 0, returns the temperature correction expected at z = 0
-	def F(self, z_arr, rho_arr, rho0, rho1):
+	def F(self, z_arr, rho_arr, rho0, rho1, nm):
 		# output: smallest value of x for which to compute 
 		#	using full Newton's method step function; a.k.a. x_b
 		# inputs: rotational velocity of the star,
@@ -162,7 +169,7 @@ class Map:
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
 		r = np.finfo(float).eps # resolution of floating point numbers
-		A = 1 # a parameter for estimating this value of x
+		A = 16 # a parameter for estimating this value of x
 		x1 = X1(omega, A, r)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
@@ -173,8 +180,10 @@ class Map:
 		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
 		# Newton's algorithm; 
 		# ten steps is about twice the number we need
-		conv = False # converged or not
-		for i in range(20):
+		
+		# print("i + 1, diff max")
+
+		for i in range(nm):
 			# a helper function evaluated
 			G_arr = G(F_arr[fnm], x_arr[fnm])
 			# the new values of F at the locations 
@@ -190,14 +199,10 @@ class Map:
 			F_arr[ (F_arr < F1) ] = F1
 			F_arr[ (F_arr > F0) ] = F0
 
-			# # check for convergence of Newton's method
+			# # check for convergence
 			# if i > 0: 
 			# 	diff = np.abs(F_arr - F_prev)
-			# if i > 1:
-			# 	m = diff_prev != 0
-			# 	diff_ratio = np.abs(diff[m].max() / diff_prev[m].max())
-			# if i > 0:
-			# 	diff_prev = np.copy(diff)
+			# 	print(i + 1, diff.max())
 			# F_prev = np.copy(F_arr)
 
 		# return

@@ -2,7 +2,7 @@
 
 Calculation and pickling of limb darkening fits without checks: 42 seconds. With checks: 1 hour.
 
-Calculation of pre-processed star data. n_z = 200.
+Calculation of pre-processed star data. n_z = 200, nm = 10.
 
 Vega: 
 user	0m0.535s
