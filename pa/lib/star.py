@@ -38,16 +38,14 @@ class Star:
 	# for a given inclination,
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
 	# in ergs/s/Hz/ster;
-	# uses the integration scheme from Numerical Recipes and an additive
-	# correction to the scheme that is based on the assumption that the integrand vanishes
-	# at the lower integration bound and that the integrand is quadratic on the interval between
-	# the two successive z values around the lower integration bound.
+	# uses the integration formulas from Numerical Recipes from sections 4.1.1 - 4.1.4
 	# also allows a modified midpoint rule.
 	def integrate(self, inclination, method='quadratic'):
 		# produce the integrand for the longitudinal direction; to do so,
 		# integrate in the azimuthal direction and multiply by area element
 		def integrand(z, z1, a, A):
-			# arrays of in the expression for mu
+			## unless stated otherwise, arrays are 1D, along the z dimension
+			# arrays of coefficients in the expression for mu in terms of cos(phi)
 			a_mu, b_mu = surf.ab(z)  
 			# whether only part of the surface at a given z is visible 
 			belowZ1 = np.array( (z < z1) ) 
@@ -57,20 +55,24 @@ class Star:
 			# at each z value and wavelength, obtain the integral of the total fit function over phi;
 			# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 			# along the fit parameter dimension
+			# 0: z
+			# 1: wavelength
 			int_phi = np.sum(a * P[:, np.newaxis, :], axis=2)
 			# obtain the integrand to integrate in the z dimension:
 			# at each z and each wavelength, obtain the product of the phi integral of the fit function and
 			# the dimensionless area element
+			# 0: z
+			# 1: wavelength
 			f = A[:, np.newaxis] * int_phi
 			return f
 
 		# fetch the surface and the map
 		surf = self.surface
 		mapp = self.map
-		# get the data for the upper half of the star from the map, don't use z = 0 or 1
-		z_up = mapp.z_up[ 1:-1 ] 
-		a_up = mapp.params_up[ 1:-1 ]
-		A_up = mapp.A_up[ 1:-1 ]
+		# get the data for the upper half of the star from the map
+		z_up = mapp.z_up[ 1: ] 
+		a_up = mapp.params_up[ 1: ]
+		A_up = mapp.A_up[ 1: ]
 		dz = mapp.dz
 		# convert to the data for the lower half of the star
 		z_dn = -1 * np.flip(z_up)
@@ -92,62 +94,83 @@ class Star:
 		
 		## integrate the upper half, from z = 0 to z = 1
 		f = integrand(z_up, z1, a_up, A_up) # the integrand
+		# f_all = np.copy(f) # ---> for temporary plots
 		wts = np.ones(f.shape[0], dtype=np.float) # initialize all weights to 1
 		if method == 'quadratic': 
 			# integration boundaries and z values are equally spaced, thus no correction is necessary;
-			# set the weights according to Press et al, assuming boundary points have been culled
+			# set the weights according to 4.1.18 and 4.1.14 in Numerical recipes
 			wts[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
-			wts[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
+			# wts[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
+			wts[ [-1, -2, -3] ]	= [3./8, 7./6, 23./24]
 		elif method == 'midpoint':
-			# set the lower and upper boundary weights to 1.5
+			# set the lower (open) and upper (closed) boundary weights
 			wts[0]	= 1.5
-			wts[-1] = 1.5
+			wts[-1] = 0.5
 		# sum up the product of the integrand and the weights
 		result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
 		## integrate the lower half, from z = -z_b to z = 0
-		f = integrand(z_dn, z1, a_dn, A_dn) # the integrand
-		wts = np.ones(f.shape[0], dtype=np.float) # initialize all weights to 1
-		# initialize a correction due to the location of the lower integration bound
-		# w.r.t. the z values
-		corr = 0 
-		if method == 'quadratic':
-			# find the difference between the lowest z and the lower integration bound
-			d = z_dn[0] + z1
-			## based on this difference, possibly modify the set of integrand values involved
-			## in the Numerical Recipes integration scheme and compute the correction to the scheme 
-			# coefficients of the quadratic approximating the integrand
-			a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
-			b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-			if d >= dz / 2: # if the difference is larger than delta-z / 2
-				# correct by the area to the left of the lower integration bound
-				d1 = dz - d
-				corr = (a / 3) * d1**3 - (b / 2) * d1**2
-			else: # the difference should be above zero
-				# correct by the area to the right of the lower integration bound
-				corr = (a / 3) * d**3 + (b / 2) * d**2
-				f = f[1:] # remove the first integrand value from the integration scheme
-				wts = wts[1:] # do the same with the weights array
-			# set the weights at the boundaries of the open integration interval
-			wts[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
-			wts[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
-		elif method == 'midpoint':
-			wts[-1] = 1.5 # set the upper boundary weight to 1.5
+		# the integrand; 
+		# we will often use just the first index, resulting in 1D arrays in the wavelength dimension
+		# 0: z
+		# 1: wavelength
+		f = integrand(z_dn, z1, a_dn, A_dn) 
 
-		# sum up the product of the integrand and the weights, add the correction
-		result += dz * np.sum(wts[:, np.newaxis] * f, axis=0) + corr
-
-		# # plot f
+		# # plot
+		# f_all = np.concatenate((f, f_all), axis=0)
+		# z_all = np.concatenate((z_dn, z_up))
 		# ind = np.argwhere(self.wavelengths == 501)[0][0]
-		# plt.plot(z, f[:, ind])
-		# plt.plot(z, fit_arr[:, ind])
+		# plt.plot(z_all, f_all[:, ind])
 		# plt.show()
 
-		# plt.plot(z, fitint[:, 2*5+0])
-		# plt.show()
-
-		# plt.plot(z, params_arr[mask, ind, 2*5+0])
-		# plt.show()
+		# number of integrand values
+		nzd = len(z_dn) 
+		# initialize all weights to 1
+		wts = np.ones(f.shape[0], dtype=np.float) 
+		if nzd == 0: # if there are no integrand values
+			pass 
+		else: # at least one integrand value
+			if method == 'midpoint':
+				# set the upper open boundary weight
+				wts[-1] = 1.5
+				# sum up the product of the integrand and the weights, add the correction
+				result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
+			elif method == 'quadratic':
+				# the difference between the lowest z and the lower integration bound
+				d = z_dn[0] + z1
+				if nzd == 1: # if there is only one integrand value
+					# use a linear approximation for the entire integral between -z1 and 0
+					result += 0.5 * f[0] * (d + dz)**2 / d
+				else: # at least two integrand values
+					# calculate the coefficients of the quadratic that goes through (-z1, 0) and
+					# the first two integrand values, shifted horizontally to go through (0, 0)
+					a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
+					b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
+					if nzd == 2: # if there are only two integrand values
+						# use the quadratic approximation of the integral
+						result += (a / 3) * z1**3 + (b / 2) * z1**2
+					else: # at least three integrand values
+						# use the coefficients of the above quadratic for the integral up to the first z
+						result += (a / 3) * d**3 + (b / 2) * d**2
+						# use equation 4.1.9 in Numerical Recipes for the last step before the open end at z=0
+						result += dz * (23 * f[-1] - 16 * f[-2] + 5 * f[-3]) / 12
+						# use a closed formula for the integral between the first and the last z
+						if nzd == 3:
+							# regular 3-point Simpson's rule
+							result += dz * (f[0] + 4. * f[1] + f[2]) / 3
+						elif nzd == 4:
+							# Simpson's 3/8 rule
+							result += dz * (3 * f[0] + 9 * f[1] + 9 * f[2] + 3 * f[3]) / 8
+						elif nzd == 5:
+							# Bode's rule
+							result += dz * (14 * f[0] + 64 * f[1] + 24 * f[2] + 64 * f[3] + 14 * f[4]) / 45
+						else: # at least 6 integrand values
+							# 4.1.14 in Numerical Recipes
+							# set the weights at the boundaries
+							wts[ [ 0,  1,  2] ] = [3./8, 7./6, 23./24]
+							wts[ [-1, -2, -3] ]	= [3./8, 7./6, 23./24]
+							# sum up the product of the integrand and the weights, add the correction
+							result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
 		# return the result in the appropriate units
 		return result * (self.Req * ut.Rsun)**2

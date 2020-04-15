@@ -74,7 +74,7 @@ def run():
 		f.write('# luminosity: ' + str(st.luminosity) + '\n')
 		f.write('# mass: ' + str(st.mass) + '\n')
 		f.write('# Req: ' + str(st.Req) + '\n')
-		f.write('# number of z values: ' + str(st.map.nz) + '\n')
+		f.write('# number of upper half z values: ' + str(st.map.nz) + '\n')
 		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		# write the spectrum to the file
 		f.write('\n')

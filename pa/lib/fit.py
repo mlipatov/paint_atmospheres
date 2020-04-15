@@ -188,11 +188,11 @@ class Fit:
 		result[ ~anz, i[~anz], : ] = result_azero
 		### everything below is done for the locations where a != 0
 		# set all the arrays we will use to be for a != 0 locations only, 
-		# excepting the results array
-		a = a[anz]
-		b = b[anz]
-		belowZ1 = belowZ1[anz]
-		i = i[anz]
+		# except the results array
+		# a = a[anz]
+		# b = b[anz]
+		# belowZ1 = belowZ1[anz]
+		# i = i[anz]
 		## when a != 0, mu changes as phi changes, 
 		## so we will keep track of whether we enter different mu intervals.
 		# lower bound on integration w.r.t. phi; phi will increase
@@ -201,16 +201,16 @@ class Fit:
 		# when integrating over phi between -pi and pi, this lower bound is some number above zero,
 		# otherwise it is zero
 		mu0 = np.zeros_like(a) 
-		mu0[ ~belowZ1 ] = b[ ~belowZ1 ] - a[ ~belowZ1 ]
+		mu0[ ~belowZ1 & anz] = b[ ~belowZ1 & anz ] - a[ ~belowZ1 & anz ]
 		# the corresponding upper bound on integration w.r.t. phi, between 0 and pi
 		phi_mu0 = np.full_like(a, np.pi)
-		phi_mu0[  belowZ1 ] = phi( 0, a[ belowZ1 ], b[ belowZ1 ] )
+		phi_mu0[  belowZ1 & anz ] = phi( 0, a[ belowZ1 & anz ], b[ belowZ1 & anz ] )
 		# lower endpoint of the current mu interval
 		mu_int = cls.muB_arr[ i ]
 		# initialize a mask that filters for the locations
 		# where the lower endpoint of the current mu interval 
 		# is higher than the lower mu integration bound
-		mask = (mu_int > mu0)
+		mask = (mu_int > mu0) & anz
 		# where the lower endpoints of current mu intervals are higher 
 		# than the lower integration bound, integrate to the values of phi corresponding
 		# to these lower endpoints
@@ -219,7 +219,7 @@ class Fit:
 			phi_int = phi(mu_int[mask], a[mask], b[mask])
 			# compute the integrals on these intervals, from the current values of phi 
 			# to those corresponding to the lower endpoints of the current mu intervals
-			result[ anz & mask, i[mask], : ] += \
+			result[ mask, i[mask], : ] += \
 				intgrt(phi_int, a[mask], b[mask]) - intgrt(ph[mask], a[mask], b[mask])
 			# update the current values of phi, only leave the values
 			# where the lower endpoints of the current mu intervals are higher than the
@@ -234,7 +234,7 @@ class Fit:
 			mask &= (mu_int > mu0)
 		# compute the integrals on the remaining parts of the last intervals
 		# for all the locations with non-zero a
-		result[ anz, i, : ] += intgrt(phi_mu0, a, b) - intgrt(ph, a, b)
+		result[ anz, i[anz], : ] += intgrt(phi_mu0[anz], a[anz], b[anz]) - intgrt(ph[anz], a[anz], b[anz])
 		# flatten the interval and function dimensions into a single dimension
 		sh = result.shape
 		result = result.reshape( sh[0], sh[1] * sh[2] )

@@ -83,10 +83,16 @@ class Surface:
 
 	# coefficients in the expression mu = a * cos(phi) + b
 	def ab(self, z):
-		drz = self.f * self.Drz(z)
+		# mu = cos(i) at the pole
+		m = (z != 1)
+		a = np.zeros_like(z)
+		b = np.full_like(z, self.cosi)
+		# calculate coefficients of mu's dependence everywhere except the pole
+		drz = self.f * self.Drz(z[m])
 		sqt = np.sqrt(1 + drz**2)
-		a = self.sini / sqt
-		b = - self.cosi * drz / sqt
+		a[m] = self.sini / sqt
+		b[m] = - self.cosi * drz / sqt
+		
 		return [a, b]
 
 	# output: phi corresponding to mu = 0 at a given z
