@@ -70,9 +70,9 @@ class Star:
 		surf = self.surface
 		mapp = self.map
 		# get the data for the upper half of the star from the map
-		z_up = mapp.z_up[ 1: ] 
-		a_up = mapp.params_up[ 1: ]
-		A_up = mapp.A_up[ 1: ]
+		z_up = mapp.z_up
+		a_up = mapp.params_up
+		A_up = mapp.A_up
 		dz = mapp.dz
 		# convert to the data for the lower half of the star
 		z_dn = -1 * np.flip(z_up)
@@ -99,12 +99,11 @@ class Star:
 		if method == 'quadratic': 
 			# integration boundaries and z values are equally spaced, thus no correction is necessary;
 			# set the weights according to 4.1.18 and 4.1.14 in Numerical recipes
-			wts[ [ 0,  1,  2] ] = [55./24, -1./6, 11./8]
-			# wts[ [-1, -2, -3] ]	= [55./24, -1./6, 11./8]
+			wts[ [ 0,  1,  2] ] = [3./8, 7./6, 23./24]
 			wts[ [-1, -2, -3] ]	= [3./8, 7./6, 23./24]
 		elif method == 'midpoint':
 			# set the lower (open) and upper (closed) boundary weights
-			wts[0]	= 1.5
+			wts[0]	= 0.5
 			wts[-1] = 0.5
 		# sum up the product of the integrand and the weights
 		result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
@@ -132,7 +131,7 @@ class Star:
 		else: # at least one integrand value
 			if method == 'midpoint':
 				# set the upper open boundary weight
-				wts[-1] = 1.5
+				wts[-1] = 0.5
 				# sum up the product of the integrand and the weights, add the correction
 				result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 			elif method == 'quadratic':
@@ -152,8 +151,6 @@ class Star:
 					else: # at least three integrand values
 						# use the coefficients of the above quadratic for the integral up to the first z
 						result += (a / 3) * d**3 + (b / 2) * d**2
-						# use equation 4.1.9 in Numerical Recipes for the last step before the open end at z=0
-						result += dz * (23 * f[-1] - 16 * f[-2] + 5 * f[-3]) / 12
 						# use a closed formula for the integral between the first and the last z
 						if nzd == 3:
 							# regular 3-point Simpson's rule
