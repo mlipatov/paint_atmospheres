@@ -19,6 +19,8 @@ def run():
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
 		'or a equally spaced values specified by minimum, maximum and number', required=True)
+	parser.add_argument("-m", help="longitudinal integration method: 0=trapezoid(default), 1=quadratic", type=int, \
+			default=0)
 	args = parser.parse_args()
 
 	## inputs

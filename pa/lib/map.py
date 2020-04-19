@@ -41,10 +41,10 @@ class Map:
 		self.g_method = g_method
 
 		## initialize the array of z values for integration
-		## ultimately will not use the values at 0 and -1
+		# for the modified trapezoidal "gamma" method, this should be an integral factor of 4 plus 1
 		# non-negative z values for the upper half of the star;
 		# non-positive values for the lower half are the reversed negatives of this
-		self.z_up = np.linspace(0, 1, nz + 1) # for now include z = 0
+		self.z_up = np.linspace(0, 1, nz + 1)
 		# store the spacing between the z values
 		self.dz = self.z_up[1] - self.z_up[0]
 		# store the number of z values used for the integration on the upper half of the star
