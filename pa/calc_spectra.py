@@ -19,14 +19,24 @@ def run():
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
 		'or a equally spaced values specified by minimum, maximum and number', required=True)
-	parser.add_argument("-m", help="longitudinal integration method: 0=trapezoid(default), 1=quadratic", type=int, \
+	parser.add_argument("-m", help="longitudinal integration method: 0=cubic(default), 1=trapezoidal", type=int, \
 			default=0)
 	args = parser.parse_args()
 
 	## inputs
 	pkl_sfile = args.pkl_sfile # pickled star file
 	output = args.output # output location
-	i = args.i # inclinations
+	
+	# integration method
+	if args.m == 0: 
+		m = 'cubic'
+	elif args.m == 1:
+		m = 'trapezoid'
+	else:
+		sys.exit("Longitudinal integration method should be either 0 (cubic) or 1 (trapezoidal).")
+
+	# inclinations
+	i = args.i 
 	li = len(i)
 	if li not in [1, 3]:
 		sys.exit("Please specify either a single inclination in radians (one number) " +\
@@ -37,10 +47,11 @@ def run():
 		prec = 6
 	elif li == 3:
 		mi, ma, num = i
-		inclinations = np.linspace( mi, ma, num=num )
+		inclinations = np.linspace( mi, ma, num=int(num) )
 		# decimal precision of inclination for printout
 		prec = np.int( np.ceil( -np.log10( (ma - mi) / num ) ) )
 	leni = len(inclinations)
+	
 	# unpickle the star
 	with open(pkl_sfile, 'rb') as f:
 		st = pickle.load(f)
@@ -67,7 +78,7 @@ def run():
 		# current inclination
 		inc = inclinations[i] 
 		# calculate the spectrum
-		light = st.integrate(inc)
+		light = st.integrate(inc, method=m)
 
 		# create this file if it doesn't exist, open it for writing
 		f = open(ofile,'w+') 

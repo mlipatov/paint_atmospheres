@@ -15,7 +15,7 @@ def run():
 	parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)
 	parser.add_argument("mass", help="mass in solar masses", type=float)
 	parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
-	parser.add_argument("nz", help="number of z coordinates in the upper half (normally 100)", type=int)
+	parser.add_argument("nz", help="number of z coordinates in the upper hemisphere (normally 100)", type=int)
 	parser.add_argument("-t", help="temperature interpolation: 0=planck(default), 1=linear, 2=log", type=int, \
 			default=0)
 	parser.add_argument("-n", help="number of steps in the Newton's method for temperature calculation (default is 15)", type=int, \

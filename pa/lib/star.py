@@ -40,7 +40,7 @@ class Star:
 	# in ergs/s/Hz/ster;
 	# uses the integration formulas from Numerical Recipes from sections 4.1.1 - 4.1.4
 	# also allows a modified midpoint rule.
-	def integrate(self, inclination, method='trapezoid'):
+	def integrate(self, inclination, method='cubic'):
 		# produce the integrand for the longitudinal direction; to do so,
 		# integrate in the azimuthal direction and multiply by area element
 		def integrand(z, z1, a, A):
@@ -91,123 +91,63 @@ class Star:
 		ft.Fit.set_muB(self.bounds)
 		# initialize the output
 		result = np.zeros( len(self.wavelengths) )
-		# result = np.zeros( len(z_up) + len(z_dn) )
 		
 		## integrate the upper half, from z = 0 to z = 1
-		f_up = integrand(z_up, z1, a_up, A_up) # the integrand
-		
-		# index of 501 nm
-		ind = np.argwhere(self.wavelengths == 501)[0][0]
-		# # plot
-		# plt.plot(z_up, f_up[:, ind])
-		# plt.show()
+		f = integrand(z_up, z1, a_up, A_up) # the integrand
+		# weights
+		wts = np.ones(f.shape[0], dtype=np.float)
+		if method == 'cubic': 
+			# set the weights according to 4.1.14 in Numerical recipes
+			wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
+		elif method == 'trapezoid':
+			wts[0]	= wts[-1] = 0.5
+		# sum up the product of the integrand and the weights
+		result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
-		if method == 'richardson':
-			# estimate of the integral using all the z values
-			z = z_up
-			f = f_up
-			wts = np.ones(len(z), dtype=np.float)
-			wts[0]	= 0.5
+		## integrate the lower half, from z = -z_b to z = 0
+		# the integrand; 
+		# we will often use just the first index, resulting in 1D arrays in the wavelength dimension
+		# 0: z
+		# 1: wavelength
+		f = integrand(z_dn, z1, a_dn, A_dn) 
+		# number of integrand values
+		nzd = len(z_dn) 
+		# initialize all weights to 1
+		wts = np.ones(f.shape[0], dtype=np.float) 
+		if method == 'trapezoid':
 			wts[-1] = 0.5
-			I1 = 1 * dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-			# estimate using values spaced by double the z delta
-			z = np.concatenate( (z_up[::2], np.array([z_up[-1]]) ) )
-			f = np.concatenate( (f_up[::2], np.array([f_up[-1]]) ) )
-			wts = np.ones(len(z), dtype=np.float)
-			wts[0]	= 0.5
-			wts[-1] = 0.5
-			I2 = 2 * dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-			# estimate using values spaced by four times the z delta
-			z = np.concatenate( (z_up[::4], np.array([z_up[-1]]) ) )
-			f = np.concatenate( (f_up[::4], np.array([f_up[-1]]) ) )
-			wts = np.ones(len(z), dtype=np.float)
-			wts[0]	= 0.5
-			wts[-1] = 0.5
-			I4 = 4 * dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-			## mask out the wavelengths where the assumptions of this method do not hold
-			# check where the integral with all the points is greater than zero
-			m = (I1 > 0)
-			# check where the integral increases or decreases monotonically with step size
-			m = m & ( ((I1 <= I2) & (I2 <= I4)) | ((I1 >= I2) & (I2 >= I4)) )
-			# order of convergence
-			gamma = np.full_like(I1, np.nan)
-			gamma[m] = np.log( (I4[m] - I2[m]) / (I2[m] - I1[m]) ) / np.log(2)
-			# # check where the order of convergence is greater than 1
-			# m = m & np.greater( gamma, 1, where=( ~np.isnan(gamma) ) )
-			# result at locations where assumptions of method hold
-			result[m] = (I2[m] - I1[m] * 2**gamma[m]) / (1 - 2**gamma[m])
-			# result at other locations
-			result[~m] = I1[~m]
-
-			print(m[ind])
-		else:
-			f = f_up
-			# weights
-			wts = np.ones(f.shape[0], dtype=np.float)
-			if method == 'cubic': 
-				# set the weights according to 4.1.14 in Numerical recipes
-				wts[ [ 0,  1,  2] ] = [3./8, 7./6, 23./24]
-				wts[ [-1, -2, -3] ]	= [3./8, 7./6, 23./24]
-			elif method == 'trapezoid':
-				wts[0]	= 0.5
-				wts[-1] = 0.5
-			# sum up the product of the integrand and the weights
 			result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-
-		print('only the upper half is integrated')
-
-		# ## integrate the lower half, from z = -z_b to z = 0
-		# # the integrand; 
-		# # we will often use just the first index, resulting in 1D arrays in the wavelength dimension
-		# # 0: z
-		# # 1: wavelength
-		# f = integrand(z_dn, z1, a_dn, A_dn) 
-
-		# # number of integrand values
-		# nzd = len(z_dn) 
-		# # initialize all weights to 1
-		# wts = np.ones(f.shape[0], dtype=np.float) 
-		# if nzd == 0: # if there are no integrand values
-		# 	pass 
-		# else: # at least one integrand value
-		# 	if method == 'trapezoid':
-		# 		# set the upper open boundary weight
-		# 		wts[-1] = 0.5
-		# 		# sum up the product of the integrand and the weights, add the correction
-		# 		result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-		# 	elif method == 'quadratic':
-		# 		# the difference between the lowest z and the lower integration bound
-		# 		d = z_dn[0] + z1
-		# 		if nzd == 1: # if there is only one integrand value
-		# 			# use a linear approximation for the entire integral between -z1 and 0
-		# 			result += 0.5 * f[0] * (d + dz)**2 / d
-		# 		else: # at least two integrand values
-		# 			# calculate the coefficients of the quadratic that goes through (-z1, 0) and
-		# 			# the first two integrand values, shifted horizontally to go through (0, 0)
-		# 			a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
-		# 			b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-		# 			if nzd == 2: # if there are only two integrand values
-		# 				# use the quadratic approximation of the integral
-		# 				result += (a / 3) * z1**3 + (b / 2) * z1**2
-		# 			else: # at least three integrand values
-		# 				# use the coefficients of the above quadratic for the integral up to the first z
-		# 				result += (a / 3) * d**3 + (b / 2) * d**2
-		# 				# use a closed formula for the integral between the first and the last z
-		# 				if nzd == 3:
-		# 					# regular 3-point Simpson's rule
-		# 					result += dz * (f[0] + 4. * f[1] + f[2]) / 3
-		# 				elif nzd == 4:
-		# 					# Simpson's 3/8 rule
-		# 					result += dz * (3 * f[0] + 9 * f[1] + 9 * f[2] + 3 * f[3]) / 8
-		# 				elif nzd == 5:
-		# 					# Bode's rule
-		# 					result += dz * (14 * f[0] + 64 * f[1] + 24 * f[2] + 64 * f[3] + 14 * f[4]) / 45
-		# 				else: # at least 6 integrand values
-		# 					# 4.1.14 in Numerical Recipes
-		# 					wts[ [ 0,  1,  2] ] = [3./8, 7./6, 23./24]
-		# 					wts[ [-1, -2, -3] ]	= [3./8, 7./6, 23./24]
-		# 					# sum up the product of the integrand and the weights, add the correction
-		# 					result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
+		elif method == 'cubic':
+			# the difference between the lowest z and the lower integration bound
+			d = z_dn[0] + z1
+			if nzd == 1: # only one integrand value
+				# use a linear approximation for the entire integral between -z1 and 0
+				result += 0.5 * d * f[0] # or is it dz * d * f[0] ?
+			else: # at least two integrand values
+				# coefficients of the quadratic through (-z1, 0) and
+				# the first two integrand values, shifted horizontally to go through (0, 0)
+				a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
+				b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
+				if nzd == 2: # only two integrand values
+					# use the quadratic approximation of the integral
+					result += (a / 3) * z1**3 + (b / 2) * z1**2
+				else: # at least three integrand values
+					# use the coefficients of the above quadratic for the integral up to the first z
+					result += (a / 3) * d**3 + (b / 2) * d**2
+					# use a closed formula for the integral between the first and the last z
+					if nzd == 3:
+						# regular 3-point Simpson's rule
+						result += dz * (f[0] + 4. * f[1] + f[2]) / 3
+					elif nzd == 4:
+						# Simpson's 3/8 rule
+						result += dz * (3 * f[0] + 9 * f[1] + 9 * f[2] + 3 * f[3]) / 8
+					elif nzd == 5:
+						# Bode's rule
+						result += dz * (14 * f[0] + 64 * f[1] + 24 * f[2] + 64 * f[3] + 14 * f[4]) / 45
+					else: # at least 6 integrand values
+						# 4.1.14 in Numerical Recipes
+						wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
+						result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
 		# return the result in the appropriate units
 		return result * (self.Req * ut.Rsun)**2
