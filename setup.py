@@ -10,7 +10,6 @@ setup(
     	'calc_star=pa.calc_star:run',
     	'calc_spectra=pa.calc_spectra:run',
     	'plot_spectra=pa.plot_spectra:run',
-        'plot_Imu=pa.opt.plot_Imu:run',
         'convert_spectrum=pa.opt.convert_spectrum:run',
         'filter_spectra=pa.opt.filter_spectra:run'
     	]}

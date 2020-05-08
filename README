@@ -25,7 +25,6 @@ Executables:
 	calc_star performs inclination-independent computations
 	calc_spectra computes spectra for multiple inclinations
 	plot_spectra plots spectra 
-	plot_Imu plots a fit of intensity versus surface inclination
 	convert_spectrum converts a spectrum between units
 	filter_spectra computes filter magnitudes of spectra
 	<command> -h provides usage instructions

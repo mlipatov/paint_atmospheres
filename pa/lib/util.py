@@ -103,39 +103,39 @@ def ster_to_cm2(I_arr, distance):
 ## Filter
 class Filter:
 	""" Information pertaining to a filter """
-	# inputs: filter multipliers, filter wavelengths, intensity zero point in erg/s/cm2/A
-	def __init__(self, filt, wlf, I0):
+	# inputs: filter multipliers, filter wavelengths, flux zero point in erg/s/cm2/A
+	def __init__(self, filt, wlf, f0):
 		self.filt = filt
-		self.I0 = I0
+		self.f0 = f0
 		# a cubic spline based on the filter
 		self.f = interp1d(wlf, filt, kind='cubic', bounds_error=False, fill_value=0)
 
-	# output: 1D array (by location) of light through a filter 
+	# output: 1D array (by location) of flux through a filter 
 	#	in units of the filter's flux zero point
-	# inputs: 2D array of intensities in erg/s/ster/Hz (location x wavelength) or
+	# inputs: 2D array of fluxes in erg/s/ster/Hz (location x wavelength) or
 	#		1D array (wavelength)
 	#	wavelengths for the light in nm 
 	#	distance to the object
-	def flux(self, I_arr, wll, distance):
-		# convert intensity from per Hz to per angstrom
-		I_arr = Hz_to_A(I_arr, wll)
-		# convert intensity from per steradian to per cm2 of photodetector
-		I_arr = ster_to_cm2(I_arr, distance)
+	def flux(self, flux_arr, wll, distance):
+		# convert flux from per Hz to per angstrom
+		flux_arr = Hz_to_A(flux_arr, wll)
+		# convert flux from per steradian to per cm2 of photodetector
+		flux_arr = ster_to_cm2(flux_arr, distance)
 		# convert wavelength to angstroms
 		wll_A = color_nm_A(wll)
 		# filter evaluated at the light's wavelengths
 		fil = self.f(wll_A) 
-		# multiply by light
-		integrand = np.multiply(I_arr, fil[np.newaxis, :])
+		# multiply the flux by the filter function
+		integrand = np.multiply(flux_arr, fil[np.newaxis, :])
 		# calculate the differences between light's wavelengths in A
 		diff = np.diff(wll_A)
 		## estimate the integral using the trapezoidal rule with variable argument differentials
 		# array of averaged differentials
 		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-		# approximation of the integral
+		# approximation of the integral, flux integrated over wavelengths
 		flux = np.sum( d[np.newaxis, :] * integrand, axis=1 )
-		# approximate the flux zero point
-		integrand = fil * self.I0
+		# zero point of the integrated flux
+		integrand = fil * self.f0
 		flux_zero = np.sum(d * integrand)
 		# output
 		output = np.empty_like(flux)

@@ -16,8 +16,7 @@ import math
 class Star:
 	""" Contains all the information pertaining to a rotating star, including its surface shape,
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
-	Performs the 1D integration in the z dimension,
-	based on an open-interval formula, equation 4.1.18 of Numerical Recipes, 3rd edition.
+	Performs the 1D integration in the z dimension.
 	Paints the temperature across the surface of the star."""
 	def __init__(self, omega, luminosity, mass, Req, nz=100, ld=None, temp_method='planck', g_method='log', nm=15):
 		if ld is not None:
@@ -51,7 +50,7 @@ class Star:
 			belowZ1 = np.array( (z < z1) ) 
 			# a 2D array of fit function integrals, one for each combination of z value and an index that
 			# combines interval and fit function
-			P = ft.Fit.integrate(belowZ1, a_mu, b_mu)
+			P = ft.integrate(belowZ1, a_mu, b_mu)
 			# at each z value and wavelength, obtain the integral of the total fit function over phi;
 			# to do this, sum up the products of the fit parameters and the corresponding fit integrals
 			# along the fit parameter dimension
@@ -82,13 +81,13 @@ class Star:
 		surf.set_inclination(inclination)
 		# get the integration bound for this surface and inclination
 		z1 = surf.z1
-		# mask the locations below or equal to the lower boundary
-		m = (z_dn > -z1)
+		# mask the locations below the lower boundary
+		m = (z_dn >= -z1)
 		z_dn = z_dn[m]
 		a_dn = a_dn[m]
 		A_dn = A_dn[m]
 		# set the bounds between mu intervals in intensity fits
-		ft.Fit.set_muB(self.bounds)
+		ft.set_muB(self.bounds)
 		# initialize the output
 		result = np.zeros( len(self.wavelengths) )
 		
@@ -302,14 +301,14 @@ class Star:
 		params_arr = self.map.Tp( z_arr, r_arr, ld )[1]
 		sh = np.shape(params_arr)
 		ft.Fit.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
-		## intensities in ergs/s/Hz/ster
+		## flux in erg/s/Hz/ster
 		# 0: point index
 		# 1: wavelength index
-		I_arr = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
+		flux_ster = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
 
-		# fluxes
+		# flux in erg/s/Hz/cm**2
 		# 0: point index
-		flux_arr[ mask ] = filt.flux(I_arr, ld.wl_arr, distance)
+		flux_arr[ mask ] = filt.flux(flux_ster, ld.wl_arr, distance)
 		# reshape the flux array according to belonging to different planet shadows
 		# and sum the fluxes from different sightlines for a given shadow
 		flux = np.sum( np.reshape(flux_arr, (tr.n, ns)), axis=1 )

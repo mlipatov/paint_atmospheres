@@ -89,7 +89,7 @@ class LimbDark:
     coefficients of intensity fits are only meaningful to 5 decimal digits. """
 
     # initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
-    def __init__(self, datafile, bounds, check, save):
+    def __init__(self, datafile, bounds, save):
         wl_arr, g_arr, temp_arr, I_arr = getdata(datafile)
         self.wl_arr = wl_arr
         self.g_arr = g_arr
@@ -97,12 +97,12 @@ class LimbDark:
         self.bounds = bounds
         if save:
             self.I_arr = I_arr
-        ft.Fit.set_muB(bounds)
+        ft.set_muB(bounds)
 
         n_temp = len(temp_arr)
         n_g = len(g_arr)
         n_wl = len(wl_arr)
-        n_param = ft.n * ft.Fit.m
+        n_param = ft.n * ft.m
         # initialize a list of fit coefficients for interpolation to NAN values for each 
         # combination of gravity, temperature, wavelength and the fit parameter index: 
         # index 1 : temperature;
@@ -128,27 +128,9 @@ class LimbDark:
                         wl = wl_arr[ind_wl]
                         g = g_arr[ind_g]
                         temp = temp_arr[ind_temp]
-                        # initialize and fit
-                        fit = ft.Fit(I_slice, wl, g, temp, check)
-                        # record the fit parameters in the array that is later used by interpolation
-                        fp[ind_wl] = fit.p
+                        # fit and record the fit parameters in the array that is later used by interpolation
+                        fp[ind_wl] = ft.fit(I_slice)
                     self.fit_params[ind_temp][ind_g] = fp
-            if check:
-                # print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev)
-                print (ft.Fit.I0_min, ft.Fit.min_step, ft.Fit.max_dev, np.median(ft.Fit.dev_arr))
         end = time.time()
         print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()
-
-
-    # plots the information corresponding to given wavelength, log g and temperature
-    def plotFit(self, wl, g, temp):
-        # create a fit object
-        ind_wl = np.where(self.wl_arr == wl)[0][0]
-        ind_g = np.where(self.g_arr == g)[0][0]
-        ind_temp = np.where(self.temp_arr == temp)[0][0]
-        I_slice = self.I_arr[ind_wl, :, ind_g, ind_temp]
-        check = False
-        fit = ft.Fit(I_slice, wl, g, temp, check)
-        # plot it
-        fit.plot()
