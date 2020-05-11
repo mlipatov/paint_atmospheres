@@ -66,7 +66,8 @@ def run():
 	if not output.endswith('/'):
 		output += '/'
 	filename = os.path.splitext(os.path.basename(pkl_sfile))[0]
-	ofiles = ch.add(output + filename, np.round(inclinations, decimals=prec).astype(str))
+	inc_str = np.array([("%." + str(prec) + "f") % x for x in np.round(inclinations, decimals=prec)])
+	ofiles = ch.add(output + filename, inc_str)
 	ofiles = ch.replace(ofiles, '.', '_')
 	ofiles = ch.add(ofiles, '.txt')
 

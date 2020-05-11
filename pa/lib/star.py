@@ -217,15 +217,17 @@ class Star:
 
 	# output: flux in zero flux units from a series of points on the surface of a star
 	#	covered by a planet
-	# inputs: inclination of the star's rotation axis,
+	# inputs: inclination of the star's rotation axis
+	#	distance to the star
 	#	planetary transit information
 	#	limb darkening information
 	#	filter information
 	#	number of points in the shadow of a planet where to calculate intensities (1, 7, 19 or >19)
+	# 	number of iterations of Newton's method
 	# requres: -pi / 2 <= alpha <= pi / 2
 	# notes: the computation of intensity for each point is much more time-consuming than
 	#	the computation of the point itself
-	def transit(self, inclination, distance, tr, ld, filt, ns=7):
+	def transit(self, inclination, distance, tr, ld, filt, ns=7, nm=15):
 		# radius of the planet
 		radius = tr.radius
 		## notes: we work in the viewplane coordinates 
@@ -298,13 +300,13 @@ class Star:
 		# 0: point index
 		# 1: wavelength index
 		# 2: parameter index
-		params_arr = self.map.Tp( z_arr, r_arr, ld )[1]
+		params_arr = self.map.Tp( z_arr, r_arr, ld, nm )[1]
 		sh = np.shape(params_arr)
-		ft.Fit.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
+		ft.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
 		## flux in erg/s/Hz/ster
 		# 0: point index
 		# 1: wavelength index
-		flux_ster = ft.Fit.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
+		flux_ster = ft.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
 
 		# flux in erg/s/Hz/cm**2
 		# 0: point index

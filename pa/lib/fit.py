@@ -89,13 +89,13 @@ def I(mu, p):
 	# 0: location
 	i = np.searchsorted(muB_arr, mu, side='right') - 1 
 	# reshape the parameter array to distinguish between functions on different intervals
-	# sh = p.shape
+	sh = p.shape
 	# # 0: location
 	# # 1: wavelength
 	# # 2: interval
 	# # 3: function
-	# params = p.reshape( (sh[0], sh[1], cls.m, n) )
-	params = p.reshape( (m, n) )
+	params = p.reshape( (sh[0], sh[1], m, n) )
+	# params = p.reshape( (m, n) )
 	# at each location, in the corresponding interval, for each wavelength, 
 	# sum up the product of fit parameters and functions of mu
 	output = np.sum(f_mu[ :, np.newaxis, : ] * params[ np.arange(sh[0]), :, i, : ], axis=2)
