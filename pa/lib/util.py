@@ -56,7 +56,7 @@ def color_nm_Hz(wl):
 	c_nm = 1.e7 * c # speed of light in nm per second
 	return c_nm / wl
 
-### Intensity conversions
+### Flux conversions
 
 # inputs: an array of some quantity per Angstrom of wavelength, 
 # 	an array of corresponding wavelengths in nanometers

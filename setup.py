@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='paint_atmospheres',
-    version='0.1.0',
+    version='1.0.0',
     packages=find_packages(),
     package_dir={'paint_atmospheres': 'pa'},
     entry_points={'console_scripts': [
@@ -10,7 +10,6 @@ setup(
     	'calc_star=pa.calc_star:run',
     	'calc_spectra=pa.calc_spectra:run',
     	'plot_spectra=pa.plot_spectra:run',
-        'convert_spectrum=pa.opt.convert_spectrum:run',
         'filter_spectra=pa.opt.filter_spectra:run'
     	]}
 )
