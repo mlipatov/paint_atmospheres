@@ -98,9 +98,6 @@ class Star:
 		if method == 'cubic': 
 			# set the weights according to 4.1.14 in Numerical recipes
 			wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
-		elif method == 'quadratic':
-			# equation 4.1.12
-			wts[ [0, 1] ] = wts[ [-1, -2] ] = [5./12, 13./12]
 		elif method == 'trapezoid':
 			wts[0]	= wts[-1] = 0.5
 		# sum up the product of the integrand and the weights
@@ -119,31 +116,6 @@ class Star:
 		if method == 'trapezoid':
 			wts[-1] = 0.5
 			result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
-		elif method == 'quadratic':
-			# the difference between the lowest z and the lower integration bound
-			d = z_dn[0] + z1
-			if nzd == 1: # only one integrand value
-				# use a linear approximation for the entire integral between -z1 and 0
-				result += 0.5 * d * f[0]
-			else: # at least two integrand values
-				# coefficients of the quadratic through (-z1, 0) and
-				# the first two integrand values, shifted horizontally to go through (0, 0)
-				a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
-				b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-				if nzd == 2: # only two integrand values
-					# use the quadratic approximation of the integral
-					result += (a / 3) * z1**3 + (b / 2) * z1**2
-				else: # at least three integrand values
-					# use the coefficients of the above quadratic for the integral up to the first z
-					result += (a / 3) * d**3 + (b / 2) * d**2
-					# use a closed formula for the integral between the first and the last z
-					if nzd == 3:
-						# regular 3-point Simpson's rule
-						result += dz * (f[0] + 4. * f[1] + f[2]) / 3
-					else: # at least 4 integrand values
-						# equation 4.1.12 
-						wts[ [0, 1] ] = wts[ [-1, -2] ] = [5./12, 13./12]
-						result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 		elif method == 'cubic':
 			# the difference between the lowest z and the lower integration bound
 			d = z_dn[0] + z1
