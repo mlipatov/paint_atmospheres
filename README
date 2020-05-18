@@ -29,7 +29,13 @@ Executables:
 	filter_spectra computes filter magnitudes of spectra
 	<command> -h provides usage instructions
 
+Scripts:
+	Located in paint_atmospheres/pa/usr
+	Create the figures in [LB] that require spectra or intensity fits
+	Each contains instructions in the comments at the top of the file 
+
 References: 
+	Lipatov M & Brandt TD, Submitted to ApJ [LB]
 	Espinosa Lara F & Rieutord M (2011), A&A, 533, A43
 	Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 
 	http://mathworld.wolfram.com/CubicFormula.html

@@ -116,15 +116,14 @@ class Map:
 		# output: smallest value of x for which to compute 
 		#	using full Newton's method step function; a.k.a. x_b
 		# inputs: rotational velocity of the star,
-		#	temperature correction at x = 0,
 		#	order-one factor of proportionality between the error 
 		#		in full step function and that in the series expansion
 		#	resolution of floating point numbers
 		def X1(omega, A, r):
-			# a factor that's a little less than 1
+			# a factor that's a little less than 1; above 0.95 is enough for r < 1
 			B = 0.9
 			# omega below which the approximation yields values greater than 1
-			omega_lim = 0.9 * (2./(85*A))**(1./4) * 3**(1./2) * r**(1./4)
+			omega_lim = B * (2./(85*A))**(1./4) * 3**(1./2) * r**(1./4)
 			if omega < omega_lim:
 				output = 1
 			else: # otherwise, evaluate the estimate of x_b
@@ -138,15 +137,15 @@ class Map:
 		# helper function
 		# inputs: an array of temperature correction values and 
 		#	an array of x = abs(cos(theta)) values
-		def G(F_arr, x_arr):
-			return np.sqrt(F_arr * (1 - x_arr**2) + x_arr**2)
+		def G(F, x):
+			return np.sqrt(F * (1 - x**2) + x**2)
 		# output: full Newton's method step function
 		# inputs: F, x, G, rho and omega
-		def dF_full(F_arr, x_arr, G_arr, rho_arr, omega):
-			mult = -2 * F_arr * G_arr**2
-			add1 = (1 - G_arr) / x_arr**2
-			add2 = (-1./3) * G_arr * rho_arr**3 * omega**2
-			add3 = G_arr * np.log( np.sqrt(F_arr) * (1 + x_arr) / (x_arr + G_arr) ) / x_arr**3
+		def dF_full(F, x, G, rho, omega):
+			mult = -2 * F * G**2
+			add1 = (1 - G) / x**2
+			add2 = (-1./3) * G * rho**3 * omega**2
+			add3 = G * np.log( np.sqrt(F) * (1 + x) / (x + G) ) / x**3
 			output = mult * (add1 + add2 + add3)
 			return output
 		# output: series approximation of Newton's method step function up to third order
@@ -169,7 +168,7 @@ class Map:
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
 		r = np.finfo(float).eps # resolution of floating point numbers
-		A = 16 # a parameter for estimating this value of x
+		A = 1000 # a parameter for estimating this value of x; optimized for the maximum omega
 		x1 = X1(omega, A, r)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
@@ -179,10 +178,7 @@ class Map:
 		# initialize the result array (to the half-way point in the possible range)
 		F_arr = np.full_like(z_arr, (F0 + F1) / 2)
 		# Newton's algorithm; 
-		# ten steps is about twice the number we need
-		
-		# print("i + 1, diff max")
-
+		# we never need more than 11 steps
 		for i in range(nm):
 			# a helper function evaluated
 			G_arr = G(F_arr[fnm], x_arr[fnm])
