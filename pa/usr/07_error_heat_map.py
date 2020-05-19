@@ -13,7 +13,7 @@ import glob
 import os
 
 nz = '100'
-om = '999'
+om = '615' # or '999'
 
 vmax = -2
 vmin = -5
@@ -23,14 +23,9 @@ rc('text', usetex=True)
 
 iodir = '../../' # location of the input/output directory
 
-# These should give sorted file lists.  Note that you have to choose
-# the names carefully to make sure that they are sorted by np.sort.
-# I used a rename shell script, but there are other ways.  It might 
-# be worth modifying calc_spectra.py to print zeros, e.g. 1.100 rather
-# than 1.1.
+# These should give sorted file lists.
 
 filelist1 = list(np.sort(glob.glob(iodir + 'data/vega' + str(om) + '_100/vega*.txt'))) # nz = 100
-# for x in filelist1: print(os.path.basename(x)) 
 filelist2 = list(np.sort(glob.glob(iodir + 'data/vega' + str(om) + '_10K/vega*.txt'))) # nz = 10,000
 
 if len(filelist1) != len(filelist2):

@@ -119,15 +119,15 @@ class Map:
 		#	order-one factor of proportionality between the error 
 		#		in full step function and that in the series expansion
 		#	resolution of floating point numbers
-		def X1(omega, A, r):
-			# a factor that's a little less than 1; above 0.95 is enough for r < 1
-			B = 0.9
+		def X1(omega, k, q):
+			# a factor that's a little less than 1; above 0.95 is enough for q < 1
+			c = 0.9
 			# omega below which the approximation yields values greater than 1
-			omega_lim = B * (2./(85*A))**(1./4) * 3**(1./2) * r**(1./4)
+			omega_lim = c * (2./(85*k))**(1./4) * 3**(1./2) * q**(1./4)
 			if omega < omega_lim:
 				output = 1
 			else: # otherwise, evaluate the estimate of x_b
-				output = r**(1./6) * (2./(85*A))**(1/6) * \
+				output = q**(1./6) * (2./(85*k))**(1/6) * \
 					( 3**(1./3) * omega**(-2./3) - \
 					  3**(-2./3) * (199./255) * omega**(4./3) - \
 					  3**(-2./3) * (29123./65025) * omega**(10./3) )
@@ -167,9 +167,9 @@ class Map:
 		# absolute value of cosine theta, a.k.a. x
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
-		r = np.finfo(float).eps # resolution of floating point numbers
-		A = 1000 # a parameter for estimating this value of x; optimized for the maximum omega
-		x1 = X1(omega, A, r)
+		q = np.finfo(float).eps # resolution of floating point numbers
+		k = 1000 # a parameter for estimating this value of x; optimized for the maximum omega
+		x1 = X1(omega, k, q)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
 		# for the remaining elements, we use order three series expansion of the 

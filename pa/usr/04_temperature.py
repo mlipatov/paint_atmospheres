@@ -9,6 +9,7 @@ import math
 import sys
 import matplotlib.pyplot as plt
 from matplotlib import rc
+import time
 
 iodir = '../../'
 
@@ -38,15 +39,15 @@ def F_1(omega):
 #	order-one factor of proportionality between the error 
 #		in full step function and that in the series expansion
 #	resolution of floating point numbers
-def X1(omega, A, r):
+def X1(omega, k, q):
 	# a factor that's a little less than 1
 	B = 0.9
 	# omega below which the approximation yields values greater than 1
-	omega_lim = B * (2./(85*A))**(1./4) * 3**(1./2) * r**(1./4)
+	omega_lim = B * (2./(85*k))**(1./4) * 3**(1./2) * q**(1./4)
 	output = np.empty_like(omega)
 	mask = (omega < omega_lim)
 	output[mask] = 1
-	output[~mask] = r**(1./6) * (2./(85*A))**(1/6) * \
+	output[~mask] = q**(1./6) * (2./(85*k))**(1/6) * \
 			( 3**(1./3) * omega[~mask]**(-2./3) - \
 			  3**(-2./3) * (199./255) * omega[~mask]**(4./3) - \
 			  3**(-2./3) * (29123./65025) * omega[~mask]**(10./3) )
@@ -93,10 +94,10 @@ omega = np.linspace(0, omega_max, 200)
 o2 = omega**2
 F0 = F_0(omega) # F at x = 0
 F1 = F_1(omega) # F at x = 1
-A = 1000 # a parameter for estimating this value of x
-r = np.finfo(float).eps # resolution of floating point numbers
+k = 1000 # a parameter for estimating this value of x
+q = np.finfo(float).eps # resolution of floating point numbers
 # optimal smallest value of x for which to compute using Newton's method
-xb = X1(omega, A, r)
+xb = X1(omega, k, q)
 # rho at these values of x
 rho_b = rho(xb, omega)
 
@@ -105,6 +106,7 @@ F_full = np.full_like(omega, (F0 + F1) / 2)
 F_approx = np.full_like(omega, (F0 + F1) / 2)
 F_etalon = mp.mpf(1) * np.full_like(omega, (F0 + F1) / 2)
 # Newton's algorithm using the two variants of double precision 
+start = time.time()
 for i in range(nm):
 	# helper function
 	G_full = G(F_full, xb)
@@ -121,12 +123,15 @@ for i in range(nm):
 	m = (F_full > F0);		F_full[ m ] = F0[ m ]
 	m = (F_approx < F1); 	F_approx[ m ] = F1[ m ]
 	m = (F_approx > F0);	F_approx[ m ] = F0[ m ]
+end = time.time()
+print('Time for the two sets of double precision evaluations in seconds: ' + str(end - start), flush=True)
 # Newton's algorithm using the full expression method with higher precision
 xb = mp.mpf(1) * xb
 F0 = mp.mpf(1) * F0
 F1 = mp.mpf(1) * F1
 mp.dps = 100 # number of digits after decimal point in higher precision calculations
-for i in range(nmp):
+start = time.time()
+for i in range(nm):
 	# helper function
 	G_etalon = G(F_etalon, xb)
 	# the new values of F at the locations 
@@ -141,12 +146,14 @@ for i in range(nmp):
 	# 	diff = np.abs(F_etalon - F_prev)
 	# 	print(i + 1, float(diff.max()))
 	# F_prev = np.copy(F_etalon)
+end = time.time()
+print('Time for the high precision evaluations: ' + str(end - start), flush=True)
 
 dfull = np.abs(F_full/F_etalon - 1).astype(float)
 dapprox = np.abs(F_approx/F_etalon - 1).astype(float)
-print(A)
-print(dfull.max())
-print(dapprox.max())
+print('k = A*B ' + str(k))
+print('Maximum error using full formula: ' + str(dfull.max()))
+print('Maximum error using series approximation: ' + str(dapprox.max()))
 
 diff = np.concatenate((dfull, dapprox))
 max_diff = np.max(diff)
@@ -161,7 +168,7 @@ fig = plt.figure()
 # axes
 ax = plt.axes()
 ax.set_yscale('log')
-ax.set_ylim(r / 1e3, max_diff * 4)
+ax.set_ylim(q / 1e3, max_diff * 4)
 ax.scatter(omega, dfull, marker='o', c='b', s=6)
 ax.scatter(omega, dapprox, marker='o', c='g', s=6)
 ax.set_xlabel(r'$\omega$')
