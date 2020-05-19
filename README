@@ -31,7 +31,7 @@ Executables:
 
 Scripts:
 	Located in paint_atmospheres/pa/usr
-	Create the figures in [LB] that require spectra or intensity fits
+	Create Figures 3-10 in [LB]
 	Each contains instructions in the comments at the top of the file 
 
 References: 

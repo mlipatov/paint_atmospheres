@@ -14,7 +14,7 @@ import os
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
 		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.000 1.5707963267948966 150; " +\
-		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.08841")
+		"calc_spectra \'data/vega.pkl\' \'data/vega/\' -i 0.088418")
 	parser.add_argument("pkl_sfile", help="the pickled star file")
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
@@ -42,7 +42,7 @@ def run():
 		sys.exit("Please specify either a single inclination in radians (one number) " +\
 			"or a range specified by minimum, maximum and step (three numbers).")
 	elif li == 1:
-		inclinations = np.array([ i ])
+		inclinations = np.array( i )
 		# decimal precision of inclination for printout
 		prec = 6
 	elif li == 3:
