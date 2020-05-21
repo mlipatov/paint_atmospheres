@@ -8,6 +8,7 @@ from mpmath import mp
 import math
 import sys
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib import rc
 import time
 
@@ -54,6 +55,7 @@ def X1(omega, k, q):
 	# in case this estimate exceeds 1 by a little, bring it back to 1
 	output [output > 1] = 1
 	return output
+
 # helper function
 # inputs: an array of temperature correction values and 
 #	an array of x = abs(cos(theta)) values
@@ -89,12 +91,14 @@ def dF_approx(F, x, omega):
 
 nm = 15 # number of steps to run the double-precision versions of the algorithm
 nmp = 20 # number of steps to run the higher precision version
-omega_max = 0.999
-omega = np.linspace(0, omega_max, 200)
+# omega_max = 0.999
+delta = np.logspace(-3, 0, num=400, base=10)
+omega = np.flip(1 - delta)
+# omega = np.linspace(0, omega_max, 200)
 o2 = omega**2
 F0 = F_0(omega) # F at x = 0
 F1 = F_1(omega) # F at x = 1
-k = 1000 # a parameter for estimating this value of x
+k = 100 # a parameter for estimating this value of x
 q = np.finfo(float).eps # resolution of floating point numbers
 # optimal smallest value of x for which to compute using Newton's method
 xb = X1(omega, k, q)
@@ -159,6 +163,8 @@ diff = np.concatenate((dfull, dapprox))
 max_diff = np.max(diff)
 min_diff = np.min(diff)
 
+
+
 plt.rcParams.update({'font.size': 18})
 rc('font',**{'family':'serif','serif':['Computer Modern']})
 rc('text', usetex=True)
@@ -167,10 +173,21 @@ rc('text', usetex=True)
 fig = plt.figure()
 # axes
 ax = plt.axes()
+
 ax.set_yscale('log')
+ax.set_xscale('log')
+ax.invert_xaxis()
 ax.set_ylim(q / 1e3, max_diff * 4)
-ax.scatter(omega, dfull, marker='o', c='b', s=6)
-ax.scatter(omega, dapprox, marker='o', c='g', s=6)
-ax.set_xlabel(r'$\omega$')
+
+# ax.plot(1 - omega, dapprox, c='g')
+ax.scatter(1 - omega, dapprox, marker='o', facecolors='none', edgecolors='g', s=6)
+ax.scatter(1 - omega, dfull, marker='o', facecolors='b', edgecolors='b', s=6)
+
+om_label = [0, 0.9, 0.99, 0.999]
+ax.set_xticks(1 - np.asarray(om_label))
+ax.set_xticklabels(['%g' % x for x in om_label])
+ax.set_xlim(1.2, 1e-3 * 0.8)
+
+ax.set_xlabel(r'$1 - \omega$')
 ax.set_ylabel(r'$\left|\delta F(x_b) \,/\, F(x_b)\right|$', labelpad=5)
 fig.savefig(iodir + 'error_F.pdf', dpi=200, bbox_inches='tight')

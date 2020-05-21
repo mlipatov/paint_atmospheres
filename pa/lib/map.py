@@ -109,10 +109,10 @@ class Map:
 		return geff
 
 	# output: temperature correction factors (EL equation 26)
-	# 	at every value of z; runs the Newton's method algorithm that acts on the entire array 
-	# 	of z values that aren't too close to 0 at its every step; for values that 
-	# 	are close to 0, returns the temperature correction expected at z = 0
-	def F(self, z_arr, rho_arr, rho0, rho1, nm):
+	# inputs: array of z, corresponding array of rho, rho(z=0), rho(z=1),
+	#	number of steps in Newton's method, parameter that determines the
+	#	value of z that is close enough to zero to use approximate Newton's method
+	def F(self, z_arr, rho_arr, rho0, rho1, nm, k=100):
 		# output: smallest value of x for which to compute 
 		#	using full Newton's method step function; a.k.a. x_b
 		# inputs: rotational velocity of the star,
@@ -168,7 +168,6 @@ class Map:
 		x_arr = np.abs(z_arr / (surf.f * rho_arr)) 
 		# optimal smallest value of x for which to compute using Newton's method
 		q = np.finfo(float).eps # resolution of floating point numbers
-		k = 1000 # a parameter for estimating this value of x; optimized for the maximum omega
 		x1 = X1(omega, k, q)
 		# a mask that says which x elements are far enough from zero
 		# that we use the full Newton's method step function;
