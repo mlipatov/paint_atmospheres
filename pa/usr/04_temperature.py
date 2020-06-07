@@ -179,7 +179,6 @@ ax.set_xscale('log')
 ax.invert_xaxis()
 ax.set_ylim(q / 1e3, max_diff * 4)
 
-# ax.plot(1 - omega, dapprox, c='g')
 ax.scatter(1 - omega, dapprox, marker='o', facecolors='none', edgecolors='g', s=6)
 ax.scatter(1 - omega, dfull, marker='o', facecolors='b', edgecolors='b', s=6)
 
@@ -188,6 +187,6 @@ ax.set_xticks(1 - np.asarray(om_label))
 ax.set_xticklabels(['%g' % x for x in om_label])
 ax.set_xlim(1.2, 1e-3 * 0.8)
 
-ax.set_xlabel(r'$1 - \omega$')
+ax.set_xlabel(r'$\omega$')
 ax.set_ylabel(r'$\left|\delta F(x_b) \,/\, F(x_b)\right|$', labelpad=5)
 fig.savefig(iodir + 'error_F.pdf', dpi=200, bbox_inches='tight')

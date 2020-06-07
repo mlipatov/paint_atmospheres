@@ -1,3 +1,4 @@
+opt/
 data/*
 !data/.keep
 convergence.py

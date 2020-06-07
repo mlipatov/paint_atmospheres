@@ -74,7 +74,7 @@ ax = plt.axes()
 ax.ticklabel_format(axis='y', style='sci', scilimits=(0,0))
 for norm_flux, col in zip(norm_arr, colors):
 	ax.plot(norm_flux - 1, color=col, linewidth=3)
-ax.set(xlabel='Time (a.u.)', ylabel=r'$\mathcal{F}/\mathcal{F}_{max} - 1$')
+ax.set(xlabel='Time (arbitrary units)', ylabel=r'$\mathcal{F}/\mathcal{F}_{max} - 1$')
 
 # an inset showing the temperature of the visible surface and the transit line
 width, height = fig.get_size_inches() # dimensions of the figure in inches

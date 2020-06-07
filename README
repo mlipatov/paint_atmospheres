@@ -24,14 +24,11 @@ Executables:
 	calc_limbdark computes fits of intensity w.r.t surface inclination
 	calc_star performs inclination-independent computations
 	calc_spectra computes spectra for multiple inclinations
-	plot_spectra plots spectra 
-	convert_spectrum converts a spectrum between units
-	filter_spectra computes filter magnitudes of spectra
 	<command> -h provides usage instructions
 
 Scripts:
 	Located in paint_atmospheres/pa/usr
-	Create Figures 3-10 in [LB]
+	Create Figures 3-10 in [LB] and other figures
 	Each contains instructions in the comments at the top of the file 
 
 References: 

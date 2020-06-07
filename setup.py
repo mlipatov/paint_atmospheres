@@ -8,8 +8,6 @@ setup(
     entry_points={'console_scripts': [
     	'calc_limbdark=pa.calc_limbdark:run',
     	'calc_star=pa.calc_star:run',
-    	'calc_spectra=pa.calc_spectra:run',
-    	'plot_spectra=pa.plot_spectra:run',
-        'filter_spectra=pa.opt.filter_spectra:run'
+    	'calc_spectra=pa.calc_spectra:run'
     	]}
 )

@@ -90,7 +90,7 @@ class Star:
 		ft.set_muB(self.bounds)
 		# initialize the output
 		result = np.zeros( len(self.wavelengths) )
-		
+
 		## integrate the upper half, from z = 0 to z = 1
 		f = integrand(z_up, z1, a_up, A_up) # the integrand
 		# weights

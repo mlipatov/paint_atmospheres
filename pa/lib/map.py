@@ -83,6 +83,7 @@ class Map:
 		## compute the effective temperature in units of ( L / (4 pi sigma Re**2) )**(1/4), 
 		## as in EL eqn 31, for each z; then convert it to Kelvin
 		[F, F0, F1] = self.F(z, rho, rho0, rho1, nm) # temperature correction values
+
 		# temperatures
 		temp = self.mult_temp * ( geff * F )**(1./4)
 		# convert temperature values to a less memory-intensive data type

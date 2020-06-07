@@ -13,7 +13,7 @@ import glob
 import os
 
 nz = '100'
-om = '615' # or '999'
+om = '999' # '615' or '999'
 
 vmax = -2
 vmin = -5
