@@ -11,7 +11,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import rc
 
 w = 3000 # don't plot above this wavelength
-distance = 2.3694e19 # distance to vega in cm
 
 iodir = '../../' # location of the input/output directory
 
@@ -37,7 +36,7 @@ wl_syn, I_syn = np.loadtxt(iodir + 'data/vega/vega0_088418.txt').T
 
 m = wl_syn < w
 wl_syn = wl_syn[m]
-I_syn = I_syn[m] / distance**2 
+I_syn = I_syn[m]
 
 # a star without limb darkening information for the temperature plot
 star = st.Star(omega, luminosity, mass, Req, nz) 
@@ -52,7 +51,7 @@ I_obs = I_obs[m]
 wl_inc, I_inc = np.loadtxt(iodir + 'data/vega/vega1_570796.txt').T
 m = wl_inc < w
 wl_inc = wl_inc[m]
-I_inc = I_inc[m] / distance**2
+I_inc = I_inc[m]
 
 ## plot
 rc('font',**{'family':'serif','serif':['Computer Modern'],'size': 18})

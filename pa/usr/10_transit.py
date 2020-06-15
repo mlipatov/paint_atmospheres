@@ -14,22 +14,15 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 iodir = '../../' # location of the input/output directory
 
-# unpickle the limb darkening information
-with open(iodir + 'data/limbdark_m01.pkl', 'rb') as f:
+# unpickle the filtered limb darkening information, get the filter index
+with open(iodir + 'data/limbdark_m01f.pkl', 'rb') as f:
 	ld = pickle.load(f)
-# the spectrum wavelengths
-wl_arr = ld.wl_arr
-
-# the filter's discrete transmission values and corresponding wavelengths
-wlf, T = np.loadtxt(iodir + 'data/Generic_Bessell.V.dat').T
-F0 = 3.619e-9 # flux zero point for this filter
-filt = ut.Filter(T, wlf, F0)
+iV = ld.bands.index('V')
 
 # star parameters
-omega, luminosity, mass, Req = [0.838, 3020, 6.1, 9.16] # achernar
+omega, luminosity, mass, Req, distance = [0.838, 3020, 6.1, 9.16, 1.319e20] # achernar
 inclination = np.pi/3
 n_z = 100
-distance = 1.319e20
 # transit parameters
 b_arr = [-0.3, 0.6]
 alpha_arr = [np.pi/3, 0]
@@ -39,21 +32,22 @@ n = 200 # number of time points
 ns_arr = [7, 7] # number of sight lines per time point
 
 # create star
-star = st.Star(omega, luminosity, mass, Req, n_z, ld) 
-# compute its spectrum
-star_light = star.integrate(inclination)
-# flux
-star_flux = filt.flux(star_light, wl_arr, distance)
+star = st.Star(omega, luminosity, mass, Req, distance, n_z, ld) 
+# compute its magnitude
+V = star.integrate(inclination)[iV]
+# convert magnitudes to dimension-less flux
+star_flux = 10**(V / -2.5)
+# # flux
+# star_flux = filt.flux(star_light, wl_arr, distance)
 # transit flux, normalized
 norm_arr = []
 # compute normalized transit spectra
 for b, alpha, ns in zip(b_arr, alpha_arr, ns_arr):
 	# transit info
 	tr = st.Transit(b, alpha, radius, n)
-	# spectra of blocked light
+	# dimension-less blocked light
 	# index 0: location
-	# index 1: wavelength
-	blocked_flux = star.transit(inclination, distance, tr, ld, filt, ns=ns)
+	blocked_flux = star.transit(inclination, tr, ld, 'V', ns=ns)
 	# subtract the transit spectrum from the star spectrum
 	transit_flux = star_flux - blocked_flux
 	# normalize the fluxes by their maxima

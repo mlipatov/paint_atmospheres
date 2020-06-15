@@ -8,13 +8,14 @@ import pickle
 def run():
 	parser = argparse.ArgumentParser(description="Example: \n" +\
 		"calc_star \'data/limbdark_m01.pkl\' \'data/vega.pkl\' " +\
-		"0.6151 40.346 2.165 2.815 100")
+		"0.6151 40.346 2.165 2.815 2.3694e19 100")
 	parser.add_argument("ld_file", help="the limb darkening .pkl file to access")
 	parser.add_argument("output", help="an output file containing the pickled star")
 	parser.add_argument("omega", help="rotation speed divided by its Keplerian value at the equator", type=float)
 	parser.add_argument("luminosity", help="luminosity in solar luminosities", type=float)
 	parser.add_argument("mass", help="mass in solar masses", type=float)
 	parser.add_argument("Req", help="equatorial radius in solar radii", type=float)
+	parser.add_argument("d", help="distance in cm", type=float)	
 	parser.add_argument("nz", help="number of z coordinates in the upper hemisphere (normally 100)", type=int)
 	parser.add_argument("-t", help="temperature interpolation: 0=planck(default), 1=linear, 2=log", type=int, \
 			default=0)
@@ -30,6 +31,7 @@ def run():
 	luminosity = args.luminosity # luminosity of the star in solar luminosities
 	mass = args.mass # mass of the star in solar masses
 	Req = args.Req # equatorial radius of the star in solar radii
+	distance = args.d # distance to the star in cm
 	# integration parameter
 	nz = args.nz
 	# temperature interpolation parameter
@@ -53,7 +55,7 @@ def run():
 	## For a star with given physical parameters, resolution of map, 
 	## and limb darkening information, pre-compute quantities that are needed for 
 	## integrating the starlight and are independent of the inclination
-	st = star.Star(omega, luminosity, mass, Req, nz=nz, ld=ld, temp_method=tm, nm=nm)
+	st = star.Star(omega, luminosity, mass, Req, distance, nz=nz, ld=ld, temp_method=tm, nm=nm)
 
 	### Pickle the star
 	with open(pkl_sfile, 'wb') as f:

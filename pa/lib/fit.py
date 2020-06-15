@@ -75,9 +75,8 @@ def fit(I_arr):
 	return alpha
 
 # output: a 2D array of intensity values (location x wavelength)
-# units: ergs/cm2(surf)/s/hz/ster
 # inputs: a 1D array of mu values (corresponding to locations)
-# 	a 3D array of fit parameters (location x wavelength x parameter index)
+# 	a 2D array of fit parameters for some band/filter (location x parameter index)
 # note: mu has to be in [0, 1]
 def I(mu, p):
 	# 2D array of functions evaluated at different locations
@@ -90,15 +89,13 @@ def I(mu, p):
 	i = np.searchsorted(muB_arr, mu, side='right') - 1 
 	# reshape the parameter array to distinguish between functions on different intervals
 	sh = p.shape
-	# # 0: location
-	# # 1: wavelength
-	# # 2: interval
-	# # 3: function
-	params = p.reshape( (sh[0], sh[1], m, n) )
-	# params = p.reshape( (m, n) )
-	# at each location, in the corresponding interval, for each wavelength, 
+	# 0: location
+	# 1: interval
+	# 2: function
+	params = p.reshape( (sh[0], m, n) )
+	# at each location, in the corresponding interval, 
 	# sum up the product of fit parameters and functions of mu
-	output = np.sum(f_mu[ :, np.newaxis, : ] * params[ np.arange(sh[0]), :, i, : ], axis=2)
+	output = np.sum(f_mu * params[ np.arange(sh[0]), i, : ], axis=-1)
 	return output
 
 # For each function of the fit on each mu interval of the fit, 

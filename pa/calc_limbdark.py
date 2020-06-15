@@ -4,25 +4,33 @@
 from pa.lib import limbdark
 import argparse
 import pickle
+import glob
 
 def run():
-	parser = argparse.ArgumentParser(description="Example: \n" +\
-		"calc_limbdark \'data/im01k2.pck\' \'data/limbdark_m01.pkl\' -b 0.1 0.4 -s")
-	parser.add_argument("ldfile", help="an existing file with limb darkening information")
-	parser.add_argument("pkl_lfile", help="name for a .pkl file with limb darkening information to create")
-	parser.add_argument('-b', type=float, nargs='+', help='list of boundaries between intervals', required=True)
-	parser.add_argument("-s", help="save the original discrete intensities in the .pkl file", 
+	parser = argparse.ArgumentParser(description="Examples: \n" +\
+		"calc_limbdark data/im01k2.pck data/limbdark_m01f.pkl 0.1 0.4 -f data/filters/; " +\
+		"calc_limbdark data/im01k2.pck data/limbdark_m01.pkl 0.1 0.4 -s")
+	parser.add_argument("ldfile", help="an existing file with intensities on an atmosphere grid")
+	parser.add_argument("pkl_lfile", help="name for an output .pkl file with limb darkening fits")
+	parser.add_argument('bounds', type=float, nargs='+', help='list of boundaries between intervals')
+	parser.add_argument("-f", help="directory with filter files")
+	parser.add_argument("-s", help="save the discrete intensities in the .pkl file", 
 						action="store_true")
 	args = parser.parse_args()
 
 	pkl_lfile = args.pkl_lfile # limb darkening pickle file
 	ldfile = args.ldfile # file with limb darkening information
-	bounds = args.b # list of boundaries of separate intervals for the fits
-	save = args.s # save the intensity data
+	bounds = args.bounds # list of boundaries of separate intervals for the fits
+	save = args.s # whether to save the intensity data
+	if args.f is not None:
+		filtfiles = glob.glob(args.f + "*")
+		filtfiles.sort()
+	else:
+		filtfiles = []
 
 	## Load the limb darkening information, calculate the fits and perform checks
 	## (about 4 - 6 seconds to calculate the fits)
-	ld = limbdark.LimbDark(ldfile, bounds, save)
+	ld = limbdark.LimbDark(ldfile, filtfiles, bounds, save)
 
 	### Pickle the limb darkening information
 	with open(pkl_lfile, 'wb') as f:

@@ -78,7 +78,7 @@ def run():
 			sys.stdout.flush()
 		# current inclination
 		inc = inclinations[i] 
-		# calculate the spectrum
+		# calculate the spectrum or the magnitudes
 		light = st.integrate(inc, method=m)
 
 		# create this file if it doesn't exist, open it for writing
@@ -92,11 +92,19 @@ def run():
 		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		# write the spectrum to the file
 		f.write('\n')
-		f.write('# wavelength(nm)\tflux(ergs/s/Hz/ster)\n') 
-		for j, w in np.ndenumerate(wl):
-			f.write( str(w) )
-			f.write('\t %.5E' % light[j])
-			f.write('\n')
+		if len(st.bands) == 0: # spectrum mode
+			f.write('# wavelength(nm)\tflux(ergs/s/Hz/ster)\n') 
+			for j, w in np.ndenumerate(wl):
+				f.write( str(w) )
+				f.write('\t %.5E' % light[j])
+				f.write('\n')
+		else: # photometry mode
+			f.write('# filter\twavelength(nm)\tmagnitude\n') 
+			for j, w in enumerate(wl):
+				f.write( st.bands[j] )
+				f.write('\t %.6g' % w )
+				f.write('\t %.4f' % light[j])
+				f.write('\n')
 		f.close()
 		
 # in case we are running this file as the main program

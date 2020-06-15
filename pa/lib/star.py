@@ -18,13 +18,18 @@ class Star:
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	
 	Performs the 1D integration in the z dimension.
 	Paints the temperature across the surface of the star."""
-	def __init__(self, omega, luminosity, mass, Req, nz=100, ld=None, temp_method='planck', g_method='log', nm=15):
+	def __init__(self, omega, luminosity, mass, Req, distance, \
+			nz=100, ld=None, temp_method='planck', g_method='log', nm=15):
+
 		if ld is not None:
+			self.bands = ld.bands # band names (photometry mode)
+			self.F0 = ld.F0 # flux zero points (photometry mode)
 			self.wavelengths = ld.wl_arr # wavelengths
 			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity
 		self.mass = mass
 		self.Req = Req # equatorial radius, in solar radii
+		self.distance = distance # distance to the star in cm
 		# information about the surface shape of the star and its inclination
 		self.surface = sf.Surface(omega)
 		# an additive constant for log g and a multiplicative constant for Teff
@@ -36,7 +41,7 @@ class Star:
 
 	# for a given inclination,
 	# using the pre-calculated mapped features, integrate to find the light at all wavelengths,
-	# in ergs/s/Hz/ster;
+	# in ergs/s/Hz/ster; or magnitudes in all bands, from flux in ergs/s/cm^2
 	# uses the integration formulas from Numerical Recipes from sections 4.1.1 - 4.1.4
 	# also allows a modified midpoint rule.
 	def integrate(self, inclination, method='cubic'):
@@ -148,8 +153,13 @@ class Star:
 						wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
 						result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
-		# return the result in the appropriate units
-		return result * (self.Req * ut.Rsun)**2
+		# convert from Req^2 to cm^2 (area of the star)
+		# and from per steradian to per cm^2 (area of the photodetector)
+		result *= (self.Req * ut.Rsun)**2 / self.distance**2
+		if len(self.bands) > 0: # if in photometry mode
+			result /= self.F0 # normalize by the flux zero points
+			result = -2.5 * np.log10( result ) # compute magnitudes
+		return result
 
 	# paint the temperature of the visible surface of the star
 	# 	on a set of axes
@@ -215,19 +225,19 @@ class Star:
 			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal', ticks=ticks)
 			cb.set_label(r'Temperature, $10^3$ K')
 
-	# output: flux in zero flux units from a series of points on the surface of a star
+	# output: normalized flux from a series of points on the surface of a star
 	#	covered by a planet
 	# inputs: inclination of the star's rotation axis
 	#	distance to the star
 	#	planetary transit information
 	#	limb darkening information
-	#	filter information
+	#	filter name (e.g. 'V')
 	#	number of points in the shadow of a planet where to calculate intensities (1, 7, 19 or >19)
 	# 	number of iterations of Newton's method
 	# requres: -pi / 2 <= alpha <= pi / 2
 	# notes: the computation of intensity for each point is much more time-consuming than
 	#	the computation of the point itself
-	def transit(self, inclination, distance, tr, ld, filt, ns=7, nm=15):
+	def transit(self, inclination, tr, ld, filname, ns=7, nm=15):
 		# radius of the planet
 		radius = tr.radius
 		## notes: we work in the viewplane coordinates 
@@ -296,28 +306,32 @@ class Star:
 		# a, b, mu arrays for the points where intensity is calculated
 		a_arr, b_arr = self.surface.ab(z_arr)
 		mu_arr = a_arr * cos_phi + b_arr	
+
+		iF = ld.bands.index(filname) # index of the filter
 		## intensity fit parameters
 		# 0: point index
 		# 1: wavelength index
 		# 2: parameter index
-		params_arr = self.map.Tp( z_arr, r_arr, ld, nm )[1]
+		params_arr = self.map.Tp( z_arr, r_arr, ld, nm )[1][:, iF, :]
 		sh = np.shape(params_arr)
 		ft.set_muB(self.bounds) # set the bounds between mu intervals in intensity fits
-		## flux in erg/s/Hz/ster
+		## un-normalized flux
 		# 0: point index
 		# 1: wavelength index
-		flux_ster = ft.I(mu_arr, params_arr) * np.pi * radius**2 * (self.Req * ut.Rsun)**2
+		flux = ft.I(mu_arr, params_arr) * np.pi * radius**2
+		# convert from Req^2 to cm^2 (area of the star)
+		# and from per steradian to per cm^2 (area of the photodetector)
+		flux *= (self.Req * ut.Rsun)**2 / self.distance**2
+		flux /= self.F0[iF] # normalize by the flux zero points
+		flux_arr[mask] = flux
 
-		# flux in erg/s/Hz/cm**2
-		# 0: point index
-		flux_arr[ mask ] = filt.flux(flux_ster, ld.wl_arr, distance)
 		# reshape the flux array according to belonging to different planet shadows
 		# and sum the fluxes from different sightlines for a given shadow
-		flux = np.sum( np.reshape(flux_arr, (tr.n, ns)), axis=1 )
+		flux_arr = np.sum( np.reshape(flux_arr, (tr.n, ns)), axis=1 )
 		# divide the flux by the number of points in a planet's shadow
-		flux = flux / ns 
-		# return the fluxes
-		return flux
+		flux_arr = flux_arr / ns
+		# compute magnitudes and return
+		return flux_arr
 
 class Transit:
 	""" Information pertaining to a planetary transit:

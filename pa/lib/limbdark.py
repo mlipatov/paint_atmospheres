@@ -2,9 +2,10 @@ from pa.lib import util as ut
 from pa.lib import fit as ft
 import numpy as np
 import sys, time
+import linecache
 
 # given the name of a file provided by Castelli and Kurucz 2004,
-# output arrays of wavelengths, mu, values of log g, temperatures, intensities and 
+# output arrays of wavelengths in nm, mu, values of log g, temperatures, intensities and 
 #     an array specifying which values of temperature each log g has 
 #    (this contains a -1 for each combination of temperature and log g that doesn't exist)
 # all arrays other than the intensity array should be sorted
@@ -83,21 +84,71 @@ def getdata(filename):
 
 
 class LimbDark:
-    """ Class containing all limbdarkening information.
+    """ 
+    Limb darkening fits.
+
     Uses single-precision floating point to conserve space. Specifically, uses python's numpy.float32, which
     is precise to 6 decimal digits; Kurucz gives 5 decimal digits for each intensity, so that the derived 
-    coefficients of intensity fits are only meaningful to 5 decimal digits. """
+    coefficients of intensity fits are only meaningful to 5 decimal digits.
+    
+    Admits two configurations:
+    1. Spectrum. Contains fits of specific intensities to viewing angle, at every T, g and lambda.
+        Optionally, contains the original intensity grid at every T, g, lambda and mu.
+    2. Photometry. Contains fits of filtered intensities to viewing angle, at every T, g and band.
+        Also contains the additive magnitude offset for every band.
+     """
 
-    # initialize with a file containing the limb darkening information from Castelli and Kurucz 2004
-    def __init__(self, datafile, bounds, save):
-        wl_arr, g_arr, temp_arr, I_arr = getdata(datafile)
-        self.wl_arr = wl_arr
+    # initialize
+    # Inputs: a file with limb darkening grids from Castelli and Kurucz 2004
+    #   bounds that define a partition of mu's range
+    #   list of files with band transmission curves and flux zero points (photometry mode)
+    #   whether to save intensity values at mu grid points
+    # Fields:
+    #   gravity and temperature arrays
+    #   mu partition bounds
+    #   wavelengths (spectrum mode)
+    #   bands (photometry mode)
+    #   magnitude offsets (photometry mode)
+    #   discrete intensities on g, T, lambda/band, mu grid (save option) 
+    def __init__(self, ldfile, filtfiles, bounds, save):
+        # wavelengths in nm, gravities, temperatures, intensities in erg cm^-2 s^-1 Hz^-1 ster^-1
+        wl_arr, g_arr, temp_arr, Ilam = getdata(ldfile)
         self.g_arr = g_arr
         self.temp_arr = temp_arr
         self.bounds = bounds
-        if save:
-            self.I_arr = I_arr
         ft.set_muB(bounds)
+
+        bands = [] # names
+        F0 = [] # flux zero points
+        if len(filtfiles) == 0: # spectrum mode
+            self.wl_arr = wl_arr # wavelengths are given, in nm
+            I = Ilam # use the specific intensity at each wavelength
+        else: # photometry mode
+            # array with band intensities
+            Iband = []
+            # make the wavelength the last dimension in the intensity array
+            Ilam = np.moveaxis(Ilam, 0, -1)
+            # band parameters
+            wl_band = [] # wavelengths
+            for file in filtfiles: # for every band
+                # band name
+                bands.append( linecache.getline(file, 2).strip('# \n') )
+                # zero pt flux, converted from erg cm^-2 s^-1 A^-1 to erg cm^-2 s^-1 nm^-1
+                F0.append( float(linecache.getline(file, 3).strip('# \n').split()[-1]) * 10. )
+                # characteristic wavelength, converted from A to nm
+                wl_band.append( float(linecache.getline(file, 4).strip('# \n').split()[-1]) / 10. )
+                # transmission curve, wavelengths converted from A to nm
+                wlf, T = np.loadtxt(file).T
+                wlf = wlf / 10.
+                # intensities in erg cm^-2 s^-1 nm^-1 ster^-1, with the wavelength dimension filtered out 
+                Iband.append( ut.filter(Ilam, wl_arr, T, wlf) )
+            self.wl_arr = wl_arr = np.array(wl_band) # one wavelength for each band
+            I = np.array( Iband ) # a filtered intensity at each band
+        self.bands = bands # record band names
+        self.F0 = np.array(F0) # record flux zero points
+
+        if save:
+            self.I_arr = I # record the discrete intensities
 
         n_temp = len(temp_arr)
         n_g = len(g_arr)
@@ -111,9 +162,8 @@ class LimbDark:
         # index 4 : fit parameter index (if applicable).
         self.fit_params = \
             np.full( (n_temp, n_g, n_wl, n_param), np.nan, dtype=np.float32 ) 
-        # for each combination of wavelength, gravity and temperature, initialize a fit object, 
-        # thus calculating the fit at these values; record the fit parameters in the array needed for 
-        # interpolation
+        # for each combination of wavelength, gravity and temperature, calculate the fit at these values; 
+        # record the fit parameters in the array needed for interpolation
         print ("Computing fits of intensity versus mu. ")
         sys.stdout.flush()
         start = time.time()
@@ -121,10 +171,10 @@ class LimbDark:
             ut.printf(str(ind_g) + " out of " + str(n_g) + " gravity values completed.\n")
             sys.stdout.flush()
             for ind_temp in np.arange(n_temp):
-                if not np.isnan(I_arr[0, 0, ind_g, ind_temp]):
+                if not np.isnan(I[0, 0, ind_g, ind_temp]):
                     fp = np.empty( (n_wl, n_param) )
                     for ind_wl in np.arange(n_wl):
-                        I_slice = I_arr[ind_wl, :, ind_g, ind_temp] # get the intensities at different mus
+                        I_slice = I[ind_wl, :, ind_g, ind_temp] # get the intensities at different mus
                         wl = wl_arr[ind_wl]
                         g = g_arr[ind_g]
                         temp = temp_arr[ind_temp]
