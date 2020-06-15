@@ -1,4 +1,6 @@
-# PARS (Paint the Atmospheres of Rotating Stars)
+<img src="logo.png" width="20%">
+
+# Paint the Atmospheres of Rotating Stars
 
 Authors: 
 	Timothy D. Brandt
