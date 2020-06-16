@@ -88,7 +88,7 @@ ls ../../vega_colormag.pdf
 
 #### Scripts
 
-These create figures 3 - 10 in [LB].
+These create figures 3 - 10 in [LB] (see References below).
 
 * Intensity vs. viewing angle, goodness of fit checks: [1](pa/usr/03a_Imu_fits_min.py) followed by [2](03b_Imu_fits.py)
 * [Temperature error](pa/usr/04_temperature.py)
