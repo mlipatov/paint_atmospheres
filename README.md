@@ -15,7 +15,7 @@ The following instructions describe how to install PARS on macOS 10.15.4. These 
 
 ### Installation
 
-Go to the directory where you want to install PARS, clone it into that directory, and go to the software's top directory.
+Go to the directory where you want to install PARS, clone it in that directory, and go to the software's top directory.
 ```
 cd <directory name>
 git clone https://github.com/mlipatov/paint_atmospheres
@@ -60,7 +60,7 @@ Perform the inclination-dependent computations.
 calc_spectra 'data/vega.pkl' 'data/vega/' -i 0.088418
 ```
 
-Look at the resulting spectrum
+Look at the resulting spectrum.
 ```
 cat data/vega/*.txt | more
 ```
