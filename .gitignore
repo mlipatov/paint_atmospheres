@@ -1,6 +1,8 @@
 opt/
 data/*
-!data/.keep
+!data/filters/
+data/filters/*
+!data/filters/Generic_Bessell.V.dat
 convergence.py
 *.pyc
 *__pycache__
