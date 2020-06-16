@@ -2,7 +2,7 @@
 
 # Paint the Atmospheres of Rotating Stars (PARS)
 
-This software quickly computes magnitudes and spectra of rotating stellar models. The models incorporate **a Roche model of mass distribution** (in which all mass is at the center of the star), **solid body rotation**, and **collinearity of effective gravity and energy flux**.
+This software quickly computes magnitudes and spectra of rotating stellar models. The models incorporate **Roche mass distribution** (where all mass is at the center of the star), **solid body rotation**, and **collinearity of effective gravity and energy flux**.
 
 ## Getting Started
 
@@ -13,7 +13,7 @@ The following instructions describe how to install PARS on macOS 10.15.4. These 
 * git
 * python 3
 
-### Installing
+### Installation
 
 Go to the directory where you want to install PARS, clone it into that directory, and go to the software's top directory.
 ```
@@ -45,7 +45,7 @@ The following instructions describe how to access the functionality of PARS in s
 
 ### Compute a Spectrum
 
-Compute fits of intensity versus surface inclination from the limb darkening information.
+Compute fits of intensity versus viewing angle from the limb darkening information.
 ```
 calc_limbdark data/im01k2.pck data/limbdark_m01.pkl 0.1 0.4
 ```
@@ -65,53 +65,51 @@ Look at the resulting spectrum
 cat data/vega/*.txt | more
 ```
 
-### Compute magnitudes
+### Compute Magnitudes
 
-Create files with filter transmission curves, such as [](other_file.md)
+Create files with filter transmission curves, such as [data/filters/Generic_Bessell.V.dat](data/filters/Generic_Bessell.V.dat)
 
-### Break down into end to end tests
-
-Explain what these tests test and why
-
+Compute fits of *filtered* intensity versus surface inclination, then follow the same steps as above.
 ```
-Give an example
-```
-
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
+calc_limbdark data/im01k2.pck data/limbdark_m01f.pkl 0.1 0.4 -f data/filters/
+calc_star 'data/limbdark_m01.pkl' 'data/vega.pkl' 0.6151 40.346 2.165 2.815 2.3694e19 100
+calc_spectra 'data/vega.pkl' 'data/vega/' -i 0.088418
+cat data/vega/*.txt | more
 ```
 
+### Run Sample Scripts
 
-Features:
-	a closed-form expression for the azimuthal integral,
-	a high-order approximation of the longitudinal integral,
-	a precise calculation of surface effective temperature.
+Go to the directory with scripts, run a script, look at the result.
+```
+cd pa/usr/
+python 09_colormag_inclinations.py
+ls ../../vega_colormag.pdf
+```
 
-Executables:
-	calc_limbdark computes fits of intensity w.r.t surface inclination
-	calc_star performs inclination-independent computations
-	calc_spectra computes spectra for multiple inclinations
-	<command> -h provides usage instructions
+#### Scripts
 
-Scripts:
-	Located in paint_atmospheres/pa/usr
-	Create Figures 3-10 in [LB] and other figures
-	Each contains instructions in the comments at the top of the file 
+These create figures 3 - 10 in [LB].
+
+* Intensity vs. viewing angle, goodness of fit checks: [1](pa/usr/03a_Imu_fits_min.py) followed by [2](03b_Imu_fits.py)
+* [Temperature error](pa/usr/04_temperature.py)
+* Error due to interpolation in [temperature](pa/usr/05a_temperature_interpolation.py) and [gravity](pa/usr/05b_gravity_interpolation.py)
+* [Convergence of the longitudinal integral](pa/usr/06_convergence.py)
+* [Error in the longitudinal integral](pa/usr/07_error_heat_map.py)
+* [Comparison with an observed spectrum](pa/usr/08_vega_spectrum_comparison.py)
+* [Color-magnitude diagram for a range of inclinations](pa/usr/09_colormag_inclinations.py)
+* [Planetary transits](pa/usr/10_transit.py)
 
 ## Authors
 
 * **Timothy D. Brandt**
 * [Mikhail Lipatov](https://github.com/mlipatov/)
 
-References: 
-	Lipatov M & Brandt TD, Submitted to ApJ [LB]
-	Espinosa Lara F & Rieutord M (2011), A&A, 533, A43
-	Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 
-	http://mathworld.wolfram.com/CubicFormula.html
-	Wikipedia:Bilinear interpolation:Algorithm
-	Wikipedia:Newton's method
-	Press WH et al, Numerical Recipes, 3rd ed. (2007) 
+## References 
+	
+* Lipatov M & Brandt TD, Submitted to ApJ [LB]
+* Espinosa Lara F & Rieutord M (2011), A&A, 533, A43
+* Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 
+* [Wolfram World: Cubic Formula](http://mathworld.wolfram.com/CubicFormula.html)
+* [Wikipedia: Bilinear interpolation: Algorithm](https://en.wikipedia.org/wiki/Bilinear_interpolation#Algorithm)
+* [Wikipedia: Newton's Method](https://en.wikipedia.org/wiki/Newton%27s_method)
+* Press WH et al, Numerical Recipes, 3rd ed. (2007) 
