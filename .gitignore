@@ -1,4 +1,3 @@
-opt/
 data/*
 !data/filters/
 data/filters/*
