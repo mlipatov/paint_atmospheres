@@ -11,7 +11,7 @@ The following instructions describe how to install PARS on macOS 10.15.4. These 
 ### Prerequisites
 
 * git
-* python 3
+* python
 
 ### Installation
 
