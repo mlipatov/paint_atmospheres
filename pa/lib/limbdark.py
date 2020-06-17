@@ -2,7 +2,7 @@ from pa.lib import util as ut
 from pa.lib import fit as ft
 import numpy as np
 import sys, time
-import linecache
+import re
 
 # given the name of a file provided by Castelli and Kurucz 2004,
 # output arrays of wavelengths in nm, mu, values of log g, temperatures, intensities and 
@@ -131,12 +131,15 @@ class LimbDark:
             # band parameters
             wl_band = [] # wavelengths
             for file in filtfiles: # for every band
+                f = open(file)
+                filetext = f.read()
+                f.close()
                 # band name
-                bands.append( linecache.getline(file, 2).strip('# \n') )
+                bands.append( re.search("# name.*", filetext)[0].split(':')[-1].strip() )
                 # zero pt flux, converted from erg cm^-2 s^-1 A^-1 to erg cm^-2 s^-1 nm^-1
-                F0.append( float(linecache.getline(file, 3).strip('# \n').split()[-1]) * 10. )
+                F0.append( float(re.search("# flux zero point.*", filetext)[0].split(':')[-1].strip()) * 10. )
                 # characteristic wavelength, converted from A to nm
-                wl_band.append( float(linecache.getline(file, 4).strip('# \n').split()[-1]) / 10. )
+                wl_band.append( float(re.search("# mean wavelength.*", filetext)[0].split(':')[-1].strip()) / 10. )
                 # transmission curve, wavelengths converted from A to nm
                 wlf, T = np.loadtxt(file).T
                 wlf = wlf / 10.

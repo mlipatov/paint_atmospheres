@@ -344,7 +344,7 @@ class Map:
 
 		# set the extrapolation info
 		if np.any(extra):
-			extr_info = np.stack( (self.z_arr[extra], g_arr[extra], temp_arr[extra]), axis=-1)
+			extr_info = np.stack( (self.z_up[extra], g_arr[extra], temp_arr[extra]), axis=-1)
 		else: 
 			extr_info = None
 

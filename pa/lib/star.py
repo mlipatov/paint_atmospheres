@@ -124,34 +124,41 @@ class Star:
 		elif method == 'cubic':
 			# the difference between the lowest z and the lower integration bound
 			d = z_dn[0] + z1
-			if nzd == 1: # only one integrand value
-				# use a linear approximation for the entire integral between -z1 and 0
-				result += 0.5 * d * f[0]
-			else: # at least two integrand values
-				# coefficients of the quadratic through (-z1, 0) and
+			# if this difference is not zero and there are at least two integrand values
+			if d != 0 and nzd > 1:
+				# compute the coefficients of the quadratic through (-z1, 0) and
 				# the first two integrand values, shifted horizontally to go through (0, 0)
 				a = ( -f[0] / d 			+ f[1] / (d + dz) ) 	/ dz
 				b = ( f[0] * (d + dz) / d 	- f[1] * d / (d + dz) ) / dz
-				if nzd == 2: # only two integrand values
-					# use the quadratic approximation of the integral
+
+			if nzd == 1: # one integrand value
+				# a linear approximation for the entire integral between -z1 and 0
+				result += 0.5 * d * f[0]
+			elif nzd == 2: # two integrand values
+				if d != 0:
+					# the quadratic approximation of the entire integral
 					result += (a / 3) * z1**3 + (b / 2) * z1**2
-				else: # at least three integrand values
-					# use the coefficients of the above quadratic for the integral up to the first z
+				else:
+					# a linear approximation, different inputs than above
+					result += 0.5 * dz * f[1]
+			else: # at least three integrand values
+				if d != 0:
+					# the quadratic approximation for the integral up to the first z
 					result += (a / 3) * d**3 + (b / 2) * d**2
-					# use a closed formula for the integral between the first and the last z
-					if nzd == 3:
-						# regular 3-point Simpson's rule
-						result += dz * (f[0] + 4. * f[1] + f[2]) / 3
-					elif nzd == 4:
-						# Simpson's 3/8 rule
-						result += dz * (3 * f[0] + 9 * f[1] + 9 * f[2] + 3 * f[3]) / 8
-					elif nzd == 5:
-						# Bode's rule
-						result += dz * (14 * f[0] + 64 * f[1] + 24 * f[2] + 64 * f[3] + 14 * f[4]) / 45
-					else: # at least 6 integrand values
-						# 4.1.14 in Numerical Recipes
-						wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
-						result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
+				# plus a closed formula for the integral between the first and the last z
+				if nzd == 3:
+					# regular 3-point Simpson's rule
+					result += dz * (f[0] + 4. * f[1] + f[2]) / 3
+				elif nzd == 4:
+					# Simpson's 3/8 rule
+					result += dz * (3 * f[0] + 9 * f[1] + 9 * f[2] + 3 * f[3]) / 8
+				elif nzd == 5:
+					# Bode's rule
+					result += dz * (14 * f[0] + 64 * f[1] + 24 * f[2] + 64 * f[3] + 14 * f[4]) / 45
+				else: # at least 6 integrand values
+					# 4.1.14 in Numerical Recipes
+					wts[ [0, 1, 2] ] = wts[ [-1, -2, -3] ] = [3./8, 7./6, 23./24]
+					result += dz * np.sum(wts[:, np.newaxis] * f, axis=0)
 
 		# convert from Req^2 to cm^2 (area of the star)
 		# and from per steradian to per cm^2 (area of the photodetector)

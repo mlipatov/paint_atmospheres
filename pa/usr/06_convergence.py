@@ -30,16 +30,16 @@ n_z = np.logspace(low, high, num=m, base=2.)
 
 diff_trap = []
 diff_cubic = []
-omega, luminosity, mass, Req, inclination = [0.6151, 40.346, 2.165, 2.815, math.pi/4]
+omega, luminosity, mass, Req, distance, inclination = [0.6151, 40.346, 2.165, 2.815, 2.3694e19, math.pi/4]
 
 print("calculating the etalon spectrum with N = 10,000...")
-st = star.Star(omega, luminosity, mass, Req, 1e4, ld=ld)
+st = star.Star(omega, luminosity, mass, Req, distance, 1e4, ld=ld)
 ref = st.integrate(inclination, method='cubic')
 mask = ref > 0
 
 print("calculating the flux at the indicator wavelength")
 for i, n in np.ndenumerate(n_z):
-	st = star.Star(omega, luminosity, mass, Req, n, ld=ld)
+	st = star.Star(omega, luminosity, mass, Req, distance, n, ld=ld)
 
 	light = st.integrate(inclination, method='cubic')
 	sd = np.abs(1 - light[ind] / ref[ind])

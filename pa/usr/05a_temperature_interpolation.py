@@ -43,7 +43,7 @@ print('Masses in solar masses ' + str(M))
 print('Radii in solar radii ' + str(R))
 
 # stars with linear temperature interpolaion and full limb darkening information
-stars = [st.Star(omega, l, m, r, n, ld=ld) for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld) for l, m, r in zip(L, M, R)]
 # the light from such stars
 light = np.array([s.integrate(inclination) for s in stars])
 
@@ -57,17 +57,17 @@ ld.fit_params = np.delete(ld.fit_params, ind_temp, axis=0)
 ld.temp_arr = np.delete(ld.temp_arr, ind_temp)
 
 # stars with linear temperature interpolaion and missing limb darkening information
-stars = [st.Star(omega, l, m, r, n, ld=ld, temp_method='linear') for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld, temp_method='linear') for l, m, r in zip(L, M, R)]
 # the light from such stars
 light_miss = np.array([s.integrate(inclination) for s in stars])
 
 # stars with missing limb darkening information and logarithmic temperature interpolation
-stars = [st.Star(omega, l, m, r, n, ld=ld, temp_method='log') for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld, temp_method='log') for l, m, r in zip(L, M, R)]
 # integrate the stars
 light_miss_log = np.array([ s.integrate(inclination) for s in stars ])
 
 # stars with missing limb darkening information and planck function temperature interpolation
-stars = [st.Star(omega, l, m, r, n, ld=ld, temp_method='planck') for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld, temp_method='planck') for l, m, r in zip(L, M, R)]
 # integrate the stars
 light_miss_planck = np.array([ s.integrate(inclination) for s in stars ])
 

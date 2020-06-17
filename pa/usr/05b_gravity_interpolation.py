@@ -44,7 +44,7 @@ print('Masses in solar masses ' + str(M))
 print('Radii in solar radii ' + str(R))
 
 # stars with linear temperature interpolaion and full limb darkening information
-stars = [st.Star(omega, l, m, r, n, ld=ld) for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld) for l, m, r in zip(L, M, R)]
 # the light from such stars
 light = np.array([s.integrate(inclination) for s in stars])
 
@@ -58,12 +58,12 @@ ld.fit_params = np.delete(ld.fit_params, ind_g, axis=1)
 ld.g_arr = np.delete(ld.g_arr, ind_g)
 
 # stars with missing limb darkening information and log gravity interpolation
-stars = [st.Star(omega, l, m, r, n, ld=ld) for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld) for l, m, r in zip(L, M, R)]
 # the light from such stars
 light_log = np.array([s.integrate(inclination) for s in stars])
 
 # stars with missing limb darkening information and linear gravity interpolation
-stars = [st.Star(omega, l, m, r, n, ld=ld, g_method='lin') for l, m, r in zip(L, M, R)]
+stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld, g_method='lin') for l, m, r in zip(L, M, R)]
 # the light from such stars
 light_lin = np.array([s.integrate(inclination) for s in stars])
 
