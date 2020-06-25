@@ -39,7 +39,7 @@ calc_star -h
 calc_spectra -h
 ```
 
-## Deployment
+## Usage
 
 The following instructions describe how to access the functionality of PARS in several different ways.
 

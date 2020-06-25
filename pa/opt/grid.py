@@ -1,26 +1,16 @@
 class Grid:
 	""" Absolute magnitudes for a grid of stars """
-	# Stores: 
-	#	absolute magnitude array
-	# 		0: metallicity
-	# 		1: gamma = equatorial radius effective gravity (related to mass)
-	# 		2: tau = equatorial radius effective temperature (related to luminosity)
-	# 		3: omega
-	# 		4: inclination
-	# 		5: filter
-	#	metallicity list
-	#	gamma array
-	#	tau array
-	#	omega array
-	#	inclination array
-	#	filter filename array
-	#	filter zero-point intensity array
-	def __init__(self, Mag, Z, gamma, tau, omega, inc, bands):
-		# record all information that should be stored in this object
-		self.Mag = Mag
-		self.Z = Z
-		self.gamma = gamma
-		self.tau = tau
-		self.omega = omega
-		self.inc = inc
+
+	# Inputs:
+	# 	model parameters, as a list of tuples
+	# 		the first element of the tuple is parameter name (e.g. 'tau')
+	#		the secont element is an array of parameter values (e.g. array([0, 1, 2, 3]))
+	#	band names, as a list (e.g. ['I', 'V', B'])
+	#	magnitudes, as a multi-dimensional array
+	#		each dimension except the last corresponds to a model parameter
+	#		the size of the dimension should be the same as the number of parameter values
+	#		the last dimension corresponds to different bands
+	def __init__(self, params, bands, Mag):
+		self.params = params
 		self.bands = bands
+		self.Mag = Mag

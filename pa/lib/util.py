@@ -29,6 +29,20 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
+# pseudo effective temperature
+def tau(L, Req):
+	return ( L * Lsun / (4 * np.pi * sigma * (Req * Rsun)**2) )**(1./4)
+# luminosity in solar luminosities
+def L(tau, Req):
+	return 4 * np.pi * (Req * Rsun)**2 * sigma * tau**4 / Lsun
+
+# log pseudo effective gravity
+def gamma(M, Req):
+	return np.log10( G * M * Msun / (Req * Rsun)**2 )
+# mass in solar masses
+def M(gamma, Req):
+	return 10**gamma * (Req * Rsun)**2 / (G * Msun)
+
 # approximate the bolometric luminosity of a star in erg/s/ster
 # 	using the trapezoidal rule
 # input: light from the star at many wavelengths in erg/s/ster/Hz
@@ -45,11 +59,6 @@ def bolometric(light, wl):
 	return np.sum(d * f)
 
 ### Wavelength / frequency conversions
-
-# # inputs: an array of wavlengths in nanometers, 
-# # output: an array of wavelengths in Angstroms
-# def color_nm_A(wl_arr):
-# 	return wl_arr * 10
 
 # inputs: an array of wavelengths in nanometers
 # output: an array of frequencies in Hz
@@ -89,19 +98,6 @@ def Hz_to_nm(f_arr, wl_arr):
 	c_nm = 1.e7 * c # speed of light in nm per second
 	return f_arr * c_nm / wl_arr**2
 
-# # input: an array of intensity per square centimeter of photodetector, 
-# # 	distance to the star in centimeters
-# # output: an array of intensity per steradian
-# def cm2_to_ster(I_arr, distance):
-# 	return I_arr * distance**2
-
-# # input: an array of intensity per steradian, 
-# # 	distance to the star in centimeters
-# # output: an array of intensity per square centimeter of photoreceptor
-# def ster_to_cm2(I_arr, distance):
-# 	return I_arr / distance**2
-
-
 # integrate intensity (last dimension is wavelength) 
 # convolved with the transmission curve, normalize
 # by the integral of the transmission curve
@@ -130,53 +126,3 @@ def filter(I, wll, trans, wlf):
 	output[ mask ] = intensity[ mask ]
 	output[ ~mask ] = intensity[ ~mask ] / np.sum( d * T )
 	return output
-
-# ## Filter
-# class Filter:
-# 	""" Information pertaining to a filter """
-# 	# inputs: filter multipliers, filter wavelengths, flux zero point in erg/s/cm2/A
-# 	def __init__(self, T, wlf, f0, name, longname):
-# 		self.f0 = f0
-# 		self.name = name
-# 		self.longname = longname
-# 		# a cubic spline based on the filter
-# 		self.f = interp1d(wlf, T, kind='cubic', bounds_error=False, fill_value=0)
-
-# 	# output: 1D array (by location) of flux through a filter 
-# 	#	in units of the filter's flux zero point
-# 	# inputs: 2D array of fluxes in erg/s/ster/Hz (location x wavelength) or
-# 	#		1D array (wavelength)
-# 	#	wavelengths for the light in nm 
-# 	#	distance to the object
-# 	def flux(self, flux_arr, wll, distance):
-# 		# convert flux from per Hz to per angstrom
-# 		flux_arr = Hz_to_A(flux_arr, wll)
-# 		# convert flux from per steradian to per cm2 of photodetector
-# 		flux_arr = ster_to_cm2(flux_arr, distance)
-# 		# convert wavelength to angstroms
-# 		wll_A = color_nm_A(wll)
-# 		# filter evaluated at the light's wavelengths
-# 		fil = self.f(wll_A) 
-# 		# multiply the flux by the filter function
-# 		integrand = np.multiply(flux_arr, fil[np.newaxis, :])
-# 		# calculate the differences between light's wavelengths in A
-# 		diff = np.diff(wll_A)
-# 		## estimate the integral using the trapezoidal rule with variable argument differentials
-# 		# array of averaged differentials
-# 		d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-# 		# approximation of the integral, flux integrated over wavelengths
-# 		flux = np.sum( d[np.newaxis, :] * integrand, axis=1 )
-# 		# zero point of the integrated flux
-# 		integrand = fil * self.f0
-# 		flux_zero = np.sum(d * integrand)
-# 		# output
-# 		output = np.empty_like(flux)
-# 		mask = np.logical_or( flux == 0, np.isnan(flux) )
-# 		output[ mask ] = flux[ mask ]
-# 		output[ ~mask ] = flux[ ~mask ] / flux_zero
-# 		return output
-
-# 	# output: magnitude of star's light through a filter
-# 	# inputs: same as those of flux() in this module
-# 	def mag(self, light, wll, distance):
-# 		return -2.5 * np.log10( self.flux(light, wll, distance) )
