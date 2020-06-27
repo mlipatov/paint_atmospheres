@@ -43,6 +43,16 @@ def gamma(M, Req):
 def M(gamma, Req):
 	return 10**gamma * (Req * Rsun)**2 / (G * Msun)
 
+# refine a sorted 1-D grid by almost some factor n, keeping the original grid values:
+# insert n-1 equally spaced values between every two neighbors;
+# this makes a grid of size N_0 * n - (n - 1), where N_0 is the original grid size.
+def refine(grid, factor):
+	newgrid = np.array([])
+	for i in range(len(grid) - 1):
+		newgrid = np.append(newgrid, np.linspace(grid[i], grid[i + 1], factor + 1))
+	newgrid = np.unique(newgrid)
+	return newgrid
+
 # approximate the bolometric luminosity of a star in erg/s/ster
 # 	using the trapezoidal rule
 # input: light from the star at many wavelengths in erg/s/ster/Hz
