@@ -12,10 +12,11 @@ import pickle
 import os
 
 def run():
-	parser = argparse.ArgumentParser(description="Example: \n" +\
+	parser = argparse.ArgumentParser(description="Examples: \n" +\
 		"calc_spectra data/vega.pkl data/vega/ -i 0.000 1.5707963267948966 150; " +\
 		"calc_spectra data/vega.pkl data/vega/ -i 0.088418; " +\
-		"calc_spectra data/altair.pkl data/altair/ -i 0.8840")
+		"calc_spectra data/altair.pkl data/altair/ -i 0.8840; " +\
+		"calc_spectra data/achernar.pkl data/achernar/ -i 1.0577")
 	parser.add_argument("pkl_sfile", help="the pickled star file")
 	parser.add_argument("output", help="the output directory")
 	parser.add_argument('-i', type=float, nargs='+', help='either a single inclination in radians ' +
@@ -104,7 +105,7 @@ def run():
 			for j, w in enumerate(wl):
 				f.write( st.bands[j] )
 				f.write('\t %.6g' % w )
-				f.write('\t %.4f' % light[j])
+				f.write('\t %.8f' % light[j])
 				f.write('\n')
 		f.close()
 		

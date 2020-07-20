@@ -8,7 +8,8 @@ import pickle
 def run():
 	parser = argparse.ArgumentParser(description="Examples: \n" +\
 		"calc_star data/limbdark_m01.pkl data/vega.pkl 0.6151 40.346 2.165 2.815 2.3694e19 100; " +\
-		"calc_star data/limbdark/limbdark_p02f.pkl data/altair.pkl 0.744 10.6 1.86 2.008 1.583e19 100")
+		"calc_star data/limbdark/limbdark_p02f.pkl data/altair.pkl 0.744 10.6 1.86 2.008 1.583e19 100; " +\
+		"calc_star data/limbdark/limbdark_m01f.pkl data/achernar.pkl 0.838 3020 6.1 9.16 1.319e20 100")
 	parser.add_argument("ld_file", help="the limb darkening .pkl file to access")
 	parser.add_argument("output", help="an output file containing the pickled star")
 	parser.add_argument("omega", help="rotation speed divided by its Keplerian value at the equator", type=float)

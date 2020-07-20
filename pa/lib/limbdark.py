@@ -93,13 +93,14 @@ class LimbDark:
     
     Admits two configurations:
     1. Spectrum. Contains fits of specific intensities to viewing angle, at every T, g and lambda.
-        Optionally, contains the original intensity grid at every T, g, lambda and mu.
     2. Photometry. Contains fits of filtered intensities to viewing angle, at every T, g and band.
         Also contains the additive magnitude offset for every band.
+    Optionally, contains the original intensity grid at every T, g, lambda/band and mu.
      """
 
     # initialize
     # Inputs: a file with limb darkening grids from Castelli and Kurucz 2004
+    #   files with filter curves for each band
     #   bounds that define a partition of mu's range
     #   list of files with band transmission curves and flux zero points (photometry mode)
     #   whether to save intensity values at mu grid points
@@ -111,13 +112,14 @@ class LimbDark:
     #   magnitude offsets (photometry mode)
     #   discrete intensities on g, T, lambda/band, mu grid (save option) 
     def __init__(self, ldfile, filtfiles, bounds, save):
-        # wavelengths in nm, gravities, temperatures, intensities in erg cm^-2 s^-1 Hz^-1 ster^-1
+        # wavelengths in nm, gravities, temperatures, 
+        # intensities in erg cm^-2 s^-1 Hz^-1 ster^-1 on a grid
         wl_arr, g_arr, temp_arr, Ilam = getdata(ldfile)
         self.g_arr = g_arr
         self.temp_arr = temp_arr
         self.bounds = bounds
         ft.set_muB(bounds)
-
+        
         bands = [] # names
         F0 = [] # flux zero points
         if len(filtfiles) == 0: # spectrum mode
@@ -143,7 +145,8 @@ class LimbDark:
                 # transmission curve, wavelengths converted from A to nm
                 wlf, T = np.loadtxt(file).T
                 wlf = wlf / 10.
-                # intensities in erg cm^-2 s^-1 nm^-1 ster^-1, with the wavelength dimension filtered out 
+                # intensities in erg cm^-2 s^-1 nm^-1 ster^-1, 
+                # with the wavelength dimension filtered out
                 Iband.append( ut.filter(Ilam, wl_arr, T, wlf) )
             self.wl_arr = wl_arr = np.array(wl_band) # one wavelength for each band
             I = np.array( Iband ) # a filtered intensity at each band
