@@ -1,7 +1,7 @@
 data/*
 !data/filters/
 data/filters/*
-!data/filters/Generic_Bessell.V.dat
+!data/filters/HST_ACS_WFC.F555W.dat
 convergence.py
 *.pyc
 *__pycache__

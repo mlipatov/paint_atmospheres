@@ -124,7 +124,7 @@ def Hz_to_nm(f_arr, wl_arr):
 #	filter wavelengths in nm
 #	optional A_lambda reddening parameter at the light's wavelengths
 # Output: intensities in erg cm^-2 s^-1 nm^-1 ster^-1, with the wavelength dimension filtered out
-def filter(I, wll, trans, wlf):
+def filter(I, wll, trans, wlf, alam=0):
 	# a cubic spline based on the filter
 	Tfunc = interp1d(wlf, trans, kind='cubic', bounds_error=False, fill_value=0)
 	# evaluate the transmission curve at the light's wavelengths
