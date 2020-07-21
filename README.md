@@ -67,9 +67,9 @@ cat data/vega/*.txt | more
 
 ### Compute Magnitudes
 
-Create files with filter transmission curves, such as [data/filters/Generic_Bessell.V.dat](data/filters/Generic_Bessell.V.dat)
+Create files with filter transmission curves, such as [data/filters/HST_ACS_WFC.F555W.dat](data/filters/HST_ACS_WFC.F555W.dat)
 
-Compute fits of *filtered* intensity versus surface inclination, then follow the same steps as above.
+Compute fits of *filtered* intensity versus the cosine of the viewing angle, then follow the same steps as above.
 ```
 calc_limbdark data/im01k2.pck data/limbdark_m01f.pkl 0.1 0.4 -f data/filters/
 calc_star 'data/limbdark_m01.pkl' 'data/vega.pkl' 0.6151 40.346 2.165 2.815 2.3694e19 100
@@ -101,7 +101,7 @@ These create figures 3 - 10 in [LB] (see References below).
 
 ## Authors
 
-* **Timothy D. Brandt**
+* Timothy D. Brandt
 * [Mikhail Lipatov](https://github.com/mlipatov/)
 
 ## References 

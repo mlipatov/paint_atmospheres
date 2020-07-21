@@ -1,4 +1,4 @@
-# Requires: a limb darkening information file (with fits of intensity w.r.t surface inclination)
+# Requires: a limb darkening information file (with fits of intensity w.r.t. viewing angle)
 # Outputs: a plot that compares different temperature interpolation schemes
 
 import math
