@@ -67,7 +67,11 @@ cat data/vega/*.txt | more
 
 ### Compute Magnitudes
 
-Create files with filter transmission curves, such as [data/filters/HST_ACS_WFC.F555W.dat](data/filters/HST_ACS_WFC.F555W.dat)
+Move a file with a filter transmission curve into the filter directory.
+
+```
+mv data/Generic_Bessell.V.dat data/filter/Generic_Bessell.V.dat
+```
 
 Compute fits of *filtered* intensity versus the cosine of the viewing angle, then follow the same steps as above.
 ```
