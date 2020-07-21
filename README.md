@@ -70,7 +70,7 @@ cat data/vega/*.txt | more
 Move a file with a filter transmission curve into the filter directory.
 
 ```
-mv data/Generic_Bessell.V.dat data/filter/Generic_Bessell.V.dat
+mv data/Generic_Bessell.V.dat data/filter/
 ```
 
 Compute fits of *filtered* intensity versus the cosine of the viewing angle, then follow the same steps as above.
