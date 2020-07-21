@@ -1,7 +1,6 @@
 data/*
-!data/filters/
 !data/Generic_Bessell.V.dat
-data/filters/*
+!data/filters/.keep
 *.pyc
 *__pycache__
 *.DS_Store
