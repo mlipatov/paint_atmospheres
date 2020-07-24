@@ -15,17 +15,30 @@ The following instructions describe how to install PARS on macOS 10.15.4. These 
 
 ### Installation
 
-Go to the directory where you want to install PARS, clone it in that directory, and go to the software's top directory.
+#### Stable version
+
+Go to the web page with the [latest release](https://github.com/mlipatov/paint_atmospheres/releases/latest), download the source code as a tar.gz file, put the file in the directory where you want to install PARS.
+
+Un-compress the file, go to the software's top directory and install PARS.
+
+```
+tar -xf paint_atmospheres-x.x.x.tar.gz
+cd paint_atmospheres-x.x.x
+pip install .
+```
+
+#### Current version
+
+Go to the directory where you want to install PARS, clone it in that directory, go to the software's top directory and install PARS.
+
 ```
 cd <directory name>
 git clone https://github.com/mlipatov/paint_atmospheres
 cd paint_atmospheres
-```
-
-Install PARS.
-```
 pip install .
 ```
+
+### Setup and checks
 
 Place a file with limb darkening information from atmosphere models in the data directory.
 ```
