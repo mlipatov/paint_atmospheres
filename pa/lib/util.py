@@ -149,20 +149,24 @@ def filter(I, wll, trans, wlf, alam=0):
 # 	optional R_V reddening parameter
 # Result: A_lambda / A_V
 # Based on: Fitzpatrick 1999, optical and infrared anchors from IDL astrolib
+# Adapted from: f99.py
 def alamv(lam, rv=3.1, model='f99'):
 
     x = 1.e4 / np.ravel(lam)
+
+    # below 910 A, no light gets through;
+    # above 6 microns, all the light gets through
+    k = np.zeros_like(x)
+    k[ x > 11. ] = np.inf
+    uv_region = (1.e4 / 2700. <= x <= 11.)
+    oir_region = (0.167 <= x < 1.e4 / 2700.)
 
     if np.any(x < 0.167) or np.any(x > 11.):
         raise ValueError('Wavelength(s) must be between 910 A and 6 um')
     if model == 'fm07' and abs(r_v - 3.1) > 0.001:
         raise ValueError('fm07 model not implementend for r_v != 3.1')
     if model != 'f99' and model != 'fm07':
-        raise ValueError('Model %s not implemented.' % (model))
-    
-    k = np.zeros_like(x)
-    uv_region = (x >= 1.e4 / 2700.)
-    oir_region = ~uv_region
+        raise ValueError('Reddening model %s not implemented.' % (model))
 
     # UV region
     y = x[uv_region]

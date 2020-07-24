@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='paint_atmospheres',
-    version='1.1.1',
+    version='1.2.0',
     packages=find_packages(),
     package_dir={'paint_atmospheres': 'pa'},
     entry_points={'console_scripts': [
