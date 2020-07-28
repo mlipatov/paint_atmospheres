@@ -24,7 +24,8 @@ class Star:
 		if ld is not None:
 			self.bands = ld.bands # band names (photometry mode)
 			self.F0 = ld.F0 # flux zero points (photometry mode)
-			self.wavelengths = ld.wl_arr # wavelengths
+			self.av = ld.av # reddening coefficient (photometry mode)
+			self.wavelengths = ld.lam # wavelengths
 			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity
 		self.mass = mass
@@ -163,9 +164,11 @@ class Star:
 		# convert from Req^2 to cm^2 (area of the star)
 		# and from per steradian to per cm^2 (area of the photodetector)
 		result *= (self.Req * ut.Rsun)**2 / self.distance**2
-		if len(self.bands) > 0: # if in photometry mode
+		if self.bands is not None: # if in photometry mode
 			result /= self.F0 # normalize by the flux zero points
-			result = -2.5 * np.log10( result ) # compute magnitudes
+			zf = (result == 0) # zero flux
+			result[zf] = np.inf
+			result[~zf] = -2.5 * np.log10( result[~zf] ) # compute magnitudes
 		return result
 
 	# paint the temperature of the visible surface of the star

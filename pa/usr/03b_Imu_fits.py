@@ -36,11 +36,11 @@ iodir = '../../' # location of the input/output directory
 with open(iodir + 'data/limbdark_m01.pkl', 'rb') as f:
 	ld = pickle.load(f)
 
-wl = ld.wl_arr  # 1221 wavelength
-g = ld.g_arr	# 11 gravity
-T = ld.temp_arr # 61 temperature
+wl = ld.lam  # 1221 wavelength
+g = ld.g	# 11 gravity
+T = ld.T # 61 temperature
 bounds = ld.bounds
-I = ld.I_arr # (1221, 17, 11, 61) = (wavelength, mu, gravity, temperature)
+I = ld.I # (1221, 17, 11, 61) = (wavelength, mu, gravity, temperature)
 a = ld.fit_params # (61, 11, 1221, 15) = (temperature, gravity, wavelength, parameter index)
 sh = a.shape
 

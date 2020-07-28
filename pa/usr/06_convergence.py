@@ -17,11 +17,11 @@ iodir = '../../' # location of the input/output directory
 with open(iodir + 'data/limbdark_m01.pkl', 'rb') as f:
 	ld = pickle.load(f)
 
-wl_arr = ld.wl_arr
+lam = ld.lam
 
 # choose a wavelength that is close to the star's peak at all inclinations
 wl = 511. 
-ind = np.where(wl_arr == wl)[0][0]
+ind = np.where(lam == wl)[0][0]
 
 # number of z values: log2 scale
 low, high = [3, 13]

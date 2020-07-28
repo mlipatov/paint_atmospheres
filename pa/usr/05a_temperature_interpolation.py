@@ -48,13 +48,13 @@ stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld) for l, m, r in zip(L, M, R)]
 light = np.array([s.integrate(inclination) for s in stars])
 
 # remove the limb darkening information at the temperatures of the stars
-ind_temp = np.searchsorted(ld.temp_arr, temp)
-print('Temperatures removed from intensity information: ' + str(ld.temp_arr[ind_temp]) + \
+ind_temp = np.searchsorted(ld.T, temp)
+print('Temperatures removed from intensity information: ' + str(ld.T[ind_temp]) + \
 	'. \n\t These should be the same as the star temperatures.')
-print('Temperatures between we are interpolating: ' + str(ld.temp_arr[ind_temp - 1]) +\
-	' and ' + str(ld.temp_arr[ind_temp + 1]) )
+print('Temperatures between we are interpolating: ' + str(ld.T[ind_temp - 1]) +\
+	' and ' + str(ld.T[ind_temp + 1]) )
 ld.fit_params = np.delete(ld.fit_params, ind_temp, axis=0)
-ld.temp_arr = np.delete(ld.temp_arr, ind_temp)
+ld.T = np.delete(ld.T, ind_temp)
 
 # stars with linear temperature interpolaion and missing limb darkening information
 stars = [st.Star(omega, l, m, r, ut.D10, n, ld=ld, temp_method='linear') for l, m, r in zip(L, M, R)]
@@ -83,13 +83,13 @@ diff_planck = np.abs(light_miss_planck[:, mask] / light[:, mask] - 1)
 light = light[:, mask]
 
 # wavelength array
-wl_arr = ld.wl_arr[mask]
+lam = ld.lam[mask]
 # cutoff wavelength in nm for the plot
 wl = 2000
-ind_wl = max(np.searchsorted(wl_arr, wl) - 1, 1)
-ind_ld_wl = max(np.searchsorted(ld.wl_arr, wl) - 1, 1)
+ind_wl = max(np.searchsorted(lam, wl) - 1, 1)
+ind_ld_wl = max(np.searchsorted(ld.lam, wl) - 1, 1)
 # truncate the spectra and the wavelength array at the cutoff wavelength
-wl_arr = wl_arr[:ind_wl]
+lam = lam[:ind_wl]
 diff_lin = diff_lin[:, :ind_wl]
 diff_log = diff_log[:, :ind_wl]
 diff_planck = diff_planck[:, :ind_wl]
@@ -105,8 +105,8 @@ ofile = iodir + 'error_T.pdf'
 f, axarr = plt.subplots(3, sharex=True)
 T_y = [0.61, 0.7, 0.7]
 T_x = [0.64, 0.7, 0.7]
-min_x = np.min(wl_arr) * 0.9
-max_x = np.max(wl_arr) * 1.1
+min_x = np.min(lam) * 0.9
+max_x = np.max(lam) * 1.1
 max_y = 6.3
 min_y = 6.3e-7
 if max_y < np.max(diff):
@@ -119,16 +119,16 @@ for i in range(3):
 	delta_y = max_y - min_y
 	offset_y = delta_y * 0.1
 
-	axarr2[i].plot(wl_arr, light[i][:ind_ld_wl], color='grey', linewidth=2, alpha=0.5)
+	axarr2[i].plot(lam, light[i][:ind_ld_wl], color='grey', linewidth=2, alpha=0.5)
 	axarr2[i].tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
 	axarr2[i].grid(False)
 	axarr2[i].set_zorder(1)
 
 	axarr[i].set_xscale('log')
 	axarr[i].set_xlim(left=min_x, right=max_x)
-	axarr[i].scatter(wl_arr, diff_lin[i], marker='o', c='b', s=6, alpha=0.5, edgecolors="none")
-	axarr[i].scatter(wl_arr, diff_log[i], marker='o', c='g', s=6, alpha=0.5, edgecolors="none")
-	axarr[i].scatter(wl_arr, diff_planck[i], marker='o', c='m', s=6, alpha=1, edgecolors="none")
+	axarr[i].scatter(lam, diff_lin[i], marker='o', c='b', s=6, alpha=0.5, edgecolors="none")
+	axarr[i].scatter(lam, diff_log[i], marker='o', c='g', s=6, alpha=0.5, edgecolors="none")
+	axarr[i].scatter(lam, diff_planck[i], marker='o', c='m', s=6, alpha=1, edgecolors="none")
 	axarr[i].text(T_x[i], T_y[i], 'T = ' + str(temp[i]) + ' K', transform=axarr[i].transAxes)
 	axarr[i].tick_params(axis="both")
 	axarr[i].set_yscale('log')

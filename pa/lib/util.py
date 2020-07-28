@@ -19,7 +19,7 @@ Zsun = 0.017 # from Grevesse, N., & Sauval, A. J., 1998, Space Sci. Rev., 85, 16
 
 # printf() function from O'Reilly's Python Cookbook
 def printf(format, *args):
-    sys.stdout.write(format % args)
+	sys.stdout.write(format % args)
 
 # inputs: starting and ending time in seconds
 # output: a string with the time in hours, minutes and seconds
@@ -60,20 +60,20 @@ def refine(grid, factor):
 	newgrid = np.unique(newgrid)
 	return newgrid
 
-# approximate the bolometric luminosity of a star in erg/s/ster
-# 	using the trapezoidal rule
-# input: light from the star at many wavelengths in erg/s/ster/Hz
-#	wavelengths in nm
-def bolometric(light, wl):
-	# convert intensity per Hz of frequency to per nm of wavelength 
-	# this is the integrand in our integral w.r.t. wavelength
-	f = ut.Hz_to_nm(light, wl)
-	# calculate the differences between wavelengths in nm
-	diff = np.diff(wl)
-	## estimate the integral using the trapezoidal rule with variable argument differentials
-	# array of averaged differentials
-	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-	return np.sum(d * f)
+# # approximate the bolometric luminosity of a star in erg/s/ster
+# # 	using the trapezoidal rule
+# # input: light from the star at many wavelengths in erg/s/ster/Hz
+# #	wavelengths in nm
+# def bolometric(light, wl):
+# 	# convert intensity per Hz of frequency to per nm of wavelength 
+# 	# this is the integrand in our integral w.r.t. wavelength
+# 	f = ut.Hz_to_nm(light, wl)
+# 	# calculate the differences between wavelengths in nm
+# 	diff = np.diff(wl)
+# 	## estimate the integral using the trapezoidal rule with variable argument differentials
+# 	# array of averaged differentials
+# 	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
+# 	return np.sum(d * f)
 
 ### Wavelength / frequency conversions
 
@@ -115,29 +115,40 @@ def Hz_to_nm(f_arr, wl_arr):
 	c_nm = 1.e7 * c # speed of light in nm per second
 	return f_arr * c_nm / wl_arr**2
 
+# array of wavelengths for filtering, reddening, intensity conversions, etc.
+lam = np.array([])
+# array of (A_lambda / A_V) for these wavelengths
+AlamV = np.array([])
+
+# set wavelengths
+# Input: wavelength array in nm
+def setlam(l):
+	global lam
+	lam = l # set the global wavelength array
+	alamv() # set the global (A_lambda / A_V) array
+
 # integrate intensity (last dimension is wavelength) 
 # convolved with the transmission curve and, optionally, the reddening curve, 
 # normalize by the integral of the transmission curve
 # Inputs: intensity array in ergs cm^-2 s^-1 Hz^-1 ster^-1 (wavelength dimension should be last)
-#	intensity wavelengths in nm
 # 	transmission curve 
 #	filter wavelengths in nm
-#	optional A_lambda reddening parameter at the light's wavelengths
+#	reddening coefficient A_V: zero if no reddening, infinity if no light gets past the dust
 # Output: intensities in erg cm^-2 s^-1 nm^-1 ster^-1, with the wavelength dimension filtered out
-def filter(I, wll, trans, wlf, alam=0):
+def filter(I, trans, wlf, a_v):
 	# a cubic spline based on the filter
 	Tfunc = interp1d(wlf, trans, kind='cubic', bounds_error=False, fill_value=0)
 	# evaluate the transmission curve at the light's wavelengths
-	T = Tfunc(wll)
+	T = Tfunc(lam)
 	# convert intensity from per Hz to per nm
-	I = Hz_to_nm(I, wll)
+	I = Hz_to_nm(I, lam)
 	# calculate the differences between light's wavelengths
-	diff = np.diff(wll)
+	diff = np.diff(lam)
 	## estimate the integral using the trapezoidal rule with variable argument differentials
 	# array of averaged differentials
 	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
 	# approximation of the integral, flux integrated over wavelengths
-	intensity = np.sum( d * I * T * 10**(-alam/2.5), axis=-1 )
+	intensity = np.sum( d * I * T * 10**(-1 * a_v * AlamV / 2.5), axis=-1 )
 	# where intensity is not zero or nan, normalize by the integral of the transmission curve
 	output = np.empty_like(intensity)
 	mask = np.logical_or( intensity == 0, np.isnan(intensity) )
@@ -150,75 +161,76 @@ def filter(I, wll, trans, wlf, alam=0):
 # Result: A_lambda / A_V
 # Based on: Fitzpatrick 1999, optical and infrared anchors from IDL astrolib
 # Adapted from: f99.py
-def alamv(lam, rv=3.1, model='f99'):
+def alamv(r_v=3.1, model='f99'):
 
-    x = 1.e4 / np.ravel(lam)
+	global AlamV
 
-    # below 910 A, no light gets through;
-    # above 6 microns, all the light gets through
-    k = np.zeros_like(x)
-    k[ x > 11. ] = np.inf
-    uv_region = (1.e4 / 2700. <= x <= 11.)
-    oir_region = (0.167 <= x < 1.e4 / 2700.)
+	# convert wavelengths to Angstroms, then to inverse wavelength units
+	x = 1.e4 / np.ravel(lam * 10) 
 
-    if np.any(x < 0.167) or np.any(x > 11.):
-        raise ValueError('Wavelength(s) must be between 910 A and 6 um')
-    if model == 'fm07' and abs(r_v - 3.1) > 0.001:
-        raise ValueError('fm07 model not implementend for r_v != 3.1')
-    if model != 'f99' and model != 'fm07':
-        raise ValueError('Reddening model %s not implemented.' % (model))
+	# below 910 A, no light gets through;
+	# above 6 microns, all the light gets through
+	k = np.zeros_like(x)
+	k[ x > 11. ] = 1e300
+	uv_region = (1.e4 / 2700. <= x) & (x <= 11.)
+	oir_region = (0.167 <= x) & (x < 1.e4 / 2700.)
 
-    # UV region
-    y = x[uv_region]
-    if model == 'f99':
-        x0, gamma = 4.596, 0.99
-        c3, c4, c5 = 3.23, 0.41, 5.9
-        c2 = -0.824 + 4.717 / r_v
-        c1 = 2.030 - 3.007 * c2
-        d = y**2 / ((y**2 - x0**2)**2 + y**2 * gamma**2)
-        f = np.zeros_like(y)
-        valid = (y >= c5)
-        f[valid] = 0.5392 * (y[valid] - c5)**2 + 0.05644 * (y[valid] - c5)**3
-        k_uv = c1 + c2 * y + c3 * d + c4 * f
-    if model == 'fm07':
-        x0, gamma = 4.592, 0.922
-        c1, c2, c3, c4, c5 = -0.175, 0.807, 2.991, 0.319, 6.097
-        D = y**2 / ((y**2-x0**2)**2 + y**2 * gamma**2)
-        k_uv = np.zeros_like(y)
-        valid = (y <= c5)
-        k_uv[valid] = c1 + c2*y[valid] + c3*D[valid]
-        valid = (y > c5)
-        k_uv[valid] = c1 + c2*y[valid] + c3*D[valid] + c4*(y[valid] - c5)**2
-    k[uv_region] = k_uv
+	if model == 'fm07' and abs(r_v - 3.1) > 0.001:
+		raise ValueError('fm07 model not implementend for r_v != 3.1')
+	if model != 'f99' and model != 'fm07':
+		raise ValueError('Reddening model %s not implemented.' % (model))
 
-    # Calculate values for UV spline points to anchor OIR fit
-    x_uv_spline = 1.e4 / np.array([2700., 2600.])
-    d = (x_uv_spline**2 /
-         ((x_uv_spline**2 - x0**2)**2 + x_uv_spline**2 * gamma**2))
-    k_uv_spline = c1 + c2 * x_uv_spline + c3 * d
+	# UV region
+	y = x[uv_region]
+	if model == 'f99':
+		x0, gamma = 4.596, 0.99
+		c3, c4, c5 = 3.23, 0.41, 5.9
+		c2 = -0.824 + 4.717 / r_v
+		c1 = 2.030 - 3.007 * c2
+		d = y**2 / ((y**2 - x0**2)**2 + y**2 * gamma**2)
+		f = np.zeros_like(y)
+		valid = (y >= c5)
+		f[valid] = 0.5392 * (y[valid] - c5)**2 + 0.05644 * (y[valid] - c5)**3
+		k_uv = c1 + c2 * y + c3 * d + c4 * f
+	if model == 'fm07':
+		x0, gamma = 4.592, 0.922
+		c1, c2, c3, c4, c5 = -0.175, 0.807, 2.991, 0.319, 6.097
+		D = y**2 / ((y**2-x0**2)**2 + y**2 * gamma**2)
+		k_uv = np.zeros_like(y)
+		valid = (y <= c5)
+		k_uv[valid] = c1 + c2*y[valid] + c3*D[valid]
+		valid = (y > c5)
+		k_uv[valid] = c1 + c2*y[valid] + c3*D[valid] + c4*(y[valid] - c5)**2
+	k[uv_region] = k_uv
 
-    # Optical / IR region
-    y = x[oir_region]
-    if model == 'f99':
-        anchors_x = 1.e4 / np.array([np.inf, 26500., 12200., 6000., 5470.,
-                                     4670., 4110.])
+	# Calculate values for UV spline points to anchor OIR fit
+	x_uv_spline = 1.e4 / np.array([2700., 2600.])
+	d = (x_uv_spline**2 /
+		 ((x_uv_spline**2 - x0**2)**2 + x_uv_spline**2 * gamma**2))
+	k_uv_spline = c1 + c2 * x_uv_spline + c3 * d
 
-        # The OIR anchors are from IDL astrolib, not F99.
-        anchors_extinction = np.array(
-            [0.,
-             0.26469 * r_v / 3.1,  # IR
-             0.82925 * r_v / 3.1,  # IR
-             -0.422809 + 1.00270 * r_v + 2.13572e-04 * r_v**2,  # optical
-             -5.13540e-02 + 1.00216 * r_v - 7.35778e-05 * r_v**2,
-             0.700127 + 1.00184 * r_v - 3.32598e-05 * r_v**2,
-             (1.19456 + 1.01707 * r_v - 5.46959e-03 * r_v**2 +
-              7.97809e-04 * r_v**3 - 4.45636e-05 * r_v**4)]
-            )
+	# Optical / IR region
+	y = x[oir_region]
+	if model == 'f99':
+		anchors_x = 1.e4 / np.array([np.inf, 26500., 12200., 6000., 5470.,
+									 4670., 4110.])
 
-        anchors_x = np.append(anchors_x, x_uv_spline)
-        anchors_k = np.append(anchors_extinction - r_v, k_uv_spline)
+		# The OIR anchors are from IDL astrolib, not F99.
+		anchors_extinction = np.array(
+			[0.,
+			 0.26469 * r_v / 3.1,  # IR
+			 0.82925 * r_v / 3.1,  # IR
+			 -0.422809 + 1.00270 * r_v + 2.13572e-04 * r_v**2,  # optical
+			 -5.13540e-02 + 1.00216 * r_v - 7.35778e-05 * r_v**2,
+			 0.700127 + 1.00184 * r_v - 3.32598e-05 * r_v**2,
+			 (1.19456 + 1.01707 * r_v - 5.46959e-03 * r_v**2 +
+			  7.97809e-04 * r_v**3 - 4.45636e-05 * r_v**4)]
+			)
 
-    oir_spline = interp1d(anchors_x, anchors_k, kind='cubic')
-    k[oir_region] = oir_spline(y)
+		anchors_x = np.append(anchors_x, x_uv_spline)
+		anchors_k = np.append(anchors_extinction - r_v, k_uv_spline)
 
-    return k / r_v + 1
+	oir_spline = interp1d(anchors_x, anchors_k, kind='cubic')
+	k[oir_region] = oir_spline(y)
+
+	AlamV = k / r_v + 1
