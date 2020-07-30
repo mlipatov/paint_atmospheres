@@ -1,16 +1,20 @@
-class Grid:
-	""" Absolute magnitudes for a grid of stars """
+import numpy as np
 
-	# Inputs:
-	# 	model parameters, as a list of tuples
-	# 		the first element of the tuple is parameter name (e.g. 'tau')
-	#		the secont element is an array of parameter values (e.g. array([0, 1, 2, 3]))
-	#	band names, as a list (e.g. ['I', 'V', B'])
-	#	magnitudes, as a multi-dimensional array
-	#		each dimension except the last corresponds to a model parameter
-	#		the size of the dimension should be the same as the number of parameter values
-	#		the last dimension corresponds to different bands
-	def __init__(self, params, bands, Mag):
-		self.params = params
+class Grid:
+	""" Absolute magnitudes for a grid of stars with sun's equatorial radius"""
+	def __init__(self, tau, omega, inc, gamma, Z, av, bands):
+		# stellar model parameters
+		self.tau = tau
+		self.omega = omega
+		self.inc = inc
+		self.gamma = gamma
+		self.Z = Z
+
+		# reddenings and bands
+		self.av = av
 		self.bands = bands
-		self.Mag = Mag
+
+		# magnitudes, indexed in the above order 
+		# use a less memory-intensive data type
+		shape = tuple(( len(tau), len(omega), len(inc), len(gamma), len(Z), len(av), len(bands) ))
+		self.Mag = np.full( shape, np.nan, dtype=np.float32 )
