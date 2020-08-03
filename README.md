@@ -123,7 +123,7 @@ These create figures 3 - 10 in [LB] (see References below).
 
 ## References 
 	
-* Lipatov M & Brandt TD, Submitted to ApJ [LB]
+* Lipatov M & Brandt TD, arXiv:2007.12779 [LB]
 * Espinosa Lara F & Rieutord M (2011), A&A, 533, A43
 * Castelli F & Kurucz RL (2004), arXiv:astro-ph/0405087 
 * [Wolfram World: Cubic Formula](http://mathworld.wolfram.com/CubicFormula.html)
@@ -133,4 +133,4 @@ These create figures 3 - 10 in [LB] (see References below).
 
 ## Cite PARS
 
-If you use PARS in your work, please cite it according to http://zenodo.org/record/3955185. Thank you!
+If you use PARS in your work, please cite [the article that describes it](https://arxiv.org/abs/2007.12779). Thank you!
