@@ -1,0 +1,18 @@
+cff-version: 1.1.0
+message: "Please cite the following works when using this software: https://ui.adsabs.harvard.edu/abs/2020ascl.soft07014L"
+authors:
+- family-names: Lipatov
+  given-names: Mikhail
+- family-names: Brandt
+  given-names: Timothy D.
+title: "PARS: Paint the Atmospheres of Rotating Stars"
+version: PLACEHOLDER
+date-released: PLACEHOLDER
+identifiers:
+ - type: "ascl-id"
+   value: "2007.014"
+ - type: "doi"
+   value: PLACEHOLDER
+ - type: "bibcode"
+   value: "2020ascl.soft07014L"
+abstract: "PARS (Paint the Atmospheres of Rotating Stars) quickly computes magnitudes and spectra of rotating stellar models. It uses the star's mass, equatorial radius, rotational speed, luminosity, and inclination as input; the models incorporate Roche mass distribution (where all mass is at the center of the star), solid body rotation, and collinearity of effective gravity and energy flux."
