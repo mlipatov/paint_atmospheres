@@ -130,3 +130,7 @@ These create figures 3 - 10 in [LB] (see References below).
 * [Wikipedia: Bilinear interpolation: Algorithm](https://en.wikipedia.org/wiki/Bilinear_interpolation#Algorithm)
 * [Wikipedia: Newton's Method](https://en.wikipedia.org/wiki/Newton%27s_method)
 * Press WH et al, Numerical Recipes, 3rd ed. (2007) 
+
+## Cite PARS
+
+If you use PARS in your work, please cite it according to http://zenodo.org/record/3955185. Thank you!
