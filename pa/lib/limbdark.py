@@ -118,14 +118,18 @@ class LimbDark:
     # Inputs:
     #   array of intensities on a grid of [wavelength][mu][log gravity][temperature]
     #   list of files with band transmission curves and flux zero points (photometry mode)
-    #   optional reddening coefficient A_V, equal to zero if no reddening
+    #   optional set of reddening coefficients A_V, equal to zero if no reddening
     # Fields modified:
-    #   reddening coefficient (default is zero)
-    #   band names
-    #   magnitude offset for each band
-    #   characteristic wavelength for each band
-    def filter(self, I, filtfiles, a_v=0):
-        self.a_v = a_v # record the reddening coefficient
+    #   reddening coefficients: (av0, av1, ..., avm)
+    #   band names:             (b0, b1, ..., bn)
+    #   magnitude offset for each band: (F0 x m), (F1 x m), ... (Fn x m)
+    #   characteristic wavelength for each band: (lam0 x m), (lam1 x m), ... (lamn x m)
+    # Output:
+    #   intensity array, on a grid of [band x reddening][mu][log gravity][temperature],
+    #       where the first dimension corresponds to pairs 
+    #       (b0, av0), (b0, av1), ..., (b0, avm), (b1, av0), ..., (bn, avm)
+    def filter(self, I, filtfiles, a_v=[0]):
+        anum = len(a_v) # number of A_V values
         bands = [] # band names
         F0 = [] # flux zero points
 
@@ -150,12 +154,14 @@ class LimbDark:
             wlf = wlf / 10.
             # intensities in erg cm^-2 s^-1 nm^-1 ster^-1, 
             # with the wavelength dimension filtered out; reddened
-            Iband.append( ut.filter(I, T, wlf, a_v) )
-        self.lam = np.array(wl_band) # one wavelength for each band
+            for a in a_v:
+                Iband.append( ut.filter(I, T, wlf, a) )
         I = np.array( Iband ) # a filtered intensity at each band
 
-        self.bands = bands # record band names
-        self.F0 = np.array(F0) # record flux zero points
+        self.a_v = np.array(a_v) # record the reddening coefficients
+        self.bands = np.array(bands) # record band names
+        self.lam = np.repeat(wl_band, anum) # characteristic band wavelengths, repeated for each reddening
+        self.F0 = np.repeat(F0, anum) # flux magnitude zero points, repeated for each reddening
         return I # return the resulting discrete intensities
 
     # fit intensities to polynomials vs mu

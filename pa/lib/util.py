@@ -60,21 +60,6 @@ def refine(grid, factor):
 	newgrid = np.unique(newgrid)
 	return newgrid
 
-# # approximate the bolometric luminosity of a star in erg/s/ster
-# # 	using the trapezoidal rule
-# # input: light from the star at many wavelengths in erg/s/ster/Hz
-# #	wavelengths in nm
-# def bolometric(light, wl):
-# 	# convert intensity per Hz of frequency to per nm of wavelength 
-# 	# this is the integrand in our integral w.r.t. wavelength
-# 	f = ut.Hz_to_nm(light, wl)
-# 	# calculate the differences between wavelengths in nm
-# 	diff = np.diff(wl)
-# 	## estimate the integral using the trapezoidal rule with variable argument differentials
-# 	# array of averaged differentials
-# 	d = 0.5 * ( np.append(diff, 0) + np.insert(diff, 0, 0) )
-# 	return np.sum(d * f)
-
 ### Wavelength / frequency conversions
 
 # inputs: an array of wavelengths in nanometers
@@ -135,6 +120,7 @@ def setlam(l):
 #	filter wavelengths in nm
 #	reddening coefficient A_V: zero if no reddening, infinity if no light gets past the dust
 # Output: intensities in erg cm^-2 s^-1 nm^-1 ster^-1, with the wavelength dimension filtered out
+#	and the reddening dimension added as the first dimension
 def filter(I, trans, wlf, a_v):
 	# a cubic spline based on the filter
 	Tfunc = interp1d(wlf, trans, kind='cubic', bounds_error=False, fill_value=0)

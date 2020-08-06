@@ -25,7 +25,7 @@ def run():
 	ldfile = args.ldfile # file with limb darkening information
 	bounds = args.bounds # list of boundaries of separate intervals for the fits
 	save = args.s # whether to save the intensity data
-	a = args.a
+	a = [args.a]
 
 	# metallicity
 	zstr = os.path.basename(ldfile)[1:4].replace('m', '-').replace('p', '')

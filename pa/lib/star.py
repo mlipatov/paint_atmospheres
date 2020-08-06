@@ -24,7 +24,9 @@ class Star:
 		if ld is not None:
 			self.bands = ld.bands # band names (photometry mode)
 			self.F0 = ld.F0 # flux zero points (photometry mode)
-			self.av = ld.av # reddening coefficient (photometry mode)
+			# reddening coefficient (photometry mode) is either a number (same for all bands) 
+			# or an array (one for each band)
+			self.av = ld.av
 			self.wavelengths = ld.lam # wavelengths
 			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity

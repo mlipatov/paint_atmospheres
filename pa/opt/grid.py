@@ -10,8 +10,10 @@ class Grid:
 		self.gamma = gamma
 		self.Z = Z
 
-		# reddenings and bands
+		# reddenings
 		self.av = av
+		# bands
 		self.bands = bands
 
+		# dimensions should be in the above order
 		self.Mag = Mag
