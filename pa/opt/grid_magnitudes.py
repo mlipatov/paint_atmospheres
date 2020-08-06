@@ -25,15 +25,10 @@ iodir = '../../'
 #	lists of luminosities, omegas, inclinations, masses, metallicities, reddenings, bands
 # Output: magnitudes indexed by [omega][inclination][mass][band][reddening]
 def computemag(z, l, limb, L, tau, omega, inc, M, Z, av, bands):
-	start = time.time()
 	# array of magnitudes
 	shape = tuple(( len(omega), len(inc), len(M), len(bands), len(av) ))
 	# use a less memory intensive data type
 	result = np.full( shape, np.nan, dtype=np.float32 )
-
-	print('Start Z = ' + str(Z[z]) + ', tau = ' + str(tau[l]))
-	sys.stdout.flush()
-
 	for m in np.arange(len(M)):
 		for o in np.arange(len(omega)):
 			try:
@@ -47,11 +42,7 @@ def computemag(z, l, limb, L, tau, omega, inc, M, Z, av, bands):
 					result[o, i, m, :, :] = mags.reshape(len(bands), len(av))
 			except mp.InterpolationError as err:
 				pass
-		print('.', end='', flush=True)
-	# gc.collect()
-	end = time.time()
-	print('\nZ = ' + str(Z[z]) + ', tau = ' + str(tau[l]) + ' finished in ' + ut.timef(end - start))
-	sys.stdout.flush()
+	print('.', end='', flush=True)
 	return result
 
 sockets = 2 # number of chips on the machine
@@ -107,6 +98,7 @@ print('A_V\tZ\tgamma\ttau\tomega\tinclination')
 print( len(av), '\t', len(Z), '\t', len(gamma), '\t', len(L), '\t', len(omega), '\t', len(inc) )
 print('The grid will contain ' + format(n / 1e6, '.0f') + ' million stellar models')
 print('It will take up ' + format(n * len(bands) * 4 / 1e9, '.2f') + ' Gb of hard disk space')
+print('This corresponds to ' + format(n / (len(omega) * len(inc) * len(M)), '.0f') + ' dots below' )
 sys.stdout.flush()
 
 # split the computation into pool runs by metallicity, 
@@ -117,12 +109,23 @@ for z in range(len(Z)):
 	limb = ldlist[z]
 	# initialize the pool object
 	pool = mlp.Pool( num_cpu )
+
+	start = time.time()
+	print('Start Z = ' + str(Z[z]))
+	sys.stdout.flush()
+
 	# run the code in parallel; the result is a list of arrays;
 	# the list is indexed by [luminosity]; the arrays are indexed by [omega][inclination][mass][band][reddening] 
 	result = pool.starmap( computemag, [(z, l, limb, L, tau, omega, inc, M, Z, av, bands) for l in range(len(L))] )
 	result = np.array(result) # convert into numpy array
 	results.append(result) # append to the array of results
 	pool.close()
+	gc.collect()
+
+	end = time.time()
+	print('\nZ = ' + str(Z[z]) + ' finished in ' + ut.timef(end - start))
+	sys.stdout.flush()
+
 results = np.array(results) # convert to numpy array
 # permute from 	[metallicity][luminosity][omega][inclination][mass][band][reddening]
 # to 			[luminosity][omega][inclination][mass][metallicity][reddening][band]
