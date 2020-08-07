@@ -104,6 +104,10 @@ sys.stdout.flush()
 # split the computation into pool runs by metallicity, 
 # to reduce total RAM usage during every run
 results = [] # this will be indexed by [metallicity][luminosity][omega][inclination][mass][band][reddening]
+# pickle the results
+with open(iodir + 'data/temp.pkl', 'wb') as f:
+	pickle.dump(results, f)
+
 for z in range(len(Z)): 
 	# limb darkening information for this metallicity
 	limb = ldlist[z]
@@ -117,16 +121,30 @@ for z in range(len(Z)):
 	# run the code in parallel; the result is a list of arrays;
 	# the list is indexed by [luminosity]; the arrays are indexed by [omega][inclination][mass][band][reddening] 
 	result = pool.starmap( computemag, [(z, l, limb, L, tau, omega, inc, M, Z, av, bands) for l in range(len(L))] )
-	result = np.array(result) # convert into numpy array
-	results.append(result) # append to the array of results
-	pool.close()
-	del pool
-	gc.collect()
+	pool.close() # close the pool
+
+	result = np.array(result) # convert the result of this pool run into numpy array
+
+	# unpickle the total array of results
+	with open(iodir + 'data/temp.pkl', 'rb') as f:
+		results = pickle.load(f)
+	# append to the total array of results
+	results.append(result) 
+	# pickle the results
+	with open(iodir + 'data/temp.pkl', 'wb') as f:
+		pickle.dump(results, f)
+	del results # dereference the results
+	gc.collect() # garbage collect
 
 	end = time.time()
 	print('\nZ = ' + str(Z[z]) + ' finished in ' + ut.timef(end - start))
 	sys.stdout.flush()
 
+# unpickle the total array of results
+with open(iodir + 'data/temp.pkl', 'rb') as f:
+	results = pickle.load(f)
+# delete the temporary file
+os.remove(iodir + 'data/temp.pkl')
 results = np.array(results) # convert to numpy array
 # permute from 	[metallicity][luminosity][omega][inclination][mass][band][reddening]
 # to 			[luminosity][omega][inclination][mass][metallicity][reddening][band]
