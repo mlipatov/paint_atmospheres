@@ -120,6 +120,7 @@ for z in range(len(Z)):
 	result = np.array(result) # convert into numpy array
 	results.append(result) # append to the array of results
 	pool.close()
+	pool = None
 	gc.collect()
 
 	end = time.time()
