@@ -98,7 +98,7 @@ print('A_V\tZ\tgamma\ttau\tomega\tinclination')
 print( len(av), '\t', len(Z), '\t', len(gamma), '\t', len(L), '\t', len(omega), '\t', len(inc) )
 print('The grid will contain ' + format(n / 1e6, '.0f') + ' million stellar models')
 print('It will take up ' + format(n * len(bands) * 4 / 1e9, '.2f') + ' Gb of hard disk space')
-print('At every metallicity, this corresponds to ' + format(len(L)), '.0f') + ' luminocities / dots below' )
+print('At every metallicity, this corresponds to ' + format(len(L), '.0f') + ' luminocities / dots below' )
 sys.stdout.flush()
 
 # split the computation into pool runs by metallicity, 
