@@ -102,7 +102,8 @@ print('At every metallicity, this corresponds to ' + format(len(L), '.0f') + ' l
 sys.stdout.flush()
 
 # split the computation into pool runs by metallicity, 
-# to reduce total RAM usage during every run
+# to reduce total RAM usage during every run;
+# this necessitates storing the results of previous runs on hard disk
 results = [] # this will be indexed by [metallicity][luminosity][omega][inclination][mass][band][reddening]
 # pickle the results
 with open(iodir + 'data/temp.pkl', 'wb') as f:
@@ -122,19 +123,21 @@ for z in range(len(Z)):
 	# the list is indexed by [luminosity]; the arrays are indexed by [omega][inclination][mass][band][reddening] 
 	result = pool.starmap( computemag, [(z, l, limb, L, tau, omega, inc, M, Z, av, bands) for l in range(len(L))] )
 	pool.close() # close the pool
-
 	result = np.array(result) # convert the result of this pool run into numpy array
 
-	# unpickle the total array of results
+	# unpickle the total list of results
 	with open(iodir + 'data/temp.pkl', 'rb') as f:
 		results = pickle.load(f)
-	# append to the total array of results
+	# append to the total list of results
 	results.append(result) 
 	# pickle the results
 	with open(iodir + 'data/temp.pkl', 'wb') as f:
 		pickle.dump(results, f)
-	del results # dereference the results
-	gc.collect() # garbage collect
+	# dereference all the results arrays
+	del results
+	del result
+	# garbage collect
+	gc.collect() 
 
 	end = time.time()
 	print('\nZ = ' + str(Z[z]) + ' finished in ' + ut.timef(end - start))
@@ -145,7 +148,8 @@ with open(iodir + 'data/temp.pkl', 'rb') as f:
 	results = pickle.load(f)
 # delete the temporary file
 os.remove(iodir + 'data/temp.pkl')
-results = np.array(results) # convert to numpy array
+# convert the results to numpy array
+results = np.array(results) 
 # permute from 	[metallicity][luminosity][omega][inclination][mass][band][reddening]
 # to 			[luminosity][omega][inclination][mass][metallicity][reddening][band]
 results = np.transpose(results, axes=[1, 2, 3, 4, 0, 6, 5])
