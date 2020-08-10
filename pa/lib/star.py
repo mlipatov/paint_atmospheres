@@ -20,13 +20,13 @@ class Star:
 	Paints the temperature across the surface of the star."""
 	def __init__(self, omega, luminosity, mass, Req, distance, \
 			nz=100, ld=None, temp_method='planck', g_method='log', nm=15):
-
+		self.a_v = np.array([0]) # default reddening
 		if ld is not None:
 			self.bands = ld.bands # band names (photometry mode)
 			self.F0 = ld.F0 # flux zero points (photometry mode)
 			# reddening coefficient (photometry mode) is either a number (same for all bands) 
 			# or an array (one for each band)
-			self.av = ld.av
+			self.a_v = ld.a_v
 			self.wavelengths = ld.lam # wavelengths
 			self.bounds = ld.bounds # the bounds between mu intervals in intensity fits
 		self.luminosity = luminosity

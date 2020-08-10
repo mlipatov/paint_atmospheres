@@ -86,15 +86,17 @@ def run():
 		# create this file if it doesn't exist, open it for writing
 		f = open(ofile,'w+') 
 		# write the header
-		f.write('# omega: ' + str(st.surface.omega) + '\n')
 		f.write('# luminosity: ' + str(st.luminosity) + '\n')
+		f.write('# omega: ' + str(st.surface.omega) + '\n')
+		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		f.write('# mass: ' + str(st.mass) + '\n')
 		f.write('# Req: ' + str(st.Req) + '\n')
+		f.write('# distance: ' + format(st.distance, '.2e') + ' cm\n')
+		f.write('# A_V: ' + format(*(st.a_v), '.2f') + '\n')
 		f.write('# number of upper half z values: ' + str(st.map.nz) + '\n')
-		f.write('# inclination(rad): ' + str(inclinations[i]) + '\n')
 		# write the spectrum to the file
 		f.write('\n')
-		if len(st.bands) == 0: # spectrum mode
+		if st.bands is None: # spectrum mode
 			f.write('# wavelength(nm)\tflux(ergs/s/Hz/ster)\n') 
 			for j, w in np.ndenumerate(wl):
 				f.write( str(w) )

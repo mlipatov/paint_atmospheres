@@ -15,8 +15,8 @@ def run():
 	parser.add_argument("pkl_lfile", help="name for an output .pkl file with limb darkening fits")
 	parser.add_argument('bounds', type=float, nargs='+', help='list of boundaries between intervals')
 	parser.add_argument("-f", help="directory with filter files for photometry mode")
-	parser.add_argument("-a", type=float, default=0, help="A_V reddening coefficient, " +\
-		"currently only implemented in photometry mode; default is zero; R_V is 3.1")
+	parser.add_argument("-a", type=float, default=0, help="A_V reddening coefficient (photometry mode), " +\
+		"default is zero; R_V is 3.1")
 	parser.add_argument("-s", help="save the discrete intensities in the .pkl file", 
 						action="store_true")
 	args = parser.parse_args()

@@ -110,7 +110,7 @@ class LimbDark:
         self.T = T
         self.lam = lam
         self.Z = Z
-        self.av = None
+        self.a_v = np.array([0]) # default reddening
         self.bands = None
         self.F0 = None
 
