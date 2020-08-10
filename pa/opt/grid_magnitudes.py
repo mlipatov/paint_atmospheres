@@ -53,7 +53,6 @@ num_cpu = sockets * psutil.cpu_count(logical = False) # number of cores in each 
 # 1: A_V
 with open(iodir + 'data/ldlist.pkl', 'rb') as fl:
 	ldlist = pickle.load(fl)
-ldlist = ldlist[6:8]
 # bands
 bands = ldlist[0].bands
 
@@ -79,19 +78,19 @@ t = ut.refine(t, tref) # increase the size of the tau grid by about this factor
 m = t < 6250
 t = np.concatenate(( ut.refine(t[m], 2), t[~m] ))
 m = t < 4500
-tau = np.concatenate(( ut.refine(t[m], 2), t[~m] ))[:2]
+tau = np.concatenate(( ut.refine(t[m], 2), t[~m] ))
 
 # log effective gravities at the equator, related to mass
-gamma = np.sort(np.copy(ld.g)).astype(np.float32)[:2]
+gamma = np.sort(np.copy(ld.g)).astype(np.float32)
 # corresponding luminosities and masses of stars (in solar luminosities and masses)
 # whose equatorial radius is equal to that of the sun
 L = ut.L(tau, 1)
 M = ut.M(gamma, 1)
 
 # omegas
-omega = np.append( np.linspace(0, 1, 20)[:-1], np.array([0.99]) )[:2]
+omega = np.append( np.linspace(0, 1, 20)[:-1], np.array([0.99]) )
 # inclinations
-inc = np.linspace(0, np.pi/2, 20)[:2]
+inc = np.linspace(0, np.pi/2, 20)
 
 n = len(av) * len(Z) * len(gamma) * len(L) * len(omega) * len(inc)
 print('Dimensions of the grid:')
