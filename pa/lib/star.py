@@ -13,6 +13,23 @@ import numpy as np
 import sys
 import math
 
+# dictionaries of informaion about sample stars
+Altair = {
+	'L':10.6, 'omega':0.744, 'inc':0.8840, 'Req':2.008, 'mass':1.86, 'Z':0.2, 'av':0.25, 'dist':1.583e19, 
+	'mag' = [1.18165768, 0.89128375, 0.52980958] # ['F435W', 'F555W', 'F814W']
+	}
+
+Achernar = {
+	'L':3020, 'omega':0.838, 'inc':1.0577, 'Req':9.16, 'mass':6.1, 'Z':-0.1, 'av':0.25, 'dist':1.319e20, 
+	'mag' = [0.63427402, 0.70057585, 0.72687706] # ['F435W', 'F555W', 'F814W']
+}
+
+Vega = {
+	'L':40.346, 'omega':0.6151, 'inc':0.088418, 'Req':2.815, 'mass':2.165, 'Z':-0.1, 'av':0.25, 'dist':2.3694e19, 
+	'mag' = [0.32104919, 0.22920190, 0.10125346] # ['F435W', 'F555W', 'F814W']
+}
+
+
 class Star:
 	""" Contains all the information pertaining to a rotating star, including its surface shape,
 	a map of physical and geometrical features across its surface, its size, mass and luminosity. 	

@@ -65,7 +65,8 @@ class MagGrid(Grid):
 		return MagGrid(*params, Mag)
 
 class LGrid(Grid):
-	def __init__(self, tau, omega, inc, gamma, Z, av, lh):
+	def __init__(self, tau, omega, inc, gamma, Z, av, Req, lh):
 		super().__init__(tau, omega, inc, gamma, Z, av)
 		# dimensions should be in the superclass constructor order
+		self.Req = Req
 		self.lh = lh
