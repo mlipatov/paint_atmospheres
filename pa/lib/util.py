@@ -29,6 +29,18 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
+## Conversions between dimensionless omegas in the context of a Roche model;
+## see appendix in arXiv:1505.03997
+# Omega / Omega_Keplerian as a function of Omega / Omega_critical
+def omega(otilde):
+	chi = np.arcsin(otilde)
+	omega = np.sqrt((6./otilde) * np.sin(chi/3) - 2)
+	return omega
+# Omega / Omega_critical as a function of Omega / Omega_Keplerian
+def otilde(omega):
+	otilde = omega * np.sqrt(27./8) * (1 + omega**2 / 2)**(-3./2)
+	return otilde
+
 # pseudo effective temperature
 def tau(L, Req):
 	return ( L * Lsun / (4 * np.pi * sigma * (Req * Rsun)**2) )**(1./4)

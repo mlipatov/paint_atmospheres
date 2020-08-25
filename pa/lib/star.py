@@ -7,8 +7,6 @@ import matplotlib as mpl # for the temperature color bar
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
 
-import scipy.optimize as optimization
-
 import numpy as np
 import sys
 import math
