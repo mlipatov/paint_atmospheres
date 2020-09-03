@@ -1,4 +1,19 @@
 import numpy as np
+from scipy.interpolate import interpn
+
+# Interpolate in a magnitude grid to get magnitudes at a set of points
+# Notes:
+# 	When one of the neighbors of a point has NAN magnitudes, that point gets NAN magnitudes in the output;
+#	when a point is outside the grid, a ValueError is thrown
+# Inputs:
+#	A magnitude grid
+#	An array of points, e.g. [[tau0, omega0, inc0, ...], [tau1, omega1, inc1, ...], ...]
+# Output:
+#	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
+def interp(mg, points):
+	interp_mag = interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av),\
+		mg.Mag, points)
+	return interp_mag
 
 class Grid:
 	# dimension parameters

@@ -29,12 +29,29 @@ def timef(atime):
 	res = "{:0>2}:{:0>2}:{:05.2f}".format(int(hours), int(minutes), seconds)
 	return res
 
+# distance from modulus
+def dist(mod):
+	return D10 * 10**(mod / 5)
+
 ## Conversions between dimensionless omegas in the context of a Roche model;
 ## see appendix in arXiv:1505.03997
 # Omega / Omega_Keplerian as a function of Omega / Omega_critical
 def omega(otilde):
-	chi = np.arcsin(otilde)
-	omega = np.sqrt((6./otilde) * np.sin(chi/3) - 2)
+	def om(ot):
+		chi = np.arcsin(ot)
+		om = np.sqrt((6./ot) * np.sin(chi/3) - 2)
+		return om
+	lst = hasattr(otilde, "__iter__") # is the input list-like (iterable)?
+	if lst:
+		omega = np.empty_like(otilde)
+		m = (otilde == 0)
+		omega[m] = 0
+		omega[~m] = om(otilde[~m])
+	else:
+		if otilde == 0:
+			omega = 0
+		else:
+			omega = om(otilde)
 	return omega
 # Omega / Omega_critical as a function of Omega / Omega_Keplerian
 def otilde(omega):
