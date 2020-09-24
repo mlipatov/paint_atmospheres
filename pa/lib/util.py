@@ -16,6 +16,7 @@ k = 1.3806504e-16 # Boltzmann constant in erg/K
 D10 = 3.085678e+19 # ten parsecs in cm
 Tsun = (Lsun / (4*math.pi*sigma*Rsun**2))**(0.25) # temperature of the sun in Kelvins
 Zsun = 0.017 # from Grevesse, N., & Sauval, A. J., 1998, Space Sci. Rev., 85, 161 (used by Castelli and Kurucz 2004)
+Zsun_mist = 0.0142 # bulk solar metallicity from Asplund et al, Annu. Rev. Astron. Astrophys. 2009. 47:481–522 (used by MIST)
 
 # printf() function from O'Reilly's Python Cookbook
 def printf(format, *args):
@@ -32,6 +33,11 @@ def timef(atime):
 # distance from modulus
 def dist(mod):
 	return D10 * 10**(mod / 5)
+
+# Keplerian limit on the angular velocity, 
+# for fixed mass in solar masses and equatorial radius in solar radii
+def OmegaK(M, Req):
+	return np.sqrt(G * M * Msun / (Req * Rsun)**3)
 
 ## Conversions between dimensionless omegas in the context of a Roche model;
 ## see appendix in arXiv:1505.03997
@@ -58,10 +64,17 @@ def otilde(omega):
 	otilde = omega * np.sqrt(27./8) * (1 + omega**2 / 2)**(-3./2)
 	return otilde
 
-# pseudo effective temperature
+# surface area in squared solar radii
+# from luminosity in solar luminosities and effective temperature in Kelvin
+def area(L, Teff):
+	return L * Lsun / (sigma * Teff**4 * Rsun**2)
+
+# pseudo effective temperature in Kelvin
+# from luminosity in solar luminosities and equatorial radius in solar radii
 def tau(L, Req):
 	return ( L * Lsun / (4 * np.pi * sigma * (Req * Rsun)**2) )**(1./4)
 # luminosity in solar luminosities
+# from pseudo effective temperature in Kelvin and equatorial radius in solar radii
 def L(tau, Req):
 	return 4 * np.pi * (Req * Rsun)**2 * sigma * tau**4 / Lsun
 
@@ -71,6 +84,19 @@ def gamma(M, Req):
 # mass in solar masses
 def M(gamma, Req):
 	return 10**gamma * (Req * Rsun)**2 / (G * Msun)
+
+# convert between absolute metallicity Z and logarithmic relative metallicity [M/H],
+# as well as between these variables for different solar metallicities
+def logZp(Z):
+	return np.log10(Z / Zsun)
+def Z_from_logZp(logZ):
+	return Zsun * 10**logZ
+def logZm(Z):
+	return np.log10(Z / Zsun_mist)
+def logZm_from_logZp(logZ):
+	return logZ + np.log10(Zsun) - np.log10(Zsun_mist)
+def logZp_from_logZm(logZ):
+	return logZ - np.log10(Zsun) + np.log10(Zsun_mist)
 
 # v sin i from mass
 def vsini1(M, R, omega, inc):

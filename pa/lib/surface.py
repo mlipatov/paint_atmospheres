@@ -1,5 +1,62 @@
 import numpy as np
 import math
+from scipy import interpolate
+
+# functions that provides the volume and the surface area of a star 
+# at a given rotation rate in cubed equatorial radii and squared equatorial radii, respectively;
+# the associated calculations use vectorized versions of the object methods further down;
+# the functions use the value from omega = delta at omega <= 0 and that from omega = 1 - delta at omega >= 1,
+# where delta is some small value
+V = None
+A = None
+
+def calcVA():
+	def T(w, u):
+		return np.arccos(\
+			(27. - 2*u**6 - 54*w - 6*u**4*w + 27*w**2 - 6*u**2*w**2 - 2*w**3) / \
+			(2.*(u**2 + w)**3))
+
+	def Vfunc(w, u):
+		return np.cos((1./3) * (2 * np.pi + T(w, u)))
+
+	def S(w, u, v):
+		return (1. / 3) * (2*w - u**2 + 2 * (u**2 + w) * v)
+
+	def Ds(w, u, v):
+	 	return 2. * u * (1 - 2 * v) / (3 + 6 * v)
+
+	def Afunc(f, s, ds): 
+		return (1./f) * np.sqrt(s + ds**2 / 4)
+
+	def R(s): 
+		return np.sqrt(s)
+
+	# axis 0 : omega, w, f
+	# axis 1: z
+
+	omega = np.linspace(0, 1, 1000)
+	w = 1 + 2 / omega[1:]**2 # don't use the zero value
+	w = w[:, np.newaxis]
+	f = 1 + omega[1:]**2 / 2
+
+	z = np.linspace(0, 1, 1000)
+	u = z[np.newaxis, :] / f[:, np.newaxis]
+	v = Vfunc(w, u)
+	s = S(w, u, v)
+	s[ s < 0] = 0
+	ds = Ds(w, u, v)
+	a = Afunc(f[:, np.newaxis], s, ds)
+	r = R(s)
+
+	Va = (1. / f) * 2 * np.pi * np.trapz(r**2, z, axis=-1)
+	Aa = 4 * np.pi * np.trapz(a, z, axis=-1)
+	# tack on the values at zero rotation
+	Va = np.concatenate( (np.array([4*np.pi/3]), Va) )
+	Aa = np.concatenate( (np.array([4*np.pi]), Aa) )
+
+	global V, A
+	V = interpolate.interp1d(omega, Va, kind='cubic')
+	A = interpolate.interp1d(omega, Aa, kind='cubic')
 
 class Surface:
 	""" Contains all the information pertaining to the surface of a rotating star,
