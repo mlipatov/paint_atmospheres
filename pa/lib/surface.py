@@ -2,13 +2,15 @@ import numpy as np
 import math
 from scipy import interpolate
 
-# functions that provides the volume and the surface area of a star 
+# functions that provide the volume and the surface area of a star 
 # at a given rotation rate in cubed equatorial radii and squared equatorial radii, respectively;
-# the associated calculations use vectorized versions of the object methods further down;
-# the functions use the value from omega = delta at omega <= 0 and that from omega = 1 - delta at omega >= 1,
-# where delta is some small value
+# the associated calculations use vectorized versions of the object methods further down
 V = None
 A = None
+# function that provides the dimensionless omega w.r.t. Omega_K = sqrt(G M / R_eq^3), given 
+# the dimensionless omega w.r.t sqrt(G M / R^3), where R is the volume-averaged radius
+omega = None
+omax = None # maximum value of Omega / sqrt(G M / R^3)
 
 def calcVA():
 	def T(w, u):
@@ -16,7 +18,7 @@ def calcVA():
 			(27. - 2*u**6 - 54*w - 6*u**4*w + 27*w**2 - 6*u**2*w**2 - 2*w**3) / \
 			(2.*(u**2 + w)**3))
 
-	def Vfunc(w, u):
+	def vfunc(w, u):
 		return np.cos((1./3) * (2 * np.pi + T(w, u)))
 
 	def S(w, u, v):
@@ -34,16 +36,16 @@ def calcVA():
 	# axis 0 : omega, w, f
 	# axis 1: z
 
-	omega = np.linspace(0, 1, 1000)
+	omega = np.linspace(0, 1, 1001)
 	w = 1 + 2 / omega[1:]**2 # don't use the zero value
 	w = w[:, np.newaxis]
 	f = 1 + omega[1:]**2 / 2
 
-	z = np.linspace(0, 1, 1000)
+	z = np.linspace(0, 1, 1001)
 	u = z[np.newaxis, :] / f[:, np.newaxis]
-	v = Vfunc(w, u)
+	v = vfunc(w, u)
 	s = S(w, u, v)
-	s[ s < 0] = 0
+	s[s < 0] = 0
 	ds = Ds(w, u, v)
 	a = Afunc(f[:, np.newaxis], s, ds)
 	r = R(s)
@@ -57,6 +59,47 @@ def calcVA():
 	global V, A
 	V = interpolate.interp1d(omega, Va, kind='cubic')
 	A = interpolate.interp1d(omega, Aa, kind='cubic')
+
+# calculate the Keplerian dimensionless omega as a function of the MESA dimensionless omega
+def calcom():
+	def f(omega):
+		return omega**2 * V(omega)
+	
+	global omax
+	omin = 0
+	omax = np.sqrt(V(1) / (4 * np.pi / 3)) # maximum value for Omega / sqrt(G M / R^3)
+	otc = np.linspace(omin, omax, 1001)
+	ol = np.zeros(len(otc)) # lower bound
+	ou = np.ones(len(otc)) # upper bound
+	om = (ol + ou) / 2 # midpoint bracket
+	i = 0
+	while True:
+		fl = f(ol) - (4 * np.pi / 3) * otc**2 # function at the lower bound
+		fu = f(ou) - (4 * np.pi / 3) * otc**2 # function at the upper bound
+		fm = f(om) - (4 * np.pi / 3) * otc**2 # function at the midpoint
+		# signs
+		sl = np.sign(fl)
+		su = np.sign(fu)
+		sm = np.sign(fm)
+		# set the upper bound to the midpoint when the signs of lower bound and midpoint are opposite
+		mask = (sl * sm == -1)
+		ou[mask] = om[mask] # new bracket upper bound
+		# set the lower bound to the midpoint when the signs of upper bound and midpoint are opposite
+		mask = (su * sm == -1)
+		ol[mask] = om[mask] # new bracket lower bound
+		# new midpoint
+		om = (ol + ou) / 2
+		# check for convergence
+		if i > 0:
+			if np.max(np.abs(om - om_prev)) < 0.0001:
+				break
+		om_prev = np.copy(om) # remember the midpoint for the next iteration
+		i+=1
+	om[0] = 0
+	om[-1] = 1
+	global omega
+	omega = interpolate.interp1d(otc, om, kind='cubic')
+
 
 class Surface:
 	""" Contains all the information pertaining to the surface of a rotating star,
