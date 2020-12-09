@@ -10,6 +10,7 @@ A = None
 # function that provides the dimensionless omega w.r.t. Omega_K = sqrt(G M / R_eq^3), given 
 # the dimensionless omega w.r.t sqrt(G M / R^3), where R is the volume-averaged radius
 omega = None
+omin = None
 omax = None # maximum value of Omega / sqrt(G M / R^3)
 
 def calcVA():
@@ -65,7 +66,7 @@ def calcom():
 	def f(omega):
 		return omega**2 * V(omega)
 	
-	global omax
+	global omin, omax
 	omin = 0
 	omax = np.sqrt(V(1) / (4 * np.pi / 3)) # maximum value for Omega / sqrt(G M / R^3)
 	otc = np.linspace(omin, omax, 1001)

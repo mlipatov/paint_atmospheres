@@ -162,5 +162,5 @@ nvalid = np.count_nonzero(~np.isnan(grid.Mag)) / len(bands)
 print(format(nvalid / 1e6, '.0f') + ' millions valid stellar models')
 
 ### Pickle the grid
-with open(iodir + 'data/mag_grid.pkl', 'wb') as f:
+with open(iodir + 'data/pars_grid.pkl', 'wb') as f:
 	pickle.dump(grid, f)
