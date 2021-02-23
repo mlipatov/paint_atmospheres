@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.interpolate import interpn
+from scipy import interpolate as interpolate
 
 # In this module, Z is the logarithmic relative metallicity, [M/H]
 # All models are at 10 parsecs and with solar equatorial radius
@@ -26,9 +26,27 @@ def correct(Mag, Req, mod):
 #	An array of points, e.g. [[tau0, omega0, inc0, ...], [tau1, omega1, inc1, ...], ...]
 # Output:
 #	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
-def interp(mg, points):
-	interp_mag = interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av),\
-		mg.Mag, points, bounds_error=False, fill_value=np.nan)
+def interp(mg, xi):
+	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av), method='linear',\
+		mg.Mag, xi, bounds_error=False, fill_value=np.nan)
+	return interp_mag
+
+# A version of the above at a particular metallicity and reddening
+# Inputs:
+#	A magnitude grid
+#	An array of points on a 4D grid, e.g. [[tau0, omega0, inc0, gamma0], [tau1, omega1, inc1, gamma0], ...]
+#	Metallicity and reddening
+# Output:
+#	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
+def interp4d(mg, xi, Z, AV):
+	# find the index of closest metallicity and reddening
+	Zi = np.searchsorted(mg.Z, Z, side='right')
+	if (Z - mg.Z[Zi - 1]) <= (mg.Z[Zi] - Z): Zi -= 1
+	AVi = np.searchsorted(mg.av, AV, side='right')
+	if (AV - mg.av[AVi - 1]) <= (mg.av[AVi] - AV): AVi -= 1
+	# interpolate in the remaining dimensions
+	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma), method='linear',\
+		mg.Mag[..., Zi, AVi], xi, bounds_error=False, fill_value=np.nan)
 	return interp_mag
 
 class Grid:
