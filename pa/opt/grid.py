@@ -27,8 +27,8 @@ def correct(Mag, Req, mod):
 # Output:
 #	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
 def interp(mg, xi):
-	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av), method='linear',\
-		mg.Mag, xi, bounds_error=False, fill_value=np.nan)
+	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av), \
+		mg.Mag, xi, method='linear', bounds_error=False, fill_value=np.nan)
 	return interp_mag
 
 # A version of the above at a particular metallicity and reddening
@@ -45,8 +45,8 @@ def interp4d(mg, xi, Z, AV):
 	AVi = np.searchsorted(mg.av, AV, side='right')
 	if (AV - mg.av[AVi - 1]) <= (mg.av[AVi] - AV): AVi -= 1
 	# interpolate in the remaining dimensions
-	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma), method='linear',\
-		mg.Mag[..., Zi, AVi], xi, bounds_error=False, fill_value=np.nan)
+	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma), \
+		mg.Mag[..., Zi, AVi], xi, method='linear', bounds_error=False, fill_value=np.nan)
 	return interp_mag
 
 class Grid:
