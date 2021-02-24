@@ -46,7 +46,7 @@ def interp4d(mg, xi, Z, AV):
 	if (AV - mg.av[AVi - 1]) <= (mg.av[AVi] - AV): AVi -= 1
 	# interpolate in the remaining dimensions
 	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma), \
-		mg.Mag[..., Zi, AVi], xi, method='linear', bounds_error=False, fill_value=np.nan)
+		mg.Mag[..., Zi, AVi, :], xi, method='linear', bounds_error=False, fill_value=np.nan)
 	return interp_mag
 
 class Grid:
@@ -73,6 +73,9 @@ class MagGrid(Grid):
 		self.bands = bands
 		# dimensions should be in the superclass constructor order
 		self.Mag = Mag
+
+	def copy(self):
+		
 
 	# Inputs:
 	# 	minimum tau

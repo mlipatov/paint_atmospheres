@@ -21,7 +21,7 @@ iodir = '../../'
 # Inputs:
 #	metallicity index
 #	luminosity index
-#	list of limbdarkening (LD) files
+#	limbdarkening file for this metallicity
 #	lists of luminosities, omegas, inclinations, masses, metallicities, reddenings, bands
 # Output: magnitudes indexed by [omega][inclination][mass][band][reddening]
 def computemag(z, l, limb, L, tau, omega, inc, M, Z, av, bands):
