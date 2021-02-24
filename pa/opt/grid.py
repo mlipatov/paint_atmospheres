@@ -74,9 +74,6 @@ class MagGrid(Grid):
 		# dimensions should be in the superclass constructor order
 		self.Mag = Mag
 
-	def copy(self):
-		
-
 	# Inputs:
 	# 	minimum tau
 	# 	minimum gamma
