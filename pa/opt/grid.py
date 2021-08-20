@@ -40,8 +40,11 @@ def interp(mg, xi):
 #	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
 def interp4d(mg, xi, Z, AV):
 	# find the index of closest metallicity and reddening
-	Zi = np.searchsorted(mg.Z, Z, side='right')
-	if (Z - mg.Z[Zi - 1]) <= (mg.Z[Zi] - Z): Zi -= 1
+	if Z in mg.Z:
+		Zi = np.argwhere(mg.Z == Z)
+	else:
+		Zi = np.searchsorted(mg.Z, Z, side='right')
+		if (Z - mg.Z[Zi - 1]) <= (mg.Z[Zi] - Z): Zi -= 1
 	AVi = np.searchsorted(mg.av, AV, side='right')
 	if (AV - mg.av[AVi - 1]) <= (mg.av[AVi] - AV): AVi -= 1
 	# interpolate in the remaining dimensions
@@ -112,10 +115,3 @@ class MagGrid(Grid):
 		# select the elements for the magnitudes array
 		Mag = Mag[np.ix_(*inds)]
 		return MagGrid(*params, Mag)
-
-class LGrid(Grid):
-	def __init__(self, tau, omega, inc, gamma, Z, av, Req, lh):
-		super().__init__(tau, omega, inc, gamma, Z, av)
-		# dimensions should be in the superclass constructor order
-		self.Req = Req
-		self.lh = lh

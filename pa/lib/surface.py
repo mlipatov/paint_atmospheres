@@ -101,7 +101,6 @@ def calcom():
 	global omega
 	omega = interpolate.interp1d(otc, om, kind='cubic')
 
-
 class Surface:
 	""" Contains all the information pertaining to the surface of a rotating star,
 	as defined by a Roche potential that combines gravitational and rotational effects.
