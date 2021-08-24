@@ -17,10 +17,12 @@ plt.rcParams.update({
 sf.calcVA()
 sf.calcom()
 oM = np.linspace(sf.omin, sf.omax, 1000)
+oM_original = np.linspace(0, 0.7, 8)
 
 fig = plt.figure()
 ax = plt.axes()
-ax.plot(oM, sf.omega(oM), lw=3)
+ax.plot(oM, sf.omega(oM), lw=3, zorder=0)
+# ax.scatter(oM_original, sf.omega(oM_original), c='k', zorder=1, lw=3)
 
 ax.set_xlabel(r'$\omega_{\rm M}\sqrt{1 - \frac{L}{L_{\rm Edd}}}$')
 ax.set_ylabel(r'$\omega$')

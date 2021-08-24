@@ -15,7 +15,8 @@ h = 6.62606885e-27 # planck's constant in erg*s
 k = 1.3806504e-16 # Boltzmann constant in erg/K
 D10 = 3.085678e+19 # ten parsecs in cm
 Tsun = (Lsun / (4*math.pi*sigma*Rsun**2))**(0.25) # temperature of the sun in Kelvins
-Zsun = 0.017 # from Grevesse, N., & Sauval, A. J., 1998, Space Sci. Rev., 85, 161 (used by Castelli and Kurucz 2004)
+Zsun = 0.01886 # from Anders and Grevesse, 1989, Geochimica et Cosmochimica Acta, Volume 53, Issue 1, p. 197-214 (used by http://kurucz.harvard.edu/grids/gridm01/)
+# Zsun = 0.017 # from Grevesse, N., & Sauval, A. J., 1998, Space Sci. Rev., 85, 161 (used by Castelli and Kurucz 2004)
 Zsun_mist = 0.0142 # bulk solar metallicity from Asplund et al, Annu. Rev. Astron. Astrophys. 2009. 47:481–522 (used by MIST)
 
 # printf() function from O'Reilly's Python Cookbook
