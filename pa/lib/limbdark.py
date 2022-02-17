@@ -194,11 +194,11 @@ class LimbDark:
         # for each combination of wavelength, gravity and temperature, calculate the fit at these values; 
         # record the fit parameters in the array needed for interpolation
         
-        # print ("Computing fits of intensity versus mu. ")
+        print ("Computing fits of intensity versus mu. ")
         sys.stdout.flush()
         start = time.time()
         for ind_g in np.arange(n_g):
-            # ut.printf(str(ind_g) + " out of " + str(n_g) + " gravity values completed.\n")
+            ut.printf(str(ind_g) + " out of " + str(n_g) + " gravity values completed.\n")
             sys.stdout.flush()
             for ind_temp in np.arange(n_temp):
                 if not np.isnan(I[0, 0, ind_g, ind_temp]):
@@ -212,5 +212,5 @@ class LimbDark:
                         fp[ind_wl] = ft.fit(I_slice)
                     self.fit_params[ind_temp][ind_g] = fp
         end = time.time()
-        # print("Done in " + str(end - start) + " seconds")
+        print("Done in " + str(end - start) + " seconds")
         sys.stdout.flush()

@@ -249,7 +249,9 @@ class Map:
 		if below or above:
 			message = 'Surface gravity is outside the extrapolation bounds of the limb darkening information grid.'
 			if below: message += ' Gravity at some points is below ' + str(g[0] - 0.5) + '.'
-			if above: message += ' Gravity at some points is above ' + str(g[-1] + 0.5) + '.'
+			if above: 
+				message += ' Gravity at some points is above ' + str(g[-1] + 0.5) + '.'
+				message += ' Specifically, maximum gravity is ' + str(g_arr.max()) + '.'
 			raise InterpolationError(message)
 
 		# for each z, see where in the limb darkening (LD) arrays the values of 

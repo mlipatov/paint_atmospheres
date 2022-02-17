@@ -192,7 +192,8 @@ class Star:
 	# 	on a set of axes
 	# Inputs: axes, inclination, size of the axes in inches, 
 	#	an optional axes where to draw a horizontal color bar
-	def plot_temp(self, ax, inclination, size_inches, cax=None):
+	# 	an optional integer exponent exp, so that units are 10^exp Kelvins
+	def plot_temp(self, ax, inclination, size_inches, cax=None, exp=3):
 
 		sine = np.sin(inclination)
 		cosn = np.cos(inclination)
@@ -247,10 +248,17 @@ class Star:
 				fc=cmap(colors[i]), fill=True, lw=ppr * l[i])
 			ax.add_patch(ellipse)
 		if cax is not None:
-			norm = mpl.colors.Normalize(vmin=T_min/1000, vmax=T_max/1000)
+			norm = mpl.colors.Normalize(vmin=T_min/10**exp, vmax=T_max/10**exp)
 			ticks = ticker.LinearLocator(2)
-			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal', ticks=ticks)
-			cb.set_label(r'Temperature, $10^3$ K')
+			cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal', \
+				ticks=ticks, format='%.0f')
+			if exp > 2:
+				label = r'Temperature ($10^' + str(int(exp)) + '$ K)'
+			elif exp > 0:
+				label = r'Temperature ($' + str(int(10**exp)) + '$ K)'
+			elif exp == 0:
+				label = r'Temperature (K)'
+			cb.set_label(label)
 
 	# output: normalized flux from a series of points on the surface of a star
 	#	covered by a planet

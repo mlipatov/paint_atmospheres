@@ -28,7 +28,7 @@ def correct(Mag, Req, mod):
 #	An array of magnitudes, e.g. [[F435W_0, F555W_0, F814W_0], [F435W_1, F555W_1, F814W_1], ...]
 def interp(mg, xi):
 	interp_mag = interpolate.interpn((mg.tau, mg.omega, mg.inc, mg.gamma, mg.Z, mg.av), \
-		mg.Mag, xi, method='linear', bounds_error=False, fill_value=np.nan)
+		mg.Mag, xi, method='linear', bounds_error=True, fill_value=np.nan)
 	return interp_mag
 
 # A version of the above at a particular metallicity and reddening
