@@ -21,6 +21,7 @@ ds = 10 # downsample
 data = []
 labels = []
 mask = None
+lammin, lammax = [950, 1125] # [1150, 1350] # [950, 1350]
 i = 0
 # rotating BD at different inclinations
 for file in glob.glob(iodir + '*.txt'):
@@ -31,7 +32,7 @@ for file in glob.glob(iodir + '*.txt'):
 	# intensity versus wavelength
 	dt = np.loadtxt(file)
 	if mask is None:
-		mask = (dt[:, 0] < 1350) & (dt[:, 0] > 1150)
+		mask = (dt[:, 0] < lammax) & (dt[:, 0] > lammin)
 	lb = r'$\omega = ' + str(omega) + ', i = ' + str(int(inclination)) + '^{\circ} $'
 	data.append(dt) # save for later
 	labels.append(lb)
@@ -43,13 +44,19 @@ lb = r'$\omega = 0, R_{\rm p} < R < R_{\rm e}$'
 data.append(dt)
 labels.append(lb)
 plt.plot(dt[:,0][mask], dt[:,1][mask], c=colors[2], label=lb)
+# plot
 plt.xlabel(xlabel)
 plt.ylabel(ylabel)
 plt.legend()
 plt.tight_layout()
 plt.savefig(iodir + 'plots/J0348-6022_zoomin.pdf')
-# plt.show() # show the plot with all wavelengths
 
+# add beta pic b at J0348-6022's distance
+dt = np.loadtxt('../../../data/betapicb/betapicb1_570796.txt')
+lb = r'$\beta$ Pictoris b'
+data.append(dt)
+labels.append(lb)
+plt.plot(dt[:,0][mask], dt[:,1][mask], c=colors[3], label=lb)
 # make a downsampled plot
 plt.clf()
 data = np.array(data)[:, ::ds, :]
