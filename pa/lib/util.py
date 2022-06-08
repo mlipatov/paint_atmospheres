@@ -10,6 +10,7 @@ G = 6.674e-8 # gravitational constant in cm**3 g**-1 s**-2
 Msun = 1.989e33 # mass of the sun in grams
 Rsun = 6.9551e10 # solar radius in cm
 sigma = 5.6704e-5 # Stefan-Boltzmann constant in erg*cm**-2*s**-1*K**-4
+sigma_sun = sigma * Rsun**2 / Lsun # Stephan-Boltzmann constant in Lsun * Rsun^-2 * K^-4
 c = 2.99792458e10 # speed of light in cm/s
 h = 6.62606885e-27 # planck's constant in erg*s
 k = 1.3806504e-16 # Boltzmann constant in erg/K

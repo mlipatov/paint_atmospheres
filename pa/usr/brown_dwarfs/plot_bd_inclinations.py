@@ -15,8 +15,7 @@ plt.rcParams.update({
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 parser = argparse.ArgumentParser(description="Examples: \n" +\
-	"plot_spectra \'data/vega/\' \'data/vega_img/\' 3000 -t,\
-	 plot_spectra \'data/sun/\' \'data/sun_img/\' 4000")
+	"python plot_bd_inclinations.py \'data/vega/\' \'data/vega_img/\' 3000 -t")
 parser.add_argument("input", help="input directory with text files")
 parser.add_argument("output", help="output directory with .png files")
 parser.add_argument("wl", help="upper cutoff for wavelength, in nanometers", type=int)

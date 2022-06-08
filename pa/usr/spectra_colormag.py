@@ -1,7 +1,8 @@
 # Requires: a directory of spectra of a star at different inclinations,
 #	two files with filter transmission functions
 # Output: plots of the star's spectrum and position on a CMD for different inclinations
-# Note: these can be assembled into a movie
+# Note: these can be assembled into a movie, for example with the following command:
+# 	ffmpeg -framerate 10 -pattern_type glob -i '*.jpeg' -c:v libx264 -pix_fmt yuv420p -vf pad="width=ceil(iw/2)*2:height=ceil(ih/2)*2"
 
 from pa.lib import star as st
 from pa.lib import util as ut

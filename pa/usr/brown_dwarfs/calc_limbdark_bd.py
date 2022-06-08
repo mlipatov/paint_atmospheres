@@ -13,7 +13,7 @@ from pa.lib import limbdark as ld
 from pa.lib import util as ut
 from pa.lib import fit as ft
 
-di = '/Users/mike/Documents/astro/brown_dwarfs/external_data/processed_all/'
+di = './limbdark_bd/'
 files = os.listdir(di)
 files.sort()
 # viewing angles, count 16

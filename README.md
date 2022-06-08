@@ -70,6 +70,7 @@ calc_star 'data/limbdark_m01.pkl' 'data/vega.pkl' 0.6151 40.346 2.165 2.815 2.36
 
 Perform the inclination-dependent computations.
 ```
+mkdir data/vega
 calc_spectra 'data/vega.pkl' 'data/vega/' -i 0.088418
 ```
 
@@ -115,6 +116,29 @@ These create figures 3 - 10 in [LB] (see References below).
 * [Comparison with an observed spectrum](pa/usr/08_vega_spectrum_comparison.py)
 * [Color-magnitude diagram for a range of inclinations](pa/usr/09_colormag_inclinations.py)
 * [Planetary transits](pa/usr/10_transit.py)
+
+### Extra: Compute Spectra of Brown Dwarfs
+
+Put brown dwarf atmospheres with limbdarkening information as CSV files into a directory
+```
+cd paint_atmospheres/data/
+mkdir limbdark_bd
+cp ~/t200K_g17ms2_nclds_m0.0.csv ./limbdark_bd/
+cp ~/t200K_g31ms2_nclds_m0.0.csv ./limbdark_bd/
+<and so on...>
+```
+
+Compute fits of intensity versus viewing angle from the limb darkening information.
+```
+python ../pa/usr/brown_dwarfs/calc_limbdark.py
+```
+
+Perform the computations for the T7 dwarf in Tannock et al. (2021) for the two extreme inclinations
+```
+mkdir J0348-6022
+calc_star ./limbdark_BD_00.pkl ./J0348-6022.pkl 0.417029 4.65107e-6 0.041 0.093 2.57339e19 100
+calc_spectra ./J0348-6022.pkl ./J0348-6022 -i 0.000 1.5707963267948966 2
+```
 
 ## Authors
 
