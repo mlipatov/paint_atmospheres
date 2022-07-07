@@ -5,10 +5,10 @@ import glob, os, argparse, pickle
 # from sigfig import round
 from matplotlib import pyplot as plt
 
-parser = argparse.ArgumentParser(description="Examples: \n" +\
-		"python plot_T7.py 400" )
+parser = argparse.ArgumentParser(description="Examples: \n" + "python plot_T7.py 400" )
 parser.add_argument("temp", help="average temperature", type=int)
 args = parser.parse_args()
+temp = args.temp
 tempstr = '_' + str(args.temp) +'/'
 
 # plotting parameters
@@ -76,8 +76,8 @@ lums_norot = [] # non-rotating model luminosities
 
 # input data: spectra of rotating BDs at different inclinations and rotational speeds
 # and those of non-rotating objects at different luminosities
-ratlumdir = '../../../data/bd_spectra/J0348-6022_ratlum/'
-os.makedirs(ratlumdir, exist_ok=True)
+ratio_rmsd_dir = '../../../data/bd_spectra/J0348-6022_ratlum_rmsd/'
+os.makedirs(ratio_rmsd_dir, exist_ok=True)
 iodir = '../../../data/bd_spectra/J0348-6022' + tempstr
 for file in sorted(glob.glob(iodir + '**/*.txt', recursive=True)):
 	# get the parameters
@@ -141,10 +141,13 @@ for omega in omegas: # for each rotational speed
 		# corrected by the corresponding inverse ratio of bolometric fluxes
 		rat_lum[omega].append( 1 / ((lums_norot[mini] / lum_rot) * (bolo_rot[omega][i] / bolo_nrt[mini])) )
 
-# save the anisotropy ratio 
-file = ratlumdir + 'rat_lum_J0348-6022' + tempstr.replace('/','') + '.pkl'
+# save the anisotropy ratio and the RMSD
+file = ratio_rmsd_dir + 'ratio_J0348-6022' + tempstr.replace('/','') + '.pkl'
 with open(file, 'wb') as f:
     pickle.dump(rat_lum, f)
+file = ratio_rmsd_dir + 'rmsd_J0348-6022' + tempstr.replace('/','') + '.pkl'
+with open(file, 'wb') as f:
+    pickle.dump(min_rmsd, f)
 
 # coefficients for quadratic fits (highest power first) 
 # to the dependence of luminosity ratio correction on cosine of inclination
@@ -167,48 +170,80 @@ for i in range(ppr.shape[0]): # for each power of the original fits, starting fr
 
 ## plots
 xlabel = r'$\cos{i}$'
+ylabel = r'$\min{{\rm RMSD}({\hat{\cal F}}_{\omega = 0})/\bar{{\cal F}}}$'
 plotdir = iodir + 'plots/'
 os.makedirs(plotdir, exist_ok=True)
-legend_title = r'$\bar{T}_{\rm eff} = ' + tempstr.replace('_','').replace('/','') + '\,\mathrm{K}$'
 legend_fontsize = 14
 incs = [0, 30, 60, 90]
 
-# plot the rms deviation versus inclination for different rotational velocities
+# plot the rms deviation versus inclination for different rotational velocities and average temperatures
+fig, ax = plt.subplots(2, 2, sharex=True, sharey=True, figsize=(10, 10))
+# fig.subplots_adjust(wspace=0.5, hspace=0.5)
+ax = ax.flat
+ax[0].invert_xaxis()
+bottom = np.inf # initialize lower y limit
+top = 0 # initialize upper y limit
+glb = glob.glob(ratio_rmsd_dir + 'rmsd*.pkl', recursive=True) # glob of anisotropy ratios
 if '880' in tempstr: om = omegas[::2]
 else: om = omegas
-for omega in om:
-	plt.plot(cosi, min_rmsd[omega], label=r'$\omega = ' + str(np.around(oms(omega), 2)) + '$')
-plt.legend(title=legend_title, fontsize=legend_fontsize, title_fontsize=legend_fontsize)
-plt.xlabel(xlabel)
-plt.ylabel(r'$\min{{\rm RMSD}({\hat{\cal F}}_{\omega = 0})/\bar{{\cal F}}}$')
-plt.gca().invert_xaxis()
-secax = plt.gca().secondary_xaxis('top', functions=(cos2deg, deg2cos))
-secax.set_xlabel(r'$i$ (degrees)', labelpad=10)
-secax.set_xticks(incs)
-plt.tight_layout()
-plt.savefig(plotdir + 'min_rmsd_J0348-6022' + tempstr.replace('/','') + '.pdf', dpi=200)
-plt.clf()
-
+if len(glb) > 0:
+	for file in glb:
+		# temperature
+		file_temp = file.rsplit('.')[-2].rsplit('_')[-1]
+		# index of the axes in subplots where to plot
+		j = ['400','600','880','1500'].index(file_temp)
+		text = r'$\bar{T}_{\rm eff} = ' + file_temp + '\,\mathrm{K}$'
+		# load the minimum rmsd
+		with open(file, 'rb') as f: min_rmsd = pickle.load(f)
+		for omega in om:
+			label = r'$\omega = ' + str(np.around(oms(omega), 2)) + '$'
+			ax[j].plot(cosi, min_rmsd[omega], label=label)
+			low = np.min(min_rmsd[omega]) # get the minimum y-value
+			high = np.max(min_rmsd[omega]) # get the maximum y-value
+			if low < bottom: bottom = low # look for the minimum y-value across all temperatures and omegas
+			if high > top: top = high # look for the maximum y-value across all temperatures and omegas
+		if j == 0: ax[j].legend(fontsize=legend_fontsize, title_fontsize=legend_fontsize) # legend
+		ax[j].text(0.95, 0.1, text) # text
+		if j > 1: ax[j].set_xlabel(xlabel) # x labels
+		if j % 2 == 0: ax[j].set_ylabel(ylabel) # y labels
+		secax = ax[j].secondary_xaxis('top', functions=(cos2deg, deg2cos))
+		secax.set_xticks(incs)
+		if j <= 1:
+			secax.set_xlabel(r'$i$ (degrees)', labelpad=10)
+		else:
+			secax.xaxis.set_ticklabels([])
+# set the y-axis limits
+for j in range(4): 
+	ax[j].set_ylim(bottom / 1.2, top * 1.2) 
+	ax[j].set_yscale('log')
+fig.savefig(plotdir + 'min_rmsd_J0348-6022' + tempstr.replace('/','') + '.pdf', bbox_inches='tight', dpi=200)
+		
 # plot the rotational asymmetry factor in luminosity determination,
-# the discrete points - for each object temperature
+# the discrete points - for each object temperature;
+plt.clf() # clear the current figure to plot
+plt.figure(figsize=(8, 6)) # set figure size
+plt.rcParams.update({"font.size": 24}) # set general font size
+legend_fontsize = 21 # set legend font size
+legend_title = r'$\bar{T}_{\rm eff} = ' + str(temp) + '\,\mathrm{K}$'
 xarr = np.linspace(cosi[0], cosi[-1], 100)
-glb = glob.glob(ratlumdir + '*.pkl', recursive=True) # glob of anisotropy ratios at all BD temperatures
+glb = glob.glob(ratio_rmsd_dir + 'ratio*.pkl', recursive=True) # glob of anisotropy ratios
 # check if this is the main temperature
-if '880' in tempstr: start = 0; skip = 2
-else: start = 0; skip = 1
+if '880' in tempstr: start = 0; skip = 2; om = omegas[::2]
+else: start = 0; skip = 1; om = omegas
 if len(glb) > 0:
 	rat_diff = [] # all anisotropy ratios
 	for file in glb:
-		# load the anisotropy ratio 
+		# load the anisotropy ratio
 		with open(file, 'rb') as f: rat_lum = pickle.load(f)
 		j = 0
 		rd = []	# small ratio difference
 		for i in range(start, len(omegas), skip):
 			omega = omegas[i]
+			## the asymmetry factor
 			# evaluate the fit at the locations of discrete data points
 			rl_fit = np.polyval(pr2[i, :], cosi)
-			# plot
-			plt.scatter(cosi, rat_lum[omega], c=cols[j], alpha=0.5, lw=0) #, s=3, marker='.')
+			# plot the asymmetry factor
+			plt.scatter(cosi, rat_lum[omega], c=cols[j], alpha=0.5, lw=0, s=60) #, s=3, marker='.')
 			# store the anisotropy ratio difference between the fit and the data points
 			rd.append(rl_fit - rat_lum[omega])
 			# append the color counter
@@ -218,7 +253,7 @@ if len(glb) > 0:
 	rat_diff = np.array(rat_diff)
 	# index of the maximum absolute difference: this is probably the largest inclination, omega and temperature 
 	rat_ind = np.unravel_index(np.argmax(np.abs(rat_diff)), rat_diff.shape)
-	print('This should be (4, 3, 10) - indices of largest temperature, omega and inclination: ' + str(rat_ind))
+	print('This should be the indices of largest temperature, omega and inclination, e.g. (2, 3, 10): ' + str(rat_ind))
 	print('The largest fit minus data points difference at these parameter values is ' + str(rat_diff[rat_ind]))
 	# rmsd for the shown data points
 	rd_flat = rat_diff.flatten()
@@ -231,7 +266,7 @@ if len(glb) > 0:
 		j+=1
 	# plot details
 	plt.hlines(y=1, xmin=cosi[0], xmax=cosi[-1], color='grey', linestyle='--', zorder=-10)
-	plt.legend(title=legend_title, fontsize=legend_fontsize, title_fontsize=legend_fontsize)
+	plt.legend(fontsize=legend_fontsize, title_fontsize=legend_fontsize) #, title=legend_title)
 	plt.xlabel(xlabel)
 	plt.ylabel(r'$L\,p / (4\pi r^2{\cal F})$')
 	plt.gca().invert_xaxis()

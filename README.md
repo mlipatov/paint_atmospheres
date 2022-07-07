@@ -130,14 +130,58 @@ cp ~/t200K_g31ms2_nclds_m0.0.csv ./limbdark_bd/
 
 Compute fits of intensity versus viewing angle from the limb darkening information.
 ```
-python ../pa/usr/brown_dwarfs/calc_limbdark.py
+python ../pa/usr/brown_dwarfs/calc_limbdark_bd.py
 ```
 
-Perform the computations for the T7 dwarf in Tannock et al. (2021) for the two extreme inclinations
+#### Figure 1: synthetic spectra of rotating brown dwarf models and ratios of spectra
+
+Compute the spectra of the T7 dwarf in Tannock et al. (2021) for the two extreme inclinations; plot
 ```
-mkdir J0348-6022
-calc_star ./limbdark_BD_00.pkl ./J0348-6022.pkl 0.417029 4.65107e-6 0.041 0.093 2.57339e19 100
-calc_spectra ./J0348-6022.pkl ./J0348-6022 -i 0.000 1.5707963267948966 2
+python calc_bd.py bd_pkl/J0348-6022_few/ bd_spectra/J0348-6022_few/ 4.3e-6 3 9 -o 0.42
+plot_bd.py ../../../data/bd_spectra/J0348-6022_few/ -d 10 --ratio
+```
+
+#### Figure 2: synthetic spectra of the L3.5 dwarf from Tannock et al. and of beta Pictoris B
+
+Calculate and plot the spectrum of the rapidly rotating L3.5 BD (cloud-free Sonora atmospheres technically not appropriate)
+```
+calc_star data/limbdark_BD_00.pkl data/bd_pkl/J0407+1546.pkl 0.324443 0.0000977095 0.064 0.1 3.086e19 100
+calc_spectra data/bd_pkl/J0407+1546.pkl data/bd_spectra/J0407+1546/ -i 0.000 1.5707963267948966 2
+python plot_bd.py ../../../data/bd_spectra/J0407+1546/ -d 10
+```
+
+Calculate and plot the spectrum of Beta Pictoris b at 10 pc and two inclinations (luminosity is calculated from equatorial radius, not average)
+```
+calc_star data/limbdark_BD_00.pkl data/bd_pkl/betapicb.pkl 0.244337 0.000173182 0.0123 0.15 3.086e19 100
+calc_spectra data/bd_pkl/betapicb.pkl data/bd_spectra/betapicb/ -i 0 1.5707963267948966 2
+python plot_bd.py ../../../data/bd_spectra/betapicb/ -d 10
+```
+
+#### Figure 3: RMSD as a function of inclination and rotational speed, and
+#### Figure 4: flux anisotropy ratio versus inclination and rotational speed
+
+Calculate the models and the spectra
+```
+python calc_bd.py bd_pkl/J0348-6022_400/ bd_spectra/J0348-6022_400/ 1.8e-7 11 21 -o 0.1 0.5 4
+python calc_bd.py bd_pkl/J0348-6022_600/ bd_spectra/J0348-6022_600/ 9.3e-7 11 21 -o 0.1 0.5 4
+python calc_bd.py bd_pkl/J0348-6022_880/ bd_spectra/J0348-6022_880/ 4.3e-6 11 25 -o 0.1 0.5 7
+python calc_bd.py bd_pkl/J0348-6022_1500/ bd_spectra/J0348-6022_1500/ 3.6e-5 11 47 -o 0.1 0.5 4
+python calc_bd.py bd_pkl/J0348-6022_2200/ bd_spectra/J0348-6022_2200/ 1.7e-4 11 43 -o 0.1 0.5 4
+```
+
+Plot
+```
+python plot_T7.py 400
+python plot_T7.py 600
+python plot_T7.py 880
+python plot_T7.py 1500
+python plot_T7.py 880 # now that all the anisotropy ratios and rmsd values have been calculated
+```
+
+#### Movie: plot the T7 dwarf spectra at different inclinations
+```
+calc_spectra data/bd_pkl/J0348-6022/rotating/J0348-6022.pkl data/bd_spectra/J0348-6022_movie/txt/ -i 0.000 1.5707963267948966 150
+python plot_bd_inclinations.py ../../../data/bd_spectra/J0348-6022_movie/txt ../../../data/bd_spectra/J0348-6022_movie/jpg 6000 -t 
 ```
 
 ## Authors
