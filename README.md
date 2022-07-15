@@ -119,13 +119,10 @@ These create figures 3 - 10 in [LB] (see References below).
 
 ### Extra: Compute Spectra of Brown Dwarfs
 
-Put brown dwarf atmospheres with limbdarkening information as CSV files into a directory
+Unzip the file with brown dwarf plane-parallel atmospheres in CSV file format.
 ```
 cd paint_atmospheres/data/
-mkdir limbdark_bd
-cp ~/t200K_g17ms2_nclds_m0.0.csv ./limbdark_bd/
-cp ~/t200K_g31ms2_nclds_m0.0.csv ./limbdark_bd/
-<and so on...>
+tar -xf bd_atmospheres.zip
 ```
 
 Compute fits of intensity versus viewing angle from the limb darkening information.
@@ -135,7 +132,7 @@ python ../pa/usr/brown_dwarfs/calc_limbdark_bd.py
 
 #### Figure 1: synthetic spectra of rotating brown dwarf models and ratios of spectra
 
-Compute the spectra of the T7 dwarf in Tannock et al. (2021) for the two extreme inclinations; plot
+Compute the spectra of the T7 dwarf in Tannock et al. (2021) for the two extreme inclinations; plot.
 ```
 python calc_bd.py bd_pkl/J0348-6022_few/ bd_spectra/J0348-6022_few/ 4.3e-6 3 9 -o 0.42
 plot_bd.py ../../../data/bd_spectra/J0348-6022_few/ -d 10 --ratio
@@ -143,14 +140,14 @@ plot_bd.py ../../../data/bd_spectra/J0348-6022_few/ -d 10 --ratio
 
 #### Figure 2: synthetic spectra of the L3.5 dwarf from Tannock et al. and of beta Pictoris B
 
-Calculate and plot the spectrum of the rapidly rotating L3.5 BD (cloud-free Sonora atmospheres technically not appropriate)
+Calculate and plot the spectrum of the rapidly rotating L3.5 BD (note that the cloud-free Sonora atmospheres that we use are technically not appropriate for objects this hot).
 ```
 calc_star data/limbdark_BD_00.pkl data/bd_pkl/J0407+1546.pkl 0.324443 0.0000977095 0.064 0.1 3.086e19 100
 calc_spectra data/bd_pkl/J0407+1546.pkl data/bd_spectra/J0407+1546/ -i 0.000 1.5707963267948966 2
 python plot_bd.py ../../../data/bd_spectra/J0407+1546/ -d 10
 ```
 
-Calculate and plot the spectrum of Beta Pictoris b at 10 pc and two inclinations (luminosity is calculated from equatorial radius, not average)
+Calculate and plot the spectrum of Beta Pictoris b at 10 pc and two inclinations (luminosity is calculated from equatorial radius, not average).
 ```
 calc_star data/limbdark_BD_00.pkl data/bd_pkl/betapicb.pkl 0.244337 0.000173182 0.0123 0.15 3.086e19 100
 calc_spectra data/bd_pkl/betapicb.pkl data/bd_spectra/betapicb/ -i 0 1.5707963267948966 2
@@ -160,7 +157,7 @@ python plot_bd.py ../../../data/bd_spectra/betapicb/ -d 10
 #### Figure 3: RMSD as a function of inclination and rotational speed, and
 #### Figure 4: flux anisotropy ratio versus inclination and rotational speed
 
-Calculate the models and the spectra
+Calculate the models and the spectra.
 ```
 python calc_bd.py bd_pkl/J0348-6022_400/ bd_spectra/J0348-6022_400/ 1.8e-7 11 21 -o 0.1 0.5 4
 python calc_bd.py bd_pkl/J0348-6022_600/ bd_spectra/J0348-6022_600/ 9.3e-7 11 21 -o 0.1 0.5 4
@@ -169,7 +166,7 @@ python calc_bd.py bd_pkl/J0348-6022_1500/ bd_spectra/J0348-6022_1500/ 3.6e-5 11 
 python calc_bd.py bd_pkl/J0348-6022_2200/ bd_spectra/J0348-6022_2200/ 1.7e-4 11 43 -o 0.1 0.5 4
 ```
 
-Plot
+Plot.
 ```
 python plot_T7.py 400
 python plot_T7.py 600
@@ -178,10 +175,12 @@ python plot_T7.py 1500
 python plot_T7.py 880 # now that all the anisotropy ratios and rmsd values have been calculated
 ```
 
-#### Movie: plot the T7 dwarf spectra at different inclinations
+#### Movie: make a movie of the T7 dwarf spectra at different inclinations
 ```
 calc_spectra data/bd_pkl/J0348-6022/rotating/J0348-6022.pkl data/bd_spectra/J0348-6022_movie/txt/ -i 0.000 1.5707963267948966 150
 python plot_bd_inclinations.py ../../../data/bd_spectra/J0348-6022_movie/txt ../../../data/bd_spectra/J0348-6022_movie/jpg 6000 -t 
+cd ../../../data/bd_spectra/J0348-6022_movie/
+ffmpeg -framerate 10 -pattern_type glob -i '*.jpeg' -c:v libx264 -pix_fmt yuv420p -vf pad="width=ceil(iw/2)*2:height=ceil(ih/2)*2" ../J0348-6022_movie.mp4
 ```
 
 ## Authors

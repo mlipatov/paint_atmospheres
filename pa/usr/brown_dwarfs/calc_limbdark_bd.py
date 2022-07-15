@@ -13,7 +13,7 @@ from pa.lib import limbdark as ld
 from pa.lib import util as ut
 from pa.lib import fit as ft
 
-di = './limbdark_bd/'
+di = './bd_atmospheres/'
 files = os.listdir(di)
 files.sort()
 # viewing angles, count 16
